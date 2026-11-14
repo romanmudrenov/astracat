@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Астро-Кот</title>
-  <link rel="stylesheet" href="css/style.css?v=7" />
+  <link rel="stylesheet" href="css/style.css?v=8" />
 </head>
 <body>
   <div id="game-wrap">
@@ -17,7 +17,7 @@
       <button id="mute-btn" class="icon-btn" title="Звук (M)">🔊</button>
     </div>
 
-    <!-- ГЛАВНОЕ МЕНЮ (открывается сразу после комикса) -->
+    <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="start-overlay" class="overlay hidden">
       <div class="card">
         <div class="badge">Космическая экспедиция</div>
@@ -56,25 +56,23 @@
       </div>
     </div>
 
-    <!-- КОМИКС ПРЕДЫСТОРИИ (запускается автоматически при открытии ссылки) -->
+    <!-- КОМИКС ПРЕДЫСТОРИИ (ВЕРТИКАЛЬНЫЕ СЛАЙДЫ) -->
     <div id="lore-overlay" class="overlay">
       <div class="card lore-card">
-        <div class="badge">Комикс • Котовия-17</div>
         <div class="lore-dots" id="lore-dots">
           <span class="dot active"></span>
           <span class="dot"></span>
           <span class="dot"></span>
         </div>
 
-        <div class="lore-art-box" id="lore-art-box">
-          <!-- Если загружены img/slide1.png .. slide3.png, покажутся они; иначе работает живая Canvas-сцена -->
+        <div class="lore-art-box vertical" id="lore-art-box">
           <img id="lore-img" class="hidden" alt="Слайд комикса" />
-          <canvas id="lore-canvas" width="360" height="185"></canvas>
+          <canvas id="lore-canvas" width="270" height="330"></canvas>
         </div>
 
         <h2 id="lore-title">ПЛАНЕТА КОТОВИЯ-17</h2>
         <p class="intro-story" id="lore-text">
-          На родной планете Котовия-17 у кота по имени Редж заканчивается еда. Миски пустеют, а до ближайших продовольственных туманностей — световые годы!
+          На родной планете Котовия-17 у кота по имени Редж заканчивается еда. Еда выдаётся только по талонам, а миски пустеют!
         </p>
 
         <div class="btn-row">
@@ -84,7 +82,7 @@
       </div>
     </div>
 
-    <!-- БРИФИНГ ПЕРЕД КОНКРЕТНЫМ СЕКТОРОМ -->
+    <!-- БРИФИНГ ПЕРЕД СЕКТОРОМ -->
     <div id="intro-overlay" class="overlay hidden">
       <div class="card intro-card">
         <div class="intro-hero-art" id="intro-hero-art">
@@ -92,9 +90,7 @@
           <div class="intro-sector-tag" id="intro-sector-tag">СЕКТОР 1</div>
         </div>
         <h2 id="intro-title">ЗВЁЗДНАЯ БУХТА</h2>
-        <p class="intro-story" id="intro-story">
-          Редж выходит на орбиту! Подбери блюдо, чтобы добавить второе орудие к своей плазме!
-        </p>
+        <p class="intro-story" id="intro-story"></p>
         <div class="intro-intel" id="intro-intel"></div>
         <div class="btn-row">
           <button id="intro-launch-btn" class="btn-play">ЗАПУСТИТЬ ДВИГАТЕЛИ! 🔥</button>
@@ -103,36 +99,45 @@
       </div>
     </div>
 
-    <!-- НАСТРОЙКИ ЗВУКА И ТРЕКОВ -->
+    <!-- НАСТРОЙКИ ЗВУКА И ВЫБОР ТРЕКА -->
     <div id="settings-overlay" class="overlay hidden">
       <div class="card">
         <h2>НАСТРОЙКИ ЗВУКА</h2>
 
         <div class="setting-row">
           <div class="setting-head">
-            <span>🎵 Музыка (папка music/)</span>
+            <span>🎵 Фоновая музыка (папка music/)</span>
             <button id="toggle-music" class="toggle-chip">ВКЛ</button>
           </div>
           <input id="music-vol" type="range" min="0" max="100" value="50" />
-          <div class="setting-hint">Базовая громкость: 50% (music/level1.mp3 ... level10.mp3)</div>
+          <div class="setting-head" style="margin-top:8px; margin-bottom:0;">
+            <span style="font-size:12px;">Трек уровня:</span>
+            <select id="track-select" class="neon-select">
+              <option value="auto">🎲 Авто (без повтора 4 ур.)</option>
+              <option value="level1.mp3">Трек 1 (level1.mp3)</option>
+              <option value="level2.mp3">Трек 2 (level2.mp3)</option>
+              <option value="level3.mp3">Трек 3 (level3.mp3)</option>
+              <option value="level4.mp3">Трек 4 (level4.mp3)</option>
+            </select>
+          </div>
         </div>
 
         <div class="setting-row">
           <div class="setting-head">
-            <span>✨ Спецэффекты и взрывы (SFX)</span>
+            <span>✨ ASMR-эффекты и взрывы (SFX)</span>
             <button id="toggle-sfx" class="toggle-chip">ВКЛ</button>
           </div>
-          <input id="sfx-vol" type="range" min="0" max="100" value="60" />
-          <div class="setting-hint">Базовая громкость: 60%</div>
+          <input id="sfx-vol" type="range" min="0" max="100" value="72" />
+          <div class="setting-hint">Базовая громкость эффектов повышена до 72%</div>
         </div>
 
         <div class="setting-row">
           <div class="setting-head">
-            <span>🎹 Тембр эффектов</span>
+            <span>🎹 Характер ASMR-синтезатора</span>
           </div>
           <div class="diff-row" id="timbre-row" style="margin-bottom:0;">
-            <button class="pill-btn active" data-timbre="space">ASMR Пэд</button>
-            <button class="pill-btn" data-timbre="classic">Мульт-синт</button>
+            <button class="pill-btn active" data-timbre="space">Бархат</button>
+            <button class="pill-btn" data-timbre="classic">Кристалл</button>
             <button class="pill-btn" data-timbre="chiptune">Ретро</button>
           </div>
         </div>
@@ -156,15 +161,13 @@
       </div>
     </div>
 
-    <!-- ЭКРАН ИТОГОВ УРОВНЯ С АНИМАЦИЕЙ ДОВОЛЬНОГО КОТА РЕДЖА -->
+    <!-- ЭКРАН ИТОГОВ УРОВНЯ -->
     <div id="end-overlay" class="overlay hidden">
       <div class="card">
         <div class="badge" id="end-badge">Сектор зачищен</div>
-
         <div class="victory-cat-wrap" id="victory-cat-wrap">
           <canvas id="victory-cat-canvas" width="320" height="145"></canvas>
         </div>
-
         <h1 id="end-title">ПОБЕДА!</h1>
         <p class="subtitle" id="end-subtitle">Пожиратель повержен! Груз еды отправлен на Котовию-17!</p>
 
@@ -191,11 +194,10 @@
     </div>
   </div>
 
-  <!-- Модули из папки js/ -->
-  <script src="js/synth.js?v=7"></script>
-  <script src="js/vfx.js?v=7"></script>
-  <script src="js/world3d.js?v=7"></script>
-  <script src="js/entities.js?v=7"></script>
-  <script src="js/game.js?v=7"></script>
+  <script src="js/synth.js?v=8"></script>
+  <script src="js/vfx.js?v=8"></script>
+  <script src="js/world3d.js?v=8"></script>
+  <script src="js/entities.js?v=8"></script>
+  <script src="js/game.js?v=8"></script>
 </body>
 </html>
