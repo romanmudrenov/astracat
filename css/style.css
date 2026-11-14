@@ -9,8 +9,8 @@
 
 :root {
   --bg-deep: #0f0b24;
-  --glass-bg: rgba(24, 19, 54, 0.76);
-  --glass-card: rgba(34, 27, 74, 0.68);
+  --glass-bg: rgba(24, 19, 54, 0.88);
+  --glass-card: rgba(34, 27, 74, 0.78);
   --neon-pink: #ff8fab;
   --neon-mint: #72efdd;
   --neon-cyan: #80ffdb;
@@ -36,7 +36,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 20%, #241954 0%, #0d0921 100%);
+  background: #0d0921;
 }
 
 canvas {
@@ -45,7 +45,6 @@ canvas {
   height: 100%;
 }
 
-/* Верхние кнопки HUD с мягким неоновым свечением */
 .hud-top-right {
   position: absolute;
   top: 14px;
@@ -60,22 +59,16 @@ canvas {
   height: 44px;
   border-radius: 15px;
   border: 1.5px solid rgba(189, 178, 255, 0.45);
-  background: rgba(32, 25, 70, 0.78);
-  backdrop-filter: blur(10px);
+  background: rgba(32, 25, 70, 0.88);
   color: var(--text-main);
   font-size: 18px;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.14s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.12s ease, border-color 0.2s ease;
   touch-action: manipulation;
-}
-
-.icon-btn:hover {
-  border-color: var(--neon-mint);
-  box-shadow: 0 0 14px rgba(114, 239, 221, 0.4);
 }
 
 .icon-btn:active {
@@ -86,7 +79,6 @@ canvas {
   display: none;
 }
 
-/* Оверлеи с эффектом матового стекла */
 .overlay {
   position: absolute;
   inset: 0;
@@ -94,48 +86,42 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  background: radial-gradient(circle at 50% 30%, rgba(44, 30, 96, 0.65), rgba(10, 7, 26, 0.86));
-  backdrop-filter: blur(10px);
-  transition: opacity 0.28s ease;
+  padding: 14px;
+  background: rgba(11, 8, 28, 0.84);
+  transition: opacity 0.22s ease;
 }
 
 .overlay.hidden {
   opacity: 0;
   pointer-events: none;
+  display: none;
 }
 
-/* Современная неоново-пастельная карточка */
 .card {
   position: relative;
   width: 100%;
-  max-width: 450px;
-  max-height: 94vh;
+  max-width: 440px;
+  max-height: 95vh;
   overflow-y: auto;
   background: var(--glass-bg);
-  backdrop-filter: blur(18px);
-  border: 1.5px solid rgba(189, 178, 255, 0.32);
-  border-radius: 28px;
-  padding: 22px 20px 22px;
+  border: 1.5px solid rgba(189, 178, 255, 0.35);
+  border-radius: 26px;
+  padding: 18px 18px 20px;
   text-align: center;
   color: var(--text-main);
-  box-shadow:
-    0 20px 50px rgba(5, 3, 18, 0.65),
-    0 0 28px rgba(255, 143, 171, 0.14),
-    inset 0 1px 1px rgba(255, 255, 255, 0.22);
-  animation: cardAppear 0.38s cubic-bezier(0.18, 1.25, 0.32, 1);
+  box-shadow: 0 18px 45px rgba(5, 3, 18, 0.75), 0 0 24px rgba(255, 143, 171, 0.16);
+  animation: cardAppear 0.28s ease-out;
 }
 
-.card, .card button, .card input {
+.card, .card button, .card input, .card select {
   touch-action: manipulation;
 }
 
 @keyframes cardAppear {
-  0% { transform: scale(0.92) translateY(16px); opacity: 0; }
+  0% { transform: scale(0.94) translateY(10px); opacity: 0; }
   100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-/* Неоновый бейдж */
 .badge {
   display: inline-block;
   background: rgba(114, 239, 221, 0.16);
@@ -144,54 +130,43 @@ canvas {
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 5px 14px;
+  padding: 4px 13px;
   border-radius: 999px;
   border: 1px solid rgba(114, 239, 221, 0.45);
-  box-shadow: 0 0 14px rgba(114, 239, 221, 0.22);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
-/* Парящий логотип в пастельном неоне */
 h1 {
-  font-size: 32px;
+  font-size: 30px;
   line-height: 1.1;
   font-weight: 900;
   letter-spacing: 0.04em;
   background: linear-gradient(135deg, #ffd6a5 0%, #ff8fab 48%, #bdb2ff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 16px rgba(255, 143, 171, 0.42));
   margin-bottom: 6px;
-  animation: titleFloat 3.4s ease-in-out infinite;
-}
-
-@keyframes titleFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
 }
 
 h2 {
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 800;
   color: var(--text-main);
-  letter-spacing: 0.02em;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .subtitle {
   font-size: 13px;
   color: var(--text-muted);
-  font-weight: 500;
-  line-height: 1.45;
+  line-height: 1.4;
   margin-bottom: 12px;
 }
 
-/* Слайды комикса Котовии-17 */
+/* Вертикальные слайды комикса */
 .lore-dots {
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .lore-dots .dot {
@@ -199,32 +174,33 @@ h2 {
   height: 6px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .lore-dots .dot.active {
-  width: 40px;
+  width: 38px;
   background: linear-gradient(90deg, var(--neon-mint), var(--neon-lav));
-  box-shadow: 0 0 12px rgba(114, 239, 221, 0.55);
 }
 
-.lore-art-box {
+.lore-art-box.vertical {
   position: relative;
   width: 100%;
-  height: 185px;
-  border-radius: 20px;
+  height: 320px;
+  border-radius: 18px;
   border: 1.5px solid rgba(189, 178, 255, 0.35);
-  background: #140e30;
-  margin-bottom: 14px;
+  background: #120c2b;
+  margin-bottom: 10px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(189, 178, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.lore-art-box canvas,
-.lore-art-box img {
+.lore-art-box img,
+.lore-art-box canvas {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -232,30 +208,20 @@ h2 {
   display: none;
 }
 
-/* Сюжетный брифинг перед сектором */
 .intro-hero-art {
   position: relative;
-  height: 108px;
-  border-radius: 20px;
+  height: 100px;
+  border-radius: 18px;
   border: 1.5px solid rgba(114, 239, 221, 0.35);
   background: radial-gradient(circle at 50% 35%, #34216e 0%, #140e30 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
-  overflow: hidden;
-  box-shadow: 0 0 22px rgba(114, 239, 221, 0.15);
+  margin-bottom: 10px;
 }
 
 .intro-cat-badge {
-  font-size: 46px;
-  animation: floatCat 2.4s ease-in-out infinite;
-  filter: drop-shadow(0 0 14px rgba(255, 214, 165, 0.45));
-}
-
-@keyframes floatCat {
-  0%, 100% { transform: translateY(-4px) rotate(-3deg); }
-  50% { transform: translateY(5px) rotate(3deg); }
+  font-size: 42px;
 }
 
 .intro-sector-tag {
@@ -266,46 +232,41 @@ h2 {
   color: var(--neon-peach);
   border: 1px solid rgba(255, 214, 165, 0.5);
   border-radius: 999px;
-  padding: 3px 11px;
+  padding: 2px 10px;
   font-size: 11px;
   font-weight: 800;
 }
 
 .intro-story {
-  font-size: 13.5px;
-  font-weight: 500;
+  font-size: 13px;
   color: var(--text-muted);
-  line-height: 1.48;
-  margin-bottom: 14px;
-  min-height: 56px;
+  line-height: 1.4;
+  margin-bottom: 12px;
 }
 
 .intro-intel {
   background: var(--glass-card);
   border: 1px solid rgba(189, 178, 255, 0.25);
-  border-radius: 16px;
-  padding: 10px 14px;
+  border-radius: 15px;
+  padding: 9px 12px;
   text-align: left;
-  font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--text-main);
-  margin-bottom: 14px;
+  font-size: 12px;
+  line-height: 1.55;
+  margin-bottom: 12px;
 }
 
 .intro-intel b {
   color: var(--neon-mint);
 }
 
-/* Анимация довольного кота Реджа после миссии */
 .victory-cat-wrap {
   width: 100%;
-  height: 145px;
-  border-radius: 20px;
+  height: 140px;
+  border-radius: 18px;
   border: 1.5px solid rgba(114, 239, 221, 0.4);
-  background: radial-gradient(circle at 50% 40%, #2a1c59 0%, #120b29 100%);
-  margin-bottom: 12px;
+  background: #140d2e;
+  margin-bottom: 10px;
   overflow: hidden;
-  box-shadow: 0 0 24px rgba(114, 239, 221, 0.2);
 }
 
 .victory-cat-wrap.hidden {
@@ -324,10 +285,9 @@ h2 {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--neon-lav);
-  margin: 10px 0 6px;
+  margin: 8px 0 5px;
 }
 
-/* Кнопки выбора сложности и тембра */
 .diff-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -336,40 +296,32 @@ h2 {
 }
 
 .pill-btn {
-  padding: 9px 6px;
+  padding: 8px 6px;
   font-size: 12.5px;
   font-weight: 700;
-  border-radius: 14px;
+  border-radius: 13px;
   border: 1px solid rgba(189, 178, 255, 0.25);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.16s ease;
-}
-
-.pill-btn:hover {
-  background: rgba(255, 255, 255, 0.11);
-  color: #ffffff;
 }
 
 .pill-btn.active {
-  background: linear-gradient(135deg, rgba(255, 143, 171, 0.28), rgba(189, 178, 255, 0.28));
+  background: rgba(255, 143, 171, 0.28);
   border-color: var(--neon-pink);
   color: #ffffff;
-  box-shadow: 0 0 14px rgba(255, 143, 171, 0.3);
 }
 
-/* Сетка 10 уровней */
 .levels-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 7px;
+  margin-bottom: 9px;
 }
 
 .lvl-btn {
-  padding: 8px 2px 6px;
-  border-radius: 14px;
+  padding: 7px 2px 5px;
+  border-radius: 13px;
   border: 1px solid rgba(189, 178, 255, 0.25);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-main);
@@ -380,19 +332,12 @@ h2 {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  transition: all 0.16s ease;
-}
-
-.lvl-btn:hover {
-  border-color: rgba(114, 239, 221, 0.5);
-  transform: translateY(-1px);
 }
 
 .lvl-btn.active {
-  background: linear-gradient(135deg, rgba(114, 239, 221, 0.26), rgba(128, 255, 219, 0.18));
+  background: rgba(114, 239, 221, 0.24);
   border-color: var(--neon-mint);
   color: #ffffff;
-  box-shadow: 0 0 16px rgba(114, 239, 221, 0.35);
 }
 
 .lvl-btn .star {
@@ -404,12 +349,12 @@ h2 {
 .selected-level-box {
   background: var(--glass-card);
   border: 1px solid rgba(189, 178, 255, 0.24);
-  border-radius: 16px;
-  padding: 9px 12px;
-  font-size: 12.5px;
-  line-height: 1.4;
+  border-radius: 15px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.38;
   color: var(--text-muted);
-  margin-bottom: 10px;
+  margin-bottom: 9px;
 }
 
 .selected-level-box strong {
@@ -421,15 +366,14 @@ h2 {
   justify-content: space-around;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(189, 178, 255, 0.2);
-  border-radius: 13px;
-  padding: 6px 6px;
+  border-radius: 12px;
+  padding: 6px;
   font-size: 11px;
   font-weight: 700;
   color: var(--text-muted);
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
-/* Основные неоновые кнопки */
 .btn-row {
   display: flex;
   gap: 8px;
@@ -437,28 +381,14 @@ h2 {
 
 .btn-play {
   flex: 1.35;
-  padding: 13px 12px;
+  padding: 12px 10px;
   font-size: 15px;
   font-weight: 800;
-  letter-spacing: 0.03em;
   color: #0e0a24;
   background: linear-gradient(135deg, #72efdd 0%, #80ffdb 50%, #bdb2ff 100%);
-  background-size: 200% 200%;
   border: none;
-  border-radius: 16px;
+  border-radius: 15px;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(114, 239, 221, 0.35);
-  transition: transform 0.12s ease, box-shadow 0.2s ease;
-  animation: neonShimmer 4s ease infinite;
-}
-
-@keyframes neonShimmer {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.btn-play:hover {
-  box-shadow: 0 8px 26px rgba(114, 239, 221, 0.55);
 }
 
 .btn-play:active {
@@ -467,33 +397,26 @@ h2 {
 
 .btn-secondary {
   flex: 0.95;
-  padding: 13px 8px;
+  padding: 12px 8px;
   font-size: 13px;
   font-weight: 700;
   color: var(--text-main);
-  background: rgba(255, 143, 171, 0.16);
+  background: rgba(255, 143, 171, 0.18);
   border: 1px solid rgba(255, 143, 171, 0.45);
-  border-radius: 16px;
+  border-radius: 15px;
   cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 143, 171, 0.26);
-  box-shadow: 0 0 14px rgba(255, 143, 171, 0.3);
 }
 
 .btn-secondary:active {
   transform: scale(0.96);
 }
 
-/* Настройки звука */
 .setting-row {
   background: var(--glass-card);
   border: 1px solid rgba(189, 178, 255, 0.22);
-  border-radius: 16px;
-  padding: 11px 13px;
-  margin-bottom: 10px;
+  border-radius: 15px;
+  padding: 10px 12px;
+  margin-bottom: 9px;
   text-align: left;
 }
 
@@ -503,17 +426,28 @@ h2 {
   align-items: center;
   font-size: 13px;
   font-weight: 700;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
 }
 
 .setting-hint {
   font-size: 11px;
   color: var(--text-muted);
-  margin-top: 5px;
+  margin-top: 4px;
+}
+
+.neon-select {
+  background: #1a143d;
+  color: var(--neon-mint);
+  border: 1px solid rgba(114, 239, 221, 0.45);
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  outline: none;
 }
 
 .toggle-chip {
-  padding: 3px 12px;
+  padding: 3px 11px;
   border-radius: 999px;
   border: 1px solid var(--neon-mint);
   font-size: 11px;
@@ -538,9 +472,9 @@ input[type="range"] {
 .stats-box {
   background: var(--glass-card);
   border: 1px solid rgba(189, 178, 255, 0.25);
-  border-radius: 18px;
-  padding: 11px;
-  margin: 10px 0 14px;
+  border-radius: 16px;
+  padding: 10px;
+  margin: 10px 0 12px;
   display: flex;
   justify-content: space-around;
 }
@@ -554,13 +488,13 @@ input[type="range"] {
 }
 
 .stat-col strong {
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 900;
   color: var(--neon-cyan);
 }
 
 .best-line {
-  margin-top: 12px;
+  margin-top: 10px;
   font-size: 12px;
   font-weight: 700;
   color: var(--neon-lav);
