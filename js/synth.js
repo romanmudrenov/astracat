@@ -24,10 +24,18 @@ class PolySynth {
     this.recentTracks = [];
 
     this.bgmAudio = null;
+    this.bgmSource = null;
+    this.analyser = null;
+    this.freqData = null;
     this.currentTrackPath = '';
 
-    // Пентатонические ноты для приятных ASMR-переливов при стрельбе
-    this.asmrScale = [72, 74, 76, 79, 81, 84, 86, 88, 91];
+    // Красивые мелодические лады (До-мажорная пентатоника и Лидийский аккорд для космической арфы)
+    this.melodyChords = [
+      [60, 64, 67, 71, 74], // Cmaj9
+      [65, 69, 72, 76, 79], // Fmaj9
+      [67, 71, 74, 77, 81], // G13
+      [69, 72, 76, 79, 83]  // Am9
+    ];
     this.shotStep = 0;
 
     this.scanMusicFolder();
@@ -61,7 +69,7 @@ class PolySynth {
         sel.value = curVal;
       }
       if (hint) {
-        hint.textContent = `Найдено треков в music/: ${list.length} (+ boss.mp3 для боссов)`;
+        hint.textContent = `Треков в music/: ${list.length} • Выстрелы синхронизированы с ритмом`;
       }
     };
 
@@ -89,14 +97,13 @@ class PolySynth {
       this.compressor.attack.setValueAtTime(0.01, this.ctx.currentTime);
       this.compressor.release.setValueAtTime(0.2, this.ctx.currentTime);
 
-      // Стерео-реверберация/дилей для ASMR-объёма
       this.delayNode = this.ctx.createDelay(1.0);
-      this.delayNode.delayTime.setValueAtTime(0.23, this.ctx.currentTime);
+      this.delayNode.delayTime.setValueAtTime(0.24, this.ctx.currentTime);
       const delayFilter = this.ctx.createBiquadFilter();
       delayFilter.type = 'lowpass';
-      delayFilter.frequency.setValueAtTime(1250, this.ctx.currentTime);
+      delayFilter.frequency.setValueAtTime(1400, this.ctx.currentTime);
       const delayFeedback = this.ctx.createGain();
-      delayFeedback.gain.setValueAtTime(0.26, this.ctx.currentTime);
+      delayFeedback.gain.setValueAtTime(0.28, this.ctx.currentTime);
 
       this.delayNode.connect(delayFilter);
       delayFilter.connect(delayFeedback);
@@ -109,7 +116,11 @@ class PolySynth {
       this.compressor.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
 
-      // Буфер мягкого розового шума (ASMR песок / шелест / пламя взрыва)
+      // Анализатор ритма фоновой музыки
+      this.analyser = this.ctx.createAnalyser();
+      this.analyser.fftSize = 128;
+      this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
+
       const sampleRate = this.ctx.sampleRate;
       this.noiseBuffer = this.ctx.createBuffer(1, sampleRate * 2, sampleRate);
       const data = this.noiseBuffer.getChannelData(0);
@@ -127,6 +138,22 @@ class PolySynth {
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+  }
+
+  // Возвращает текущую энергию ритма/баса играющего трека (0.0 .. 1.0)
+  getBeatEnergy() {
+    if (this.analyser && this.freqData && this.bgmAudio && !this.bgmAudio.paused) {
+      try {
+        this.analyser.getByteFrequencyData(this.freqData);
+        let bassSum = 0;
+        for (let i = 0; i < 8; i++) bassSum += this.freqData[i];
+        const energy = bassSum / (8 * 255);
+        if (energy > 0.05) return energy;
+      } catch (e) {}
+    }
+    // Если трек ещё грузится — плавный внутренний пульс 110 BPM
+    const t = this.ctx ? this.ctx.currentTime : performance.now() * 0.001;
+    return 0.4 + 0.4 * Math.sin(t * Math.PI * (110 / 30));
   }
 
   pickNextTrack() {
@@ -160,8 +187,20 @@ class PolySynth {
 
     try {
       const audio = new Audio(path);
+      audio.crossOrigin = 'anonymous';
       audio.loop = true;
       audio.volume = this.getEffectiveMusicVol();
+
+      // Подключаем трек к анализатору ритма (безопасно, без прерывания звука при CORS)
+      if (this.ctx && this.analyser) {
+        try {
+          const src = this.ctx.createMediaElementSource(audio);
+          src.connect(this.analyser);
+          this.analyser.connect(this.ctx.destination);
+          this.bgmSource = src;
+        } catch (err) {}
+      }
+
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(() => {
@@ -193,6 +232,7 @@ class PolySynth {
         this.bgmAudio.currentTime = 0;
       } catch (e) {}
       this.bgmAudio = null;
+      this.bgmSource = null;
     }
     this.currentTrackPath = '';
   }
@@ -225,7 +265,6 @@ class PolySynth {
     return requestedType;
   }
 
-  // Управление пулом из 64 голосов (Voice Stealing только при превышении 64 голосов)
   allocateVoice(osc, filter, env, stopTime) {
     const now = this.ctx.currentTime;
     this.activeVoices = this.activeVoices.filter(v => v.stopTime > now);
@@ -246,13 +285,13 @@ class PolySynth {
     type = 'sine',
     detune = 0,
     time = null,
-    duration = 0.22,
+    duration = 0.24,
     attack = 0.018,
     decay = 0.08,
     sustain = 0.35,
-    release = 0.14,
+    release = 0.15,
     gain = 0.11,
-    filterFreq = 1350,
+    filterFreq = 1450,
     sendDelay = true,
     pan = 0
   }) {
@@ -273,7 +312,7 @@ class PolySynth {
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.Q.setValueAtTime(0.85, t0);
-    const maxCut = this.timbre === 'space' ? 1250 : (this.timbre === 'classic' ? 1650 : 1900);
+    const maxCut = this.timbre === 'space' ? 1350 : (this.timbre === 'classic' ? 1750 : 2050);
     filter.frequency.setValueAtTime(Math.min(filterFreq, maxCut), t0);
 
     const env = this.ctx.createGain();
@@ -300,7 +339,7 @@ class PolySynth {
 
     if (sendDelay && this.delayNode) {
       const sendGain = this.ctx.createGain();
-      sendGain.gain.setValueAtTime(0.26, t0);
+      sendGain.gain.setValueAtTime(0.28, t0);
       lastNode.connect(sendGain);
       sendGain.connect(this.delayNode);
     }
@@ -364,56 +403,62 @@ class PolySynth {
     };
   }
 
-  // --- ПРИЯТНЫЕ ПОЛИФОНИЧЕСКИЕ ASMR-ЗВУКИ ВЫСТРЕЛОВ ---
+  // --- МЕЛОДИЧНЫЕ ВЫСТРЕЛЫ, СИНХРОНИЗИРОВАННЫЕ С РИТМОМ ФОНОВОГО ТРЕКА ---
   sfxShootWeapon(pan = 0, baseWeapon = 'droplet', secondary = 'none') {
     if (!this.ctx || this.muted) return;
     const now = this.ctx.currentTime;
-    const noteMidi = this.asmrScale[this.shotStep % this.asmrScale.length];
+    const beat = this.getBeatEnergy(); // 0..1 энергия бита текущей музыки
+
+    // Каждые 8 выстрелов плавно меняем гармонию аккорда, а выбор ноты зависит от энергии бита
+    const chordIdx = Math.floor(this.shotStep / 8) % this.melodyChords.length;
+    const chord = this.melodyChords[chordIdx];
+    const beatOffset = beat > 0.55 ? 2 : 0; // на сильной доле бита звучит верхняя терция/квинта
+    const noteMidi = chord[(this.shotStep + beatOffset) % chord.length];
     this.shotStep++;
-    const f = this.midiToFreq(noteMidi);
+
+    const freq = this.midiToFreq(noteMidi);
+    const dynamicGain = 0.068 + beat * 0.032; // громкость и теплота дышат в такт музыке
 
     if (baseWeapon === 'droplet') {
-      // 1. «Капельная Плазма» — нежный ASMR-звук падающей капли воды + бархатный обертон
+      // 1. «Капельная Плазма» — мелодичная арфа + мягкий водный обертон в такт ритму
       this.playVoice({
-        time: now, freq: f * 0.75, slideTo: f * 1.45, type: 'sine',
-        duration: 0.11, attack: 0.014, decay: 0.05, sustain: 0.2, release: 0.11,
-        gain: 0.085, filterFreq: 1350, sendDelay: true, pan
+        time: now, freq, type: 'sine',
+        duration: 0.16, attack: 0.015, decay: 0.07, sustain: 0.3, release: 0.16,
+        gain: dynamicGain, filterFreq: 1350 + beat * 400, sendDelay: true, pan
       });
-      this.playVoice({
-        time: now, freq: f * 0.5, type: 'sine', detune: -6,
-        duration: 0.14, attack: 0.02, decay: 0.06, sustain: 0.25, release: 0.12,
-        gain: 0.055, filterFreq: 950, sendDelay: false, pan: -pan * 0.4
-      });
+      // На сильной доле бита добавляем октавный перелив
+      if (beat > 0.52) {
+        this.playVoice({
+          time: now + 0.035, freq: freq * 1.5, type: 'sine',
+          duration: 0.14, attack: 0.015, decay: 0.06, sustain: 0.25, release: 0.14,
+          gain: dynamicGain * 0.65, filterFreq: 1500, sendDelay: true, pan: -pan * 0.5
+        });
+      }
     } else if (baseWeapon === 'kalimba') {
-      // 2. «Калимба-Луч» — тёплый деревянно-хрустальный перезвон 4 голосами
+      // 2. «Калимба-Луч» — тёплый полифонический перебор 2 нот из аккорда
       this.playChord([noteMidi, noteMidi + 7], {
         time: now, type: 'sine',
-        duration: 0.16, attack: 0.012, decay: 0.07, sustain: 0.25, release: 0.15,
-        gain: 0.075, filterFreq: 1500, sendDelay: true, pan
-      });
-      this.playNoise({
-        time: now, duration: 0.07, gain: 0.04,
-        filterType: 'bandpass', filterFreq: 1200, filterEnd: 600
+        duration: 0.18, attack: 0.012, decay: 0.08, sustain: 0.3, release: 0.16,
+        gain: dynamicGain * 0.85, filterFreq: 1600, sendDelay: true, pan
       });
     } else {
-      // 3. «Шёлковый Залп» — мягкий ASMR-шорох кисточки + тёплый аккорд
-      this.playNoise({
-        time: now, duration: 0.12, gain: 0.075,
-        filterType: 'bandpass', filterFreq: 950, filterEnd: 380
-      });
+      // 3. «Шёлковый Залп» — мягкий мажорный трезвучный перелив + бархатный шорох
       this.playChord([noteMidi - 12, noteMidi - 5, noteMidi], {
         time: now, type: 'sine',
-        duration: 0.14, attack: 0.016, decay: 0.06, sustain: 0.25, release: 0.12,
-        gain: 0.065, filterFreq: 1250, sendDelay: true, pan
+        duration: 0.17, attack: 0.016, decay: 0.07, sustain: 0.3, release: 0.15,
+        gain: dynamicGain * 0.72, filterFreq: 1350, sendDelay: true, pan
+      });
+      this.playNoise({
+        time: now, duration: 0.10, gain: 0.045,
+        filterType: 'bandpass', filterFreq: 900, filterEnd: 420
       });
     }
 
-    // Дополнительный мягкий слой при наличии бонусного 2-го орудия из еды
     if (secondary !== 'none') {
       this.playVoice({
-        time: now + 0.02, freq: this.midiToFreq(noteMidi + 12), type: 'sine',
-        duration: 0.12, attack: 0.014, decay: 0.05, sustain: 0.2, release: 0.12,
-        gain: 0.045, filterFreq: 1600, sendDelay: true, pan: -pan * 0.6
+        time: now + 0.03, freq: this.midiToFreq(noteMidi + 12), type: 'sine',
+        duration: 0.14, attack: 0.014, decay: 0.06, sustain: 0.25, release: 0.14,
+        gain: 0.045, filterFreq: 1650, sendDelay: true, pan: -pan * 0.6
       });
     }
   }
@@ -427,32 +472,24 @@ class PolySynth {
     });
   }
 
-  // РЕАЛИСТИЧНЫЙ 4-СЛОЙНЫЙ ВЗРЫВ (ударная волна + раскат пламени + треск осколков + гул)
   sfxExplosion(pan = 0, big = false) {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     const dur = big ? 0.95 : 0.48;
 
-    // Слой 1: Глубокий низкочастотный импульс ударной волны
     this.playVoice({
       time: now, freq: big ? 110 : 145, slideTo: 28, type: 'sine',
       duration: dur, attack: 0.008, decay: dur * 0.5, sustain: 0.15, release: 0.18,
       gain: big ? 0.36 : 0.24, filterFreq: 380, sendDelay: false, pan
     });
-
-    // Слой 2: Плотное пламя и воздушная волна (розовый шум с раскрытием и затуханием фильтра)
     this.playNoise({
       time: now, duration: dur * 1.1, gain: big ? 0.36 : 0.24,
       filterType: 'lowpass', filterFreq: big ? 1100 : 1350, filterEnd: 75
     });
-
-    // Слой 3: Вторичный раскат взрыва (через 55 мс для объёма)
     this.playNoise({
       time: now + 0.055, duration: dur * 0.85, gain: big ? 0.25 : 0.16,
       filterType: 'bandpass', filterFreq: 780, filterEnd: 190
     });
-
-    // Слой 4: Треск горящих осколков
     this.playNoise({
       time: now + 0.11, duration: dur * 0.65, gain: big ? 0.16 : 0.10,
       filterType: 'bandpass', filterFreq: 1650, filterEnd: 450
@@ -462,36 +499,21 @@ class PolySynth {
   sfxIgnite(pan = 0) {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    this.playNoise({
-      time: now, duration: 0.38, gain: 0.22,
-      filterType: 'bandpass', filterFreq: 1350, filterEnd: 380
-    });
-    this.playVoice({
-      time: now, freq: 130, slideTo: 340, type: 'triangle',
-      duration: 0.28, attack: 0.025, decay: 0.1, sustain: 0.3, release: 0.14,
-      gain: 0.14, filterFreq: 1050, pan
-    });
+    this.playNoise({ time: now, duration: 0.38, gain: 0.22, filterType: 'bandpass', filterFreq: 1350, filterEnd: 380 });
+    this.playVoice({ time: now, freq: 130, slideTo: 340, type: 'triangle', duration: 0.28, attack: 0.025, decay: 0.1, sustain: 0.3, release: 0.14, gain: 0.14, filterFreq: 1050, pan });
   }
 
   sfxGravity(pan = 0) {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    this.playVoice({
-      time: now, freq: 88, slideTo: 46, type: 'sine',
-      duration: 0.55, attack: 0.08, decay: 0.2, sustain: 0.5, release: 0.25,
-      gain: 0.24, filterFreq: 320, sendDelay: true, pan
-    });
+    this.playVoice({ time: now, freq: 88, slideTo: 46, type: 'sine', duration: 0.55, attack: 0.08, decay: 0.2, sustain: 0.5, release: 0.25, gain: 0.24, filterFreq: 320, sendDelay: true, pan });
   }
 
   sfxDisintegrate(pan = 0) {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     [84, 88, 91, 96].forEach((m, idx) => {
-      this.playVoice({
-        time: now + idx * 0.035, freq: this.midiToFreq(m), type: 'sine',
-        duration: 0.18, attack: 0.012, decay: 0.07, sustain: 0.2, release: 0.14,
-        gain: 0.10, filterFreq: 1900, sendDelay: true, pan
-      });
+      this.playVoice({ time: now + idx * 0.035, freq: this.midiToFreq(m), type: 'sine', duration: 0.18, attack: 0.012, decay: 0.07, sustain: 0.2, release: 0.14, gain: 0.10, filterFreq: 1900, sendDelay: true, pan });
     });
   }
 
@@ -500,68 +522,41 @@ class PolySynth {
     const now = this.ctx.currentTime;
     [0, 0.08, 0.16].forEach((offset, idx) => {
       const base = 310 + idx * 105 + Math.random() * 50;
-      this.playVoice({
-        time: now + offset, freq: base, slideTo: base * 1.8, type: 'sine',
-        duration: 0.09, attack: 0.012, decay: 0.035, sustain: 0.2, release: 0.06,
-        gain: 0.13, filterFreq: 1250, sendDelay: true, pan
-      });
+      this.playVoice({ time: now + offset, freq: base, slideTo: base * 1.8, type: 'sine', duration: 0.09, attack: 0.012, decay: 0.035, sustain: 0.2, release: 0.06, gain: 0.13, filterFreq: 1250, sendDelay: true, pan });
     });
   }
 
   sfxCosmicHum() {
     if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    this.playChord([48, 55, 60], {
-      time: now, type: 'sine', duration: 0.75, attack: 0.18, decay: 0.25, sustain: 0.55, release: 0.35,
-      gain: 0.12, filterFreq: 450, sendDelay: true
-    });
+    this.playChord([48, 55, 60], { time: this.ctx.currentTime, type: 'sine', duration: 0.75, attack: 0.18, decay: 0.25, sustain: 0.55, release: 0.35, gain: 0.12, filterFreq: 450, sendDelay: true });
   }
 
   sfxSticky(pan = 0) {
     if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    this.playVoice({
-      time: now, freq: 185, slideTo: 390, type: 'sine',
-      duration: 0.15, attack: 0.018, decay: 0.06, sustain: 0.25, release: 0.08,
-      gain: 0.14, filterFreq: 900, pan
-    });
+    this.playVoice({ time: this.ctx.currentTime, freq: 185, slideTo: 390, type: 'sine', duration: 0.15, attack: 0.018, decay: 0.06, sustain: 0.25, release: 0.08, gain: 0.14, filterFreq: 900, pan });
   }
 
   sfxWave() {
     if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    this.playNoise({
-      time: now, duration: 0.7, gain: 0.20,
-      filterType: 'lowpass', filterFreq: 240, filterEnd: 880
-    });
+    this.playNoise({ time: this.ctx.currentTime, duration: 0.7, gain: 0.20, filterType: 'lowpass', filterFreq: 240, filterEnd: 880 });
   }
 
   sfxPowerup() {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     [60, 64, 67, 71, 74, 79].forEach((m, i) => {
-      this.playVoice({
-        freq: this.midiToFreq(m), type: 'sine', time: now + i * 0.048,
-        duration: 0.22, attack: 0.015, decay: 0.08, sustain: 0.35, release: 0.16,
-        gain: 0.12, filterFreq: 1850, sendDelay: true
-      });
+      this.playVoice({ freq: this.midiToFreq(m), type: 'sine', time: now + i * 0.048, duration: 0.22, attack: 0.015, decay: 0.08, sustain: 0.35, release: 0.16, gain: 0.12, filterFreq: 1850, sendDelay: true });
     });
   }
 
   sfxShieldBlock() {
     if (!this.ctx) return;
-    this.playChord([67, 74, 79, 83], {
-      type: 'sine', duration: 0.26, attack: 0.015, decay: 0.1, sustain: 0.25, release: 0.16,
-      gain: 0.12, sendDelay: true
-    });
+    this.playChord([67, 74, 79, 83], { type: 'sine', duration: 0.26, attack: 0.015, decay: 0.1, sustain: 0.25, release: 0.16, gain: 0.12, sendDelay: true });
   }
 
   sfxHurt() {
     if (!this.ctx) return;
-    this.playVoice({
-      freq: 210, slideTo: 72, type: 'triangle', duration: 0.30,
-      attack: 0.018, decay: 0.12, sustain: 0.3, release: 0.10, gain: 0.20, filterFreq: 800
-    });
+    this.playVoice({ freq: 210, slideTo: 72, type: 'triangle', duration: 0.30, attack: 0.018, decay: 0.12, sustain: 0.3, release: 0.10, gain: 0.20, filterFreq: 800 });
     this.playNoise({ duration: 0.24, gain: 0.18, filterType: 'lowpass', filterFreq: 560, filterEnd: 90 });
   }
 
@@ -569,11 +564,7 @@ class PolySynth {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     for (let i = 0; i < 2; i++) {
-      this.playVoice({
-        freq: 196, slideTo: 294, type: 'sine', time: now + i * 0.36,
-        duration: 0.28, attack: 0.03, decay: 0.1, sustain: 0.5, release: 0.12,
-        gain: 0.15, filterFreq: 1050, sendDelay: true
-      });
+      this.playVoice({ freq: 196, slideTo: 294, type: 'sine', time: now + i * 0.36, duration: 0.28, attack: 0.03, decay: 0.1, sustain: 0.5, release: 0.12, gain: 0.15, filterFreq: 1050, sendDelay: true });
     }
   }
 
@@ -586,11 +577,7 @@ class PolySynth {
       { notes: [67, 71, 74], t: 0.52, d: 0.24 },
       { notes: [72, 76, 79, 83], t: 0.80, d: 0.65 }
     ].forEach(step => {
-      this.playChord(step.notes, {
-        time: now + step.t, type: 'sine', duration: step.d,
-        attack: 0.02, decay: 0.1, sustain: 0.6, release: 0.22,
-        gain: 0.14, filterFreq: 1950, sendDelay: true
-      });
+      this.playChord(step.notes, { time: now + step.t, type: 'sine', duration: step.d, attack: 0.02, decay: 0.1, sustain: 0.6, release: 0.22, gain: 0.14, filterFreq: 1950, sendDelay: true });
     });
   }
 
@@ -603,12 +590,7 @@ class PolySynth {
       { m: 60, t: 0.56, d: 0.28 },
       { m: 55, t: 0.88, d: 0.55 }
     ].forEach(s => {
-      this.playVoice({
-        freq: this.midiToFreq(s.m), slideTo: s.m === 55 ? this.midiToFreq(52) : null,
-        type: 'sine', time: now + s.t, duration: s.d,
-        attack: 0.025, decay: 0.12, sustain: 0.5, release: 0.18,
-        gain: 0.16, filterFreq: 1450, sendDelay: true
-      });
+      this.playVoice({ freq: this.midiToFreq(s.m), slideTo: s.m === 55 ? this.midiToFreq(52) : null, type: 'sine', time: now + s.t, duration: s.d, attack: 0.025, decay: 0.12, sustain: 0.5, release: 0.18, gain: 0.16, filterFreq: 1450, sendDelay: true });
     });
   }
 }
