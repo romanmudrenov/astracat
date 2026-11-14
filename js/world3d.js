@@ -6,40 +6,26 @@ class World3DEngine {
     this.targetCamX = 0;
     this.time = 0;
 
-    // 3 слоя мягких звёзд разной глубины (z: 0.2 .. 0.9)
-    this.stars = Array.from({ length: 85 }, (_, i) => {
+    this.stars = Array.from({ length: 75 }, (_, i) => {
       const layer = i % 3;
-      const z = layer === 0 ? 0.22 : (layer === 1 ? 0.55 : 0.90);
+      const z = layer === 0 ? 0.25 : (layer === 1 ? 0.55 : 0.90);
       return {
         x: Math.random(),
         y: Math.random(),
         z,
-        r: layer === 0 ? 1.1 : (layer === 1 ? 1.8 : 2.5),
+        r: layer === 0 ? 1.2 : (layer === 1 ? 1.9 : 2.6),
         speed: 0.03 + z * 0.14,
         phase: Math.random() * Math.PI * 2
       };
     });
 
-    // Далёкие приглушённые 3D-силуэты (без чёрной обводки, полупрозрачные, чтобы не спорить с врагами)
-    this.distantBodies = Array.from({ length: 4 }, (_, i) => {
-      const z = 0.28 + i * 0.16;
-      return {
-        baseX: 0.18 + ((i * 0.23) % 0.68),
-        y: (i * 0.27) % 1.0,
-        z,
-        r: 28 + z * 34,
-        speed: 0.02 + z * 0.04,
-        variant: i
-      };
-    });
-
-    // Лёгкие линии космического потока для ощущения скорости
-    this.dust = Array.from({ length: 16 }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      len: 12 + Math.random() * 20,
-      speed: 0.34 + Math.random() * 0.24,
-      alpha: 0.10 + Math.random() * 0.16
+    this.bgElements = Array.from({ length: 6 }, (_, i) => ({
+      x: 0.12 + ((i * 0.19) % 0.78),
+      y: (i * 0.18) % 1.0,
+      z: 0.3 + (i % 3) * 0.2,
+      r: 26 + (i % 3) * 16,
+      speed: 0.025 + (i % 3) * 0.025,
+      phase: i * 1.1
     }));
   }
 
@@ -50,129 +36,220 @@ class World3DEngine {
 
   update(dt, turboActive = false) {
     this.time += dt;
-    const speedMult = turboActive ? 1.75 : 1.0;
-
-    this.camX += (this.targetCamX - this.camX) * Math.min(1, dt * 4.2);
+    const mult = turboActive ? 1.75 : 1.0;
+    this.camX += (this.targetCamX - this.camX) * Math.min(1, dt * 4.5);
 
     for (const s of this.stars) {
-      s.y += s.speed * speedMult * dt;
-      if (s.y > 1.02) {
-        s.y = -0.02;
-        s.x = Math.random();
-      }
+      s.y += s.speed * mult * dt;
+      if (s.y > 1.02) { s.y = -0.02; s.x = Math.random(); }
     }
-
-    for (const b of this.distantBodies) {
-      b.y += b.speed * speedMult * dt;
-      if (b.y > 1.18) {
-        b.y = -0.18;
-        b.baseX = 0.15 + Math.random() * 0.70;
-      }
+    for (const el of this.bgElements) {
+      el.y += el.speed * mult * dt;
+      if (el.y > 1.15) { el.y = -0.15; el.x = 0.12 + Math.random() * 0.76; }
     }
-
-    for (const d of this.dust) {
-      d.y += d.speed * speedMult * dt;
-      if (d.y > 1.05) {
-        d.y = -0.05;
-        d.x = Math.random();
-      }
-    }
-  }
-
-  drawDistantBody(ctx, lvl, b, W, H) {
-    const px = b.baseX * W - this.camX * (b.z * 65);
-    const py = b.y * H;
-    const r = b.r;
-
-    ctx.save();
-    ctx.translate(px, py);
-    // Приглушаем силуэт, чтобы фон оставался глубоким и не отвлекал от геймплея
-    ctx.globalAlpha = 0.22;
-
-    // 3D-сфера с мягким градиентным освещением и тенью (без обводки!)
-    const sphereGrad = ctx.createRadialGradient(-r * 0.32, -r * 0.32, r * 0.1, 0, 0, r);
-    sphereGrad.addColorStop(0, lvl.accent);
-    sphereGrad.addColorStop(0.55, lvl.skyBot);
-    sphereGrad.addColorStop(1, '#090617');
-
-    ctx.fillStyle = sphereGrad;
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Далёкое мягкое кольцо у части планет
-    if (b.variant % 2 === 0) {
-      ctx.strokeStyle = lvl.accent;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.ellipse(0, 2, r * 1.75, r * 0.32, -0.22, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    ctx.restore();
   }
 
   render(ctx, lvl, W, H, turboActive = false) {
-    // 1. Глубокий космический градиент неба
+    // 1. Базовый фон неба / среды
     const grad = ctx.createLinearGradient(0, 0, 0, H);
     grad.addColorStop(0, lvl.skyTop);
-    grad.addColorStop(0.55, lvl.skyMid);
+    grad.addColorStop(0.5, lvl.skyMid);
     grad.addColorStop(1, lvl.skyBot);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    // 2. Мягкие космические туманности со слабым параллаксом
-    const neb1 = ctx.createRadialGradient(
-      W * 0.28 - this.camX * 20, H * 0.30, 10,
-      W * 0.28 - this.camX * 20, H * 0.30, 210
-    );
-    neb1.addColorStop(0, lvl.nebula1);
-    neb1.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = neb1;
-    ctx.fillRect(0, 0, W, H);
-
-    const neb2 = ctx.createRadialGradient(
-      W * 0.75 - this.camX * 28, H * 0.68, 10,
-      W * 0.75 - this.camX * 28, H * 0.68, 230
-    );
-    neb2.addColorStop(0, lvl.nebula2);
-    neb2.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = neb2;
-    ctx.fillRect(0, 0, W, H);
-
-    // 3. Дальние приглушённые 3D-планеты (без сетки и без резких линий)
-    for (const b of this.distantBodies) {
-      this.drawDistantBody(ctx, lvl, b, W, H);
-    }
-
-    // 4. Многослойные звёзды с параллаксом
-    for (const s of this.stars) {
-      const twinkle = 0.5 + 0.5 * Math.sin(this.time * 3.5 + s.phase);
-      const sx = ((s.x * W - this.camX * (s.z * 50)) % W + W) % W;
-      const sy = s.y * H;
-
-      ctx.globalAlpha = twinkle * (0.45 + s.z * 0.45);
-      ctx.fillStyle = s.z > 0.8 ? lvl.accent : '#ffffff';
-      ctx.beginPath();
-      ctx.arc(sx, sy, s.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-
-    // 5. Тонкие потоки скорости
     ctx.save();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineCap = 'round';
-    for (const d of this.dust) {
-      const dx = ((d.x * W - this.camX * 105) % W + W) % W;
-      const dy = d.y * H;
-      ctx.globalAlpha = turboActive ? d.alpha * 1.9 : d.alpha;
-      ctx.lineWidth = turboActive ? 2 : 1.2;
-      ctx.beginPath();
-      ctx.moveTo(dx, dy);
-      ctx.lineTo(dx, dy + d.len * (turboActive ? 1.8 : 1));
-      ctx.stroke();
+    const theme = lvl.theme;
+
+    if (theme === 'lsd') {
+      // 1. ЛСД-стиль: плавные психоделические фрактальные волны и спиральные круги на фоне
+      ctx.globalAlpha = 0.24;
+      for (let i = 0; i < 5; i++) {
+        const hue = (this.time * 45 + i * 72) % 360;
+        const cx = W * 0.5 + Math.sin(this.time * 1.2 + i) * (W * 0.32) - this.camX * 35;
+        const cy = H * (0.2 + i * 0.18);
+        const rad = 75 + Math.sin(this.time * 2.5 + i) * 25;
+        ctx.strokeStyle = `hsl(${hue}, 85%, 65%)`;
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = `hsl(${(hue + 140) % 360}, 85%, 65%)`;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rad * 0.55, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else if (theme === 'horror') {
+      // 2. Мрачный хоррор: кровавый туман, ползущие тени и жуткие силуэты глаз в темноте
+      ctx.globalAlpha = 0.25;
+      for (const el of this.bgElements) {
+        const px = el.x * W - this.camX * (el.z * 50);
+        const py = el.y * H;
+        ctx.fillStyle = '#07020a';
+        ctx.beginPath();
+        ctx.arc(px, py, el.r * 1.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Светящиеся красные глаза в тумане
+        if (Math.sin(this.time * 2 + el.phase) > 0.2) {
+          ctx.fillStyle = '#ff002b';
+          ctx.beginPath();
+          ctx.arc(px - 8, py, 2.5, 0, Math.PI * 2);
+          ctx.arc(px + 8, py, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    } else if (theme === 'rainbow') {
+      // 3. Радужный уровень: мягкие диагональные радужные ленты
+      const rainbowCols = ['#ff5964', '#ff9f1c', '#ffd166', '#06d6a0', '#48dbfb', '#bdb2ff'];
+      ctx.globalAlpha = 0.16;
+      rainbowCols.forEach((c, idx) => {
+        ctx.fillStyle = c;
+        const waveX = Math.sin(this.time * 1.5 + idx * 0.5) * 30 - this.camX * 25;
+        ctx.fillRect(waveX + (idx * W) / 6, 0, W / 6 + 12, H);
+      });
+    } else if (theme === 'ship_interior') {
+      // 4. Технологичный объект внутри звездолёта: переборки, шлюзы и бегущие энерго-шины
+      ctx.globalAlpha = 0.26;
+      ctx.strokeStyle = '#48dbfb';
+      ctx.lineWidth = 3;
+      const offsetX = -this.camX * 40;
+      // Боковые стены коридора корабля
+      ctx.fillStyle = '#0d1b2a';
+      ctx.fillRect(0, 0, 26 + offsetX * 0.3, H);
+      ctx.fillRect(W - 26 + offsetX * 0.3, 0, 26 - offsetX * 0.3, H);
+
+      // Поперечные секции палубы
+      const stepY = 120;
+      const scrollY = (this.time * (turboActive ? 160 : 85)) % stepY;
+      for (let y = -stepY; y < H + stepY; y += stepY) {
+        const py = y + scrollY;
+        ctx.beginPath();
+        ctx.moveTo(26, py);
+        ctx.lineTo(W - 26, py);
+        ctx.stroke();
+        ctx.strokeRect(W * 0.25 + offsetX * 0.5, py + 20, W * 0.5, 65);
+      }
+    } else if (theme === 'frozen') {
+      // 5. Замёрзшие планеты: ледяные гиганты и снежная вьюга
+      ctx.globalAlpha = 0.24;
+      for (const el of this.bgElements) {
+        const px = el.x * W - this.camX * (el.z * 55);
+        const py = el.y * H;
+        ctx.fillStyle = '#90e0ef';
+        ctx.beginPath();
+        ctx.arc(px, py, el.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(px - el.r * 0.2, py - el.r * 0.2, el.r * 0.5, 0, Math.PI);
+        ctx.stroke();
+      }
+    } else if (theme === 'candy') {
+      // 6. Сахарная вата и конфеты: мягкие пастельные облака ваты
+      ctx.globalAlpha = 0.22;
+      for (const el of this.bgElements) {
+        const px = el.x * W - this.camX * (el.z * 50);
+        const py = el.y * H;
+        ctx.fillStyle = '#ffc8dd';
+        ctx.beginPath();
+        ctx.arc(px, py, el.r, 0, Math.PI * 2);
+        ctx.arc(px - el.r * 0.6, py + 6, el.r * 0.7, 0, Math.PI * 2);
+        ctx.arc(px + el.r * 0.6, py + 6, el.r * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (theme === 'underwater') {
+      // 7. Подводный уровень: лучи света сквозь толщу воды и поднимающиеся пузыри
+      ctx.globalAlpha = 0.14;
+      ctx.fillStyle = '#90e0ef';
+      for (let i = 0; i < 4; i++) {
+        const rx = W * (0.15 + i * 0.24) - this.camX * 30;
+        ctx.beginPath();
+        ctx.moveTo(rx, 0);
+        ctx.lineTo(rx + 45, 0);
+        ctx.lineTo(rx + 110, H);
+        ctx.lineTo(rx - 35, H);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // Пузыри поднимаются вверх
+      ctx.globalAlpha = 0.30;
+      ctx.strokeStyle = '#caf0f8';
+      ctx.lineWidth = 2;
+      for (const el of this.bgElements) {
+        const px = el.x * W + Math.sin(this.time * 3 + el.phase) * 14 - this.camX * 45;
+        const py = H - ((el.y * H + this.time * 60) % H);
+        ctx.beginPath();
+        ctx.arc(px, py, el.r * 0.35, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else if (theme === 'volcano') {
+      // 8. Вулканный уровень: раскалённые трещины магмы и поднимающийся пепел
+      ctx.globalAlpha = 0.24;
+      ctx.strokeStyle = '#ff9f1c';
+      ctx.lineWidth = 3;
+      for (const el of this.bgElements) {
+        const px = el.x * W - this.camX * (el.z * 50);
+        const py = el.y * H;
+        ctx.fillStyle = '#370617';
+        ctx.beginPath();
+        ctx.arc(px, py, el.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(px - el.r * 0.6, py);
+        ctx.lineTo(px, py + 8);
+        ctx.lineTo(px + el.r * 0.6, py - 5);
+        ctx.stroke();
+      }
+    } else if (theme === 'diamond') {
+      // 9. Бриллиантовый уровень: сверкающие огранённые ромбы на фоне
+      ctx.globalAlpha = 0.22;
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = 'rgba(202, 240, 248, 0.25)';
+      ctx.lineWidth = 2;
+      for (const el of this.bgElements) {
+        const px = el.x * W - this.camX * (el.z * 55);
+        const py = el.y * H;
+        const r = el.r * 0.85;
+        ctx.beginPath();
+        ctx.moveTo(px, py - r);
+        ctx.lineTo(px + r * 0.75, py);
+        ctx.lineTo(px, py + r);
+        ctx.lineTo(px - r * 0.75, py);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+    } else {
+      // 10. Органический уровень: пульсирующие био-мембраны и клетки
+      ctx.globalAlpha = 0.22;
+      for (const el of this.bgElements) {
+        const pulse = 1 + Math.sin(this.time * 3 + el.phase) * 0.12;
+        const px = el.x * W - this.camX * (el.z * 50);
+        const py = el.y * H;
+        ctx.fillStyle = '#52b788';
+        ctx.beginPath();
+        ctx.arc(px, py, el.r * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1b4332';
+        ctx.beginPath();
+        ctx.arc(px + 6, py + 4, el.r * 0.35 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     ctx.restore();
+
+    // Звёзды / частицы среды
+    for (const s of this.stars) {
+      const sx = ((s.x * W - this.camX * (s.z * 45)) % W + W) % W;
+      const sy = s.y * H;
+      ctx.globalAlpha = 0.35 + s.z * 0.45;
+      ctx.fillStyle = s.z > 0.8 ? lvl.accent : '#ffffff';
+      ctx.fillRect(sx, sy, s.r * 1.5, s.r * 1.5);
+    }
+    ctx.globalAlpha = 1;
   }
 }
