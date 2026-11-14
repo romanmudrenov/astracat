@@ -4,71 +4,75 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ASTRACAT • Астро-Кот</title>
-  <link rel="stylesheet" href="css/style.css?v=12" />
+  <link rel="stylesheet" href="css/style.css?v=13" />
 </head>
 <body>
   <div id="game-wrap">
     <canvas id="game"></canvas>
 
-    <!-- Верхняя панель управления -->
+    <!-- Верхняя плюшево-стеклянная панель управления -->
     <div class="hud-top-right">
-      <button id="pause-btn" class="icon-btn hidden" title="Пауза (P)">⏸</button>
-      <button id="settings-open-btn" class="icon-btn" title="Настройки звука">⚙️</button>
-      <button id="mute-btn" class="icon-btn" title="Звук (M)">🔊</button>
+      <button id="pause-btn" class="plush-icon-btn hidden" title="Пауза (P)">⏸</button>
+      <button id="settings-open-btn" class="plush-icon-btn" title="Настройки звука">⚙️</button>
+      <button id="mute-btn" class="plush-icon-btn" title="Звук (M)">🔊</button>
     </div>
 
     <!-- СТАРТОВАЯ ЗАСТАВКА (img/splash.jpg с логотипом ASTRACAT) -->
     <div id="splash-overlay" class="overlay splash-screen">
-      <img src="img/splash.jpg" class="splash-bg-img" alt="ASTRACAT" onerror="this.style.display='none'" />
+      <img id="splash-bg-img" class="splash-bg-img" alt="ASTRACAT" />
+      <div class="splash-fallback-title" id="splash-fallback-title">
+        <div class="plush-badge">Космическая Одиссея</div>
+        <h1>ASTRACAT</h1>
+      </div>
       <div class="splash-bottom-bar">
-        <button id="splash-enter-btn" class="btn-play splash-btn">ИГРАТЬ 🚀</button>
-        <button id="splash-lore-btn" class="btn-secondary">📖 КОМИКС</button>
+        <button id="splash-enter-btn" class="plush-btn mint splash-btn">ИГРАТЬ 🚀</button>
+        <button id="splash-lore-btn" class="plush-btn pink">📖 КОМИКС</button>
       </div>
     </div>
 
-    <!-- ГЛАВНОЕ МЕНЮ (на фоне img/menu_bg.jpg) -->
+    <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="start-overlay" class="overlay menu-with-bg hidden">
-      <div class="card">
+      <div class="plush-card">
         <div class="top-wallet-row">
-          <span class="badge" style="margin-bottom:0;">Котовия-17</span>
+          <span class="plush-badge" style="margin-bottom:0;">Котовия-17</span>
           <span class="wallet-pill" id="menu-coins">🪙 0</span>
         </div>
         <h1>ASTRACAT</h1>
 
         <div class="section-label">Уровень сложности</div>
         <div class="diff-row" id="diff-row">
-          <button class="pill-btn" data-diff="easy">Курсант</button>
-          <button class="pill-btn active" data-diff="normal">Пилот</button>
-          <button class="pill-btn" data-diff="hard">Ас</button>
+          <button class="plush-pill" data-diff="easy">Курсант</button>
+          <button class="plush-pill active" data-diff="normal">Пилот</button>
+          <button class="plush-pill" data-diff="hard">Ас</button>
         </div>
 
-        <div class="section-label">Выбор сектора (1, 2, 3, 7, 10)</div>
+        <div class="section-label">Выбор уровня (1–5)</div>
         <div class="levels-grid five-cols" id="levels-grid"></div>
         
         <div class="selected-level-box" id="selected-level-info">
-          <strong>Сектор 1: ЛСД-Туманность</strong><br>
+          <strong>Уровень 1: ЛСД-Туманность</strong><br>
           <span>Босс: Доктор Кракен-Бот</span>
         </div>
 
-        <div class="btn-row" style="margin-bottom:8px;">
-          <button id="start-btn" class="btn-play">В ПОЛЁТ! 🚀</button>
-          <button id="hangar-open-btn" class="btn-hangar">🛠 АНГАР</button>
+        <div class="btn-row" style="margin-bottom:10px;">
+          <button id="start-btn" class="plush-btn mint">В ПОЛЁТ! 🚀</button>
+          <button id="hangar-open-btn" class="plush-btn peach">🛠 АНГАР</button>
         </div>
 
         <div class="btn-row">
-          <button id="lore-open-btn" class="btn-secondary">📖 Комикс</button>
-          <button id="menu-sound-btn" class="btn-secondary">🎛 Звук</button>
+          <button id="lore-open-btn" class="plush-btn lav">📖 Комикс</button>
+          <button id="menu-sound-btn" class="plush-btn pink">🎛 Звук</button>
         </div>
 
         <div class="best-line" id="start-best">Рекорд: 0 • Пройдено: 0/5</div>
       </div>
     </div>
 
-    <!-- МЕНЮ ПРОКАЧКИ: АНГАР (на фоне img/hangar_bg.jpg) -->
+    <!-- МЕНЮ ПРОКАЧКИ: АНГАР -->
     <div id="hangar-overlay" class="overlay hangar-with-bg hidden">
-      <div class="card hangar-card">
+      <div class="plush-card hangar-card">
         <div class="top-wallet-row">
-          <span class="badge" style="margin-bottom:0;">Космоверфь</span>
+          <span class="plush-badge" style="margin-bottom:0;">Космоверфь</span>
           <span class="wallet-pill" id="hangar-coins">🪙 0</span>
         </div>
         <h2>АНГАР И ПРОКАЧКА</h2>
@@ -80,14 +84,14 @@
         <div class="shop-list" id="weapons-list"></div>
 
         <div class="btn-row" style="margin-top:12px;">
-          <button id="hangar-close-btn" class="btn-play">ГОТОВО ✔</button>
+          <button id="hangar-close-btn" class="plush-btn mint">ГОТОВО ✔</button>
         </div>
       </div>
     </div>
 
     <!-- КОМИКС ПРЕДЫСТОРИИ -->
     <div id="lore-overlay" class="overlay hidden">
-      <div class="card lore-card">
+      <div class="plush-card lore-card">
         <div class="lore-dots" id="lore-dots">
           <span class="dot active"></span>
           <span class="dot"></span>
@@ -96,7 +100,7 @@
 
         <div class="lore-art-box vertical" id="lore-art-box">
           <img id="lore-img" class="hidden" alt="Слайд комикса" />
-          <canvas id="lore-canvas" width="270" height="330"></canvas>
+          <canvas id="lore-canvas" width="270" height="310"></canvas>
         </div>
 
         <h2 id="lore-title">ПЛАНЕТА КОТОВИЯ-17</h2>
@@ -105,33 +109,33 @@
         </p>
 
         <div class="btn-row">
-          <button id="lore-next-btn" class="btn-play">ДАЛЬШЕ ➔</button>
-          <button id="lore-skip-btn" class="btn-secondary">В МЕНЮ</button>
+          <button id="lore-next-btn" class="plush-btn mint">ДАЛЬШЕ ➔</button>
+          <button id="lore-skip-btn" class="plush-btn pink">В МЕНЮ</button>
         </div>
       </div>
     </div>
 
-    <!-- ВХОДНАЯ ЗАСТАВКА ПЕРЕД УРОВНЕМ (img/levelN_in.jpg или img/transition_in.jpg) -->
+    <!-- ВХОДНАЯ ЗАСТАВКА ПЕРЕД УРОВНЕМ -->
     <div id="intro-overlay" class="overlay hidden">
-      <div class="card intro-card">
+      <div class="plush-card intro-card">
         <div class="stage-art-box" id="intro-art-box">
-          <img id="intro-stage-img" src="img/transition_in.jpg" alt="Вход в сектор" />
-          <div class="intro-sector-tag" id="intro-sector-tag">СЕКТОР 1</div>
+          <img id="intro-stage-img" alt="Вход в уровень" />
+          <div class="intro-sector-tag" id="intro-sector-tag">УРОВЕНЬ 1</div>
         </div>
         <h2 id="intro-title">ЛСД-ТУМАННОСТЬ</h2>
         <p class="intro-story" id="intro-story"></p>
         <div class="intro-intel" id="intro-intel"></div>
         <div class="btn-row">
-          <button id="intro-launch-btn" class="btn-play">ЗАПУСТИТЬ ДВИГАТЕЛИ! 🔥</button>
-          <button id="intro-back-btn" class="btn-secondary">НАЗАД</button>
+          <button id="intro-launch-btn" class="plush-btn mint">ЗАПУСТИТЬ ДВИГАТЕЛИ! 🔥</button>
+          <button id="intro-back-btn" class="plush-btn pink">НАЗАД</button>
         </div>
       </div>
     </div>
 
     <!-- НАСТРОЙКИ ЗВУКА -->
     <div id="settings-overlay" class="overlay hidden">
-      <div class="card">
-        <h2>НАСТРОЙКИ ЗВУКА (64-POLY ASMR)</h2>
+      <div class="plush-card">
+        <h2>НАСТРОЙКИ ЗВУКА (BEAT-SYNC ASMR)</h2>
 
         <div class="setting-row">
           <div class="setting-head">
@@ -145,12 +149,12 @@
               <option value="auto">🎲 Авто (все треки из music/)</option>
             </select>
           </div>
-          <div class="setting-hint" id="tracks-found-hint">Поиск треков в папке music/...</div>
+          <div class="setting-hint" id="tracks-found-hint">Выстрелы подстраиваются под ритм музыки!</div>
         </div>
 
         <div class="setting-row">
           <div class="setting-head">
-            <span>✨ ASMR-звуки и взрывы (SFX)</span>
+            <span>✨ Мелодичные ASMR-выстрелы и взрывы</span>
             <button id="toggle-sfx" class="toggle-chip">ВКЛ</button>
           </div>
           <input id="sfx-vol" type="range" min="0" max="150" value="108" />
@@ -158,41 +162,41 @@
 
         <div class="setting-row">
           <div class="setting-head">
-            <span>🎹 Характер ASMR-синтезатора</span>
+            <span>🎹 Характер мелодии выстрелов</span>
           </div>
           <div class="diff-row" id="timbre-row" style="margin-bottom:0;">
-            <button class="pill-btn active" data-timbre="space">Бархат</button>
-            <button class="pill-btn" data-timbre="classic">Кристалл</button>
-            <button class="pill-btn" data-timbre="chiptune">Капли</button>
+            <button class="plush-pill active" data-timbre="space">Арфа</button>
+            <button class="plush-pill" data-timbre="classic">Калимба</button>
+            <button class="plush-pill" data-timbre="chiptune">Хрусталь</button>
           </div>
         </div>
 
         <div class="btn-row" style="margin-top:14px;">
-          <button id="test-chord-btn" class="btn-secondary">🎶 Тест ASMR</button>
-          <button id="settings-close-btn" class="btn-play">ГОТОВО ✔</button>
+          <button id="test-chord-btn" class="plush-btn lav">🎶 Тест мелодии</button>
+          <button id="settings-close-btn" class="plush-btn mint">ГОТОВО ✔</button>
         </div>
       </div>
     </div>
 
     <!-- ЭКРАН ПАУЗЫ -->
     <div id="pause-overlay" class="overlay hidden">
-      <div class="card">
+      <div class="plush-card">
         <h2>ПОЛЁТ ПРИОСТАНОВЛЕН</h2>
         <p class="subtitle">ПК: <b>WASD / Стрелки</b> + <b>Пробел</b><br>Смартфон: <b>удерживай палец на экране</b></p>
         <div class="btn-row">
-          <button id="resume-btn" class="btn-play">ПРОДОЛЖИТЬ ▶</button>
-          <button id="pause-menu-btn" class="btn-secondary">В МЕНЮ</button>
+          <button id="resume-btn" class="plush-btn mint">ПРОДОЛЖИТЬ ▶</button>
+          <button id="pause-menu-btn" class="plush-btn pink">В МЕНЮ</button>
         </div>
       </div>
     </div>
 
-    <!-- ВЫХОДНАЯ ЗАСТАВКА ПОСЛЕ УРОВНЯ (img/levelN_out.jpg или img/transition_out.jpg) -->
+    <!-- ВЫХОДНАЯ ЗАСТАВКА ПОСЛЕ УРОВНЯ -->
     <div id="end-overlay" class="overlay hidden">
-      <div class="card">
-        <div class="badge" id="end-badge">Сектор зачищен</div>
+      <div class="plush-card">
+        <div class="plush-badge" id="end-badge">Уровень пройден</div>
 
         <div class="stage-art-box victory-stage-box" id="victory-stage-box">
-          <img id="end-stage-img" src="img/transition_out.jpg" alt="Победа в секторе" />
+          <img id="end-stage-img" alt="Победа на уровне" />
         </div>
 
         <h1 id="end-title">ПОБЕДА!</h1>
@@ -214,17 +218,17 @@
         </div>
 
         <div class="btn-row">
-          <button id="next-level-btn" class="btn-play">ДАЛЬШЕ ➔</button>
-          <button id="end-menu-btn" class="btn-secondary">В МЕНЮ</button>
+          <button id="next-level-btn" class="plush-btn mint">ДАЛЬШЕ ➔</button>
+          <button id="end-menu-btn" class="plush-btn pink">В МЕНЮ</button>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="js/synth.js?v=12"></script>
-  <script src="js/vfx.js?v=12"></script>
-  <script src="js/world3d.js?v=12"></script>
-  <script src="js/entities.js?v=12"></script>
-  <script src="js/game.js?v=12"></script>
+  <script src="js/synth.js?v=13"></script>
+  <script src="js/vfx.js?v=13"></script>
+  <script src="js/world3d.js?v=13"></script>
+  <script src="js/entities.js?v=13"></script>
+  <script src="js/game.js?v=13"></script>
 </body>
 </html>
