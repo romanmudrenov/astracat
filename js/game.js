@@ -65,7 +65,8 @@
       btn.className = 'lvl-btn' + (idx === selectedLevelIdx ? ' active' : '');
       const done = progress.completed.includes(lvl.id);
       btn.innerHTML = `<span>${lvl.id}</span><span class="star">${done ? '★' : '☆'}</span>`;
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         synth.init();
         synth.sfxHit(0);
         selectedLevelIdx = idx;
@@ -82,7 +83,8 @@
   renderLevelGrid();
 
   document.querySelectorAll('#diff-row .pill-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       synth.init();
       synth.sfxHit(0);
       selectedDiffKey = btn.dataset.diff;
@@ -108,12 +110,22 @@
     }
   }
 
-  document.getElementById('settings-open-btn').addEventListener('click', openSettings);
-  document.getElementById('menu-sound-btn').addEventListener('click', openSettings);
-  document.getElementById('settings-close-btn').addEventListener('click', closeSettings);
+  document.getElementById('settings-open-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    openSettings();
+  });
+  document.getElementById('menu-sound-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    openSettings();
+  });
+  document.getElementById('settings-close-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeSettings();
+  });
 
   const toggleMusicBtn = document.getElementById('toggle-music');
-  toggleMusicBtn.addEventListener('click', () => {
+  toggleMusicBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     synth.init();
     synth.musicEnabled = !synth.musicEnabled;
     toggleMusicBtn.textContent = synth.musicEnabled ? 'ВКЛ' : 'ВЫКЛ';
@@ -121,7 +133,8 @@
   });
 
   const toggleSfxBtn = document.getElementById('toggle-sfx');
-  toggleSfxBtn.addEventListener('click', () => {
+  toggleSfxBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     synth.init();
     synth.sfxEnabled = !synth.sfxEnabled;
     toggleSfxBtn.textContent = synth.sfxEnabled ? 'ВКЛ' : 'ВЫКЛ';
@@ -137,7 +150,8 @@
   });
 
   document.querySelectorAll('#timbre-row .pill-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       synth.init();
       synth.timbre = btn.dataset.timbre;
       document.querySelectorAll('#timbre-row .pill-btn').forEach(b => b.classList.remove('active'));
@@ -146,12 +160,14 @@
     });
   });
 
-  document.getElementById('test-chord-btn').addEventListener('click', () => {
+  document.getElementById('test-chord-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
     synth.init();
     synth.sfxPowerup();
   });
 
-  muteBtn.addEventListener('click', () => {
+  muteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     const muted = synth.toggleMute();
     muteBtn.textContent = muted ? '🔇' : '🔊';
   });
@@ -212,22 +228,46 @@
     }
   }
 
-  pauseBtn.addEventListener('click', togglePause);
-  document.getElementById('resume-btn').addEventListener('click', togglePause);
+  pauseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    togglePause();
+  });
+  document.getElementById('resume-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    togglePause();
+  });
 
   function returnToMenu() {
     state = 'START';
     pointer.active = false;
+    boss = null;
+    enemies = [];
+    bullets = [];
+    enemyBullets = [];
+    bonuses = [];
+    particles = [];
+    popups = [];
+
     synth.stopMusic();
+
     pauseOverlay.classList.add('hidden');
     endOverlay.classList.add('hidden');
+    settingsOverlay.classList.add('hidden');
     pauseBtn.classList.add('hidden');
+
     renderLevelGrid();
     startOverlay.classList.remove('hidden');
   }
 
-  document.getElementById('pause-menu-btn').addEventListener('click', returnToMenu);
-  document.getElementById('end-menu-btn').addEventListener('click', returnToMenu);
+  ['pause-menu-btn', 'end-menu-btn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        returnToMenu();
+      });
+    }
+  });
 
   window.addEventListener('keydown', (e) => {
     keys[e.code] = true;
@@ -317,13 +357,18 @@
     startOverlay.classList.add('hidden');
     endOverlay.classList.add('hidden');
     pauseOverlay.classList.add('hidden');
+    settingsOverlay.classList.add('hidden');
     pauseBtn.classList.remove('hidden');
 
     addPopup(W / 2, H * 0.36, `СЕКТОР ${lvl.id}: ${lvl.name.toUpperCase()}`, lvl.accent);
   }
 
-  document.getElementById('start-btn').addEventListener('click', () => startLevel(selectedLevelIdx));
-  document.getElementById('next-level-btn').addEventListener('click', () => {
+  document.getElementById('start-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    startLevel(selectedLevelIdx);
+  });
+  document.getElementById('next-level-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
     if (state === 'VICTORY') {
       const nextIdx = (selectedLevelIdx + 1) % LEVELS.length;
       startLevel(nextIdx);
