@@ -6,12 +6,12 @@ const LEVELS = [
   {
     id: 1,
     name: 'Звёздная Бухта',
-    story: 'Патрульный радар Астро-Кота засёк вторжение слизней на орбите родной станции!',
-    enemiesDesc: 'Слизни-НЛО и Зубастые Метеоры',
+    story: 'Редж выходит на орбиту Котовии-17! Слизни-НЛО, Метеоры и Космические Рыбки перекрыли путь к первым запасам.',
+    enemiesDesc: 'Слизни-НЛО, Метеоры и Космические Рыбки',
     bossName: 'Доктор Кракен-Бот',
     bossWeapon: 'Плазменный веер и Мега-Луч',
     theme: 'space',
-    enemyTypes: ['ufo', 'meteor'],
+    enemyTypes: ['ufo', 'meteor', 'space_fish'],
     skyTop: '#100b26', skyMid: '#1b1442', skyBot: '#271c5e',
     nebula1: 'rgba(255, 107, 157, 0.14)', nebula2: 'rgba(72, 219, 251, 0.14)',
     accent: '#48dbfb', bossColor: '#9b5de5', hpMult: 1.0
@@ -19,12 +19,12 @@ const LEVELS = [
   {
     id: 2,
     name: 'Туманность Сахарной Ваты',
-    story: 'Сладкое облако захватило торговый маршрут! Осторожно: липкие залпы Королевы Зефира!',
-    enemiesDesc: 'Зефирные Бомберы и Леденцовые Дроны',
+    story: 'Сладкое облако захватило торговый маршрут! Осторожно: шустрые Имбирные Пряники и липкие залпы Королевы Зефира!',
+    enemiesDesc: 'Зефирные Бомберы, Леденцы и Имбирные Пряники',
     bossName: 'Королева Зефира',
     bossWeapon: 'Тройные зефирные пузыри',
     theme: 'candy',
-    enemyTypes: ['marshmallow', 'lollipop'],
+    enemyTypes: ['marshmallow', 'lollipop', 'gingerbread'],
     skyTop: '#290d24', skyMid: '#4a1942', skyBot: '#6e2562',
     nebula1: 'rgba(255, 175, 204, 0.18)', nebula2: 'rgba(255, 230, 109, 0.14)',
     accent: '#ffafcc', bossColor: '#ff70a6', hpMult: 1.12
@@ -32,12 +32,12 @@ const LEVELS = [
   {
     id: 3,
     name: 'Пояс Пончиковых Астероидов',
-    story: 'Космическая закусочная взбунтовалась! Собери блюда в Омега-Оружие против Дредноута.',
-    enemiesDesc: 'Злые Пончики и Кексы-Камикадзе',
+    story: 'Космическая закусочная взбунтовалась! Сквозь Злых Пончиков и Мармеладных Мишек прорывайся к Дредноуту.',
+    enemiesDesc: 'Злые Пончики, Кексы и Мармеладные Мишки',
     bossName: 'Мега-Бургер Дредноут',
     bossWeapon: 'Залп острых кетчуп-ракет',
     theme: 'donuts',
-    enemyTypes: ['angry_donut', 'cupcake'],
+    enemyTypes: ['angry_donut', 'cupcake', 'gummy_bear'],
     skyTop: '#1e112b', skyMid: '#361e47', skyBot: '#522c6b',
     nebula1: 'rgba(255, 183, 3, 0.16)', nebula2: 'rgba(251, 86, 7, 0.14)',
     accent: '#ffb703', bossColor: '#f77f00', hpMult: 1.24
@@ -45,12 +45,12 @@ const LEVELS = [
   {
     id: 4,
     name: 'Изумрудные Джунгли Орбиты',
-    story: 'Гигантские космические споры опутали спутники связи. Пробейся сквозь рой жуков!',
-    enemiesDesc: 'Хищные Мухоловки и Споровые Жуки',
+    story: 'Гигантские космические споры опутали спутники связи. Пробейся сквозь рой жуков и бронированных Космо-Улиток!',
+    enemiesDesc: 'Мухоловки, Споровые Жуки и Космо-Улитки',
     bossName: 'Споровый Левиафан',
     bossWeapon: 'Вращающееся кольцо спор',
     theme: 'jungle',
-    enemyTypes: ['flytrap', 'spore_bug'],
+    enemyTypes: ['flytrap', 'spore_bug', 'space_snail'],
     skyTop: '#071f19', skyMid: '#0e382e', skyBot: '#165445',
     nebula1: 'rgba(128, 237, 153, 0.16)', nebula2: 'rgba(255, 209, 102, 0.12)',
     accent: '#06d6a0', bossColor: '#38b000', hpMult: 1.36
@@ -58,12 +58,12 @@ const LEVELS = [
   {
     id: 5,
     name: 'Ледяная Комета Криона',
-    story: 'Температура за бортом падает! Уворачивайся от ледяных осколков Титана Фрост-9.',
-    enemiesDesc: 'Снежные Големы и Сосульки-Перехватчики',
+    story: 'Температура за бортом падает! Уворачивайся от Кристальных Пауков и ледяных осколков Титана Фрост-9.',
+    enemiesDesc: 'Снежные Големы, Сосульки и Кристальные Пауки',
     bossName: 'Ледяной Титан Фрост-9',
     bossWeapon: 'Скоростные ледяные иглы',
     theme: 'ice',
-    enemyTypes: ['snow_golem', 'icicle'],
+    enemyTypes: ['snow_golem', 'icicle', 'crystal_spider'],
     skyTop: '#08192b', skyMid: '#103454', skyBot: '#184e77',
     nebula1: 'rgba(144, 224, 239, 0.18)', nebula2: 'rgba(202, 240, 248, 0.14)',
     accent: '#90e0ef', bossColor: '#48cae4', hpMult: 1.48
@@ -71,12 +71,12 @@ const LEVELS = [
   {
     id: 6,
     name: 'Вулканическая Кузница Магмы',
-    story: 'Огненные крабы перегревают ядро планеты. Береги щит от лавовых снарядов!',
-    enemiesDesc: 'Лавовые Элементали и Огненные Скорпионы',
+    story: 'Огненные крабы перегревают ядро планеты. Береги щит от Магма-Бомб и лавовых снарядов!',
+    enemiesDesc: 'Лавовые Элементали, Скорпионы и Магма-Бомбы',
     bossName: 'Инферно-Краб Вулкан',
     bossWeapon: 'Магматический дождь и клешни',
     theme: 'lava',
-    enemyTypes: ['lava_elem', 'fire_scorp'],
+    enemyTypes: ['lava_elem', 'fire_scorp', 'magma_bomb'],
     skyTop: '#1f0606', skyMid: '#3d0d0d', skyBot: '#631717',
     nebula1: 'rgba(255, 107, 53, 0.18)', nebula2: 'rgba(255, 190, 11, 0.14)',
     accent: '#ff6b35', bossColor: '#e63946', hpMult: 1.60
@@ -84,12 +84,12 @@ const LEVELS = [
   {
     id: 7,
     name: 'Кибер-Сити Неонополис',
-    story: 'Главный сервер взломан! Кибер-Сфинкс охраняет коды доступа перекрёстными лазерами.',
-    enemiesDesc: 'Неоновые Кубы и Лазерные Турели',
+    story: 'Главный сервер взломан! Кибер-Сфинкс охраняет коды доступа перекрёстными лазерами и Голо-Дронами.',
+    enemiesDesc: 'Неоновые Кубы, Лазерные Турели и Голо-Дроны',
     bossName: 'Кибер-Сфинкс MK-IV',
     bossWeapon: 'Двойные перекрёстные лазеры',
     theme: 'cyber',
-    enemyTypes: ['neon_cube', 'cyber_turret'],
+    enemyTypes: ['neon_cube', 'cyber_turret', 'holo_drone'],
     skyTop: '#0b051c', skyMid: '#160c36', skyBot: '#261459',
     nebula1: 'rgba(0, 245, 212, 0.16)', nebula2: 'rgba(241, 91, 181, 0.16)',
     accent: '#00f5d4', bossColor: '#f15bb5', hpMult: 1.72
@@ -97,12 +97,12 @@ const LEVELS = [
   {
     id: 8,
     name: 'Золотая Пустыня Дюн',
-    story: 'Древние пирамиды поднялись в космос! Фараон-Скарабей вызывает песчаные вихри.',
-    enemiesDesc: 'Мумии-Боты и Золотые Сфинксы',
+    story: 'Древние пирамиды поднялись в космос! Фараон-Скарабей вызывает песчаные вихри и стаи Золотых Скарабеев.',
+    enemiesDesc: 'Мумии-Боты, Золотые Сфинксы и Скарабеи',
     bossName: 'Фараон-Скарабей',
     bossWeapon: 'Спиральные солнечные сферы',
     theme: 'desert',
-    enemyTypes: ['mummy_bot', 'sand_drone'],
+    enemyTypes: ['mummy_bot', 'sand_drone', 'scarab_bot'],
     skyTop: '#26170d', skyMid: '#4a2d19', skyBot: '#734626',
     nebula1: 'rgba(255, 209, 102, 0.18)', nebula2: 'rgba(255, 159, 28, 0.14)',
     accent: '#ffd166', bossColor: '#e09f3e', hpMult: 1.85
@@ -110,12 +110,12 @@ const LEVELS = [
   {
     id: 9,
     name: 'Призрачный Сектор Эфира',
-    story: 'Корабли-призраки вышли из гиперпространства. Их снаряды умеют менять траекторию!',
-    enemiesDesc: 'Космо-Привидения и Проклятые Черепа',
+    story: 'Корабли-призраки вышли из гиперпространства. Остерегайся Призрачных Фонарей и самонаводящихся огней!',
+    enemiesDesc: 'Космо-Привидения, Черепа и Призрачные Фонари',
     bossName: 'Призрачный Адмирал',
     bossWeapon: 'Самонаводящиеся призрачные огни',
     theme: 'ghost',
-    enemyTypes: ['ghost_orb', 'skull_bot'],
+    enemyTypes: ['ghost_orb', 'skull_bot', 'ghost_lantern'],
     skyTop: '#0f0d1f', skyMid: '#1e193b', skyBot: '#30285e',
     nebula1: 'rgba(189, 178, 255, 0.18)', nebula2: 'rgba(114, 239, 221, 0.14)',
     accent: '#bdb2ff', bossColor: '#7209b7', hpMult: 2.0
@@ -123,12 +123,12 @@ const LEVELS = [
   {
     id: 10,
     name: 'Цитадель Императора Кракена',
-    story: 'Финальная битва за галактику! Объедини все 4 вида космической еды в Омега-Оружие!',
-    enemiesDesc: 'Боевые Дредноуты и Имперские Стражи',
+    story: 'Финальная битва за продовольствие Котовии-17! Прорвись сквозь Звёздные Мины и победи Омега-Кракена!',
+    enemiesDesc: 'Дредноуты, Имперские Стражи и Звёздные Мины',
     bossName: 'Император Омега-Кракен',
     bossWeapon: 'Все виды атак + Гипер-Луч',
     theme: 'citadel',
-    enemyTypes: ['dreadnought', 'royal_guard'],
+    enemyTypes: ['dreadnought', 'royal_guard', 'star_mine'],
     skyTop: '#140512', skyMid: '#2e0923', skyBot: '#4f0f3b',
     nebula1: 'rgba(255, 0, 110, 0.20)', nebula2: 'rgba(255, 190, 11, 0.16)',
     accent: '#ff006e', bossColor: '#d90429', hpMult: 2.25
@@ -152,7 +152,6 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// 3D-градиент для объёмных сфер и корпусов (источник света сверху-слева)
 function make3DGrad(ctx, x, y, r, lightCol, midCol, darkCol) {
   const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.08, x, y, r * 1.15);
   g.addColorStop(0, lightCol);
@@ -162,7 +161,7 @@ function make3DGrad(ctx, x, y, r, lightCol, midCol, darkCol) {
 }
 
 // =========================================================================
-// 1. БОНУСЫ ИЗ КОСМИЧЕСКОЙ ЕДЫ (СУММИРУЮТСЯ В СУПЕРОРУЖИЕ)
+// 1. БОНУСЫ ИЗ КОСМИЧЕСКОЙ ЕДЫ
 // =========================================================================
 function drawFoodBonus(ctx, bn) {
   ctx.save();
@@ -180,7 +179,6 @@ function drawFoodBonus(ctx, bn) {
     milk:   'rgba(72, 219, 251, 0.36)'
   };
 
-  // Объёмная 3D-сфера вокруг еды
   ctx.fillStyle = auraColors[bn.type] || 'rgba(255,255,255,0.28)';
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 2;
@@ -194,9 +192,7 @@ function drawFoodBonus(ctx, bn) {
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.moveTo(0, -14);
-    ctx.lineTo(13, 10);
-    ctx.lineTo(-13, 10);
+    ctx.moveTo(0, -14); ctx.lineTo(13, 10); ctx.lineTo(-13, 10);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -290,7 +286,6 @@ function drawFoodBonus(ctx, bn) {
     ctx.stroke();
   }
 
-  // Глянцевый 3D-блик на пузыре
   ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
   ctx.beginPath();
   ctx.ellipse(-7, -8, 4.5, 2.2, -0.5, 0, Math.PI * 2);
@@ -314,9 +309,7 @@ function drawPlayerBullet(ctx, b) {
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.2;
     ctx.beginPath();
-    ctx.moveTo(0, -11);
-    ctx.lineTo(8, 8);
-    ctx.lineTo(-8, 8);
+    ctx.moveTo(0, -11); ctx.lineTo(8, 8); ctx.lineTo(-8, 8);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -380,7 +373,7 @@ function drawPlayerBullet(ctx, b) {
 }
 
 // =========================================================================
-// 3. 20 ОБЪЁМНЫХ 3D-ВРАГОВ (С ТЕНЯМИ, ГРАДИЕНТАМИ И БЛИКАМИ)
+// 3. 30 УНИКАЛЬНЫХ ОБЪЁМНЫХ 3D-ВРАГОВ (3 ВИДА НА КАЖДЫЙ ИЗ 10 СЕКТОРОВ)
 // =========================================================================
 function drawUniqueEnemy(ctx, e) {
   ctx.save();
@@ -400,6 +393,7 @@ function drawUniqueEnemy(ctx, e) {
   ctx.lineWidth = 3;
 
   switch (e.kind) {
+    // --- СЕКТОР 1 ---
     case 'ufo':
       ctx.fillStyle = g3d('#d8f3dc', '#8ac926', '#386641');
       ctx.beginPath();
@@ -419,7 +413,7 @@ function drawUniqueEnemy(ctx, e) {
       ctx.beginPath();
       for (let i = 0; i < 9; i++) {
         const a = (Math.PI * 2 * i) / 9;
-        const rad = e.r * (i % 2 === 0 ? 1.05 : 0.85);
+        const rad = e.r * (i % 2 === 0 ? 1.08 : 0.82);
         if (i === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
         else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
       }
@@ -429,6 +423,30 @@ function drawUniqueEnemy(ctx, e) {
       ctx.rotate(-(e.rot || 0));
       break;
 
+    case 'space_fish':
+      // Космическая Рыбка-Пиранья с плавниками и хвостом
+      ctx.fillStyle = g3d('#ffbe0b', '#fb5607', '#9b2226');
+      ctx.beginPath();
+      ctx.moveTo(0, -24); ctx.lineTo(-12, -34); ctx.lineTo(12, -34);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = g3d('#90e0ef', '#00b4d8', '#023e8a');
+      ctx.beginPath();
+      ctx.ellipse(0, 2, 16, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffbe0b';
+      ctx.beginPath();
+      ctx.moveTo(-15, 0); ctx.lineTo(-25, -8); ctx.lineTo(-16, 10);
+      ctx.moveTo(15, 0); ctx.lineTo(25, -8); ctx.lineTo(16, 10);
+      ctx.fill();
+      ctx.stroke();
+      break;
+
+    // --- СЕКТОР 2 ---
     case 'marshmallow':
       ctx.fillStyle = g3d('#ffffff', '#ffccd5', '#ff758f');
       roundRectPath(ctx, -20, -22, 40, 44, 15);
@@ -456,6 +474,36 @@ function drawUniqueEnemy(ctx, e) {
       ctx.lineWidth = 3;
       break;
 
+    case 'gingerbread':
+      // Злой Имбирный Пряник с глазурью и пуговками
+      ctx.fillStyle = g3d('#e6ccb2', '#b08968', '#7f5539');
+      // Ручки и ножки
+      roundRectPath(ctx, -24, -4, 48, 10, 5);
+      ctx.fill();
+      ctx.stroke();
+      roundRectPath(ctx, -13, 6, 10, 18, 5);
+      ctx.fill();
+      ctx.stroke();
+      roundRectPath(ctx, 3, 6, 10, 18, 5);
+      ctx.fill();
+      ctx.stroke();
+      // Голова и туловище
+      roundRectPath(ctx, -12, -6, 24, 20, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, -11, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      // Пуговки-леденцы
+      ctx.fillStyle = '#ff5964';
+      ctx.beginPath();
+      ctx.arc(0, 4, 2.5, 0, Math.PI * 2);
+      ctx.arc(0, 10, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+
+    // --- СЕКТОР 3 ---
     case 'angry_donut':
       ctx.fillStyle = g3d('#ffd6a5', '#f4a261', '#9c6644');
       ctx.beginPath();
@@ -492,6 +540,20 @@ function drawUniqueEnemy(ctx, e) {
       ctx.stroke();
       break;
 
+    case 'gummy_bear':
+      // Мармеладный Мишка-Перехватчик
+      ctx.fillStyle = g3d('#9ef01a', '#38b000', '#007200');
+      ctx.beginPath();
+      ctx.arc(-11, -18, 6, 0, Math.PI * 2);
+      ctx.arc(11, -18, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      roundRectPath(ctx, -16, -16, 32, 36, 14);
+      ctx.fill();
+      ctx.stroke();
+      break;
+
+    // --- СЕКТОР 4 ---
     case 'flytrap':
       ctx.fillStyle = g3d('#b7e4c7', '#38b000', '#1b4332');
       ctx.beginPath();
@@ -516,6 +578,20 @@ function drawUniqueEnemy(ctx, e) {
       ctx.stroke();
       break;
 
+    case 'space_snail':
+      // Космо-Улитка со спиральным панцирем
+      ctx.fillStyle = g3d('#d8f3dc', '#74c69d', '#1b4332');
+      roundRectPath(ctx, -20, 4, 40, 14, 7);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = g3d('#fff3b0', '#ffb703', '#ca6702');
+      ctx.beginPath();
+      ctx.arc(2, -4, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      break;
+
+    // --- СЕКТОР 5 ---
     case 'snow_golem':
       ctx.fillStyle = g3d('#ffffff', '#caf0f8', '#48cae4');
       ctx.beginPath();
@@ -542,6 +618,25 @@ function drawUniqueEnemy(ctx, e) {
       ctx.stroke();
       break;
 
+    case 'crystal_spider':
+      // Кристальный Паук с 6 лапками
+      ctx.strokeStyle = '#90e0ef';
+      ctx.lineWidth = 3.5;
+      [-10, 0, 10].forEach(oy => {
+        ctx.beginPath();
+        ctx.moveTo(-24, oy - 4); ctx.lineTo(24, oy + 4);
+        ctx.stroke();
+      });
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 3;
+      ctx.fillStyle = g3d('#caf0f8', '#00b4d8', '#03045e');
+      ctx.beginPath();
+      ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      break;
+
+    // --- СЕКТОР 6 ---
     case 'lava_elem':
       ctx.fillStyle = g3d('#ffccd5', '#e63946', '#590d22');
       roundRectPath(ctx, -22, -20, 44, 40, 12);
@@ -569,6 +664,23 @@ function drawUniqueEnemy(ctx, e) {
       ctx.stroke();
       break;
 
+    case 'magma_bomb':
+      // Раскалённая Магма-Бомба с фитилём
+      ctx.fillStyle = g3d('#ff9f1c', '#370617', '#03071e');
+      ctx.beginPath();
+      ctx.arc(0, 2, 19, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = '#ffbe0b';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, -17); ctx.lineTo(8, -26);
+      ctx.stroke();
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 3;
+      break;
+
+    // --- СЕКТОР 7 ---
     case 'neon_cube':
       ctx.fillStyle = g3d('#7209b7', '#3a0ca3', '#10002b');
       ctx.strokeStyle = '#00f5d4';
@@ -588,6 +700,21 @@ function drawUniqueEnemy(ctx, e) {
       ctx.stroke();
       break;
 
+    case 'holo_drone':
+      // Голо-Дрон с боковыми турбинами
+      ctx.fillStyle = g3d('#caf0f8', '#00f5d4', '#0077b6');
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 26, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#f15bb5';
+      ctx.beginPath();
+      ctx.arc(0, 0, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      break;
+
+    // --- СЕКТОР 8 ---
     case 'mummy_bot':
       ctx.fillStyle = g3d('#fff3b0', '#f4e285', '#bc6c25');
       roundRectPath(ctx, -19, -22, 38, 44, 15);
@@ -608,6 +735,19 @@ function drawUniqueEnemy(ctx, e) {
       ctx.stroke();
       break;
 
+    case 'scarab_bot':
+      // Золотой Скарабей с крыльями
+      ctx.fillStyle = g3d('#fff3b0', '#ffbe0b', '#9c6644');
+      ctx.beginPath();
+      ctx.ellipse(0, 2, 19, 21, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, -19); ctx.lineTo(0, 23);
+      ctx.stroke();
+      break;
+
+    // --- СЕКТОР 9 ---
     case 'ghost_orb':
       ctx.fillStyle = g3d('#ffffff', '#bdb2ff', '#5a189a');
       ctx.beginPath();
@@ -630,6 +770,18 @@ function drawUniqueEnemy(ctx, e) {
       ctx.stroke();
       break;
 
+    case 'ghost_lantern':
+      // Призрачный Фонарь с эфирным пламенем
+      ctx.fillStyle = g3d('#e0aaff', '#7209b7', '#240046');
+      roundRectPath(ctx, -15, -18, 30, 36, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#72efdd';
+      roundRectPath(ctx, -9, -10, 18, 20, 4);
+      ctx.fill();
+      break;
+
+    // --- СЕКТОР 10 ---
     case 'dreadnought':
       ctx.fillStyle = g3d('#ff758f', '#800f2f', '#2b0510');
       roundRectPath(ctx, -26, -20, 52, 40, 10);
@@ -638,6 +790,23 @@ function drawUniqueEnemy(ctx, e) {
       ctx.fillStyle = '#ff006e';
       ctx.fillRect(-20, 14, 10, 10);
       ctx.fillRect(10, 14, 10, 10);
+      break;
+
+    case 'star_mine':
+      // Звёздная Шипастая Мина Цитадели
+      ctx.rotate(e.rot || 0);
+      ctx.fillStyle = g3d('#ffbe0b', '#ff006e', '#370617');
+      ctx.beginPath();
+      for (let i = 0; i < 12; i++) {
+        const a = (Math.PI * i) / 6;
+        const rad = i % 2 === 0 ? 25 : 13;
+        if (i === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
+        else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.rotate(-(e.rot || 0));
       break;
 
     case 'royal_guard':
@@ -666,7 +835,6 @@ function drawUniqueEnemy(ctx, e) {
     ctx.arc(7, -1, 2.1, 0, Math.PI * 2);
     ctx.fill();
 
-    // Блик в глазу
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(-8, -2.5, 1, 0, Math.PI * 2);
@@ -674,7 +842,7 @@ function drawUniqueEnemy(ctx, e) {
     ctx.fill();
   }
 
-  // Глянцевый 3D-блик сверху слева на корпусе
+  // Глянцевый 3D-блик сверху слева
   ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
   ctx.beginPath();
   ctx.ellipse(-8, -11, 6, 3, -0.4, 0, Math.PI * 2);
@@ -695,7 +863,6 @@ function drawUniqueEnemy(ctx, e) {
 // 4. 10 УНИКАЛЬНЫХ БОССОВ В ОБЪЁМНОМ 3D-СТИЛЕ
 // =========================================================================
 function drawUniqueBoss(ctx, b, lvl, player, H) {
-  // Двойные перекрёстные лазеры Кибер-Сфинкса (Уровень 7)
   if (b.crossLasers && b.crossLasers.active) {
     ctx.save();
     const angle = b.crossLasers.angle;
@@ -722,7 +889,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.restore();
   }
 
-  // Классический мега-лазер (Уровень 1 и 10)
   if (b.laserState === 'charge') {
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 0, 110, 0.75)';
@@ -749,7 +915,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
 
-  // Объёмная 3D-тень под боссом
   ctx.fillStyle = 'rgba(8, 5, 22, 0.42)';
   ctx.beginPath();
   ctx.ellipse(10, 56, 58, 18, 0, 0, Math.PI * 2);
@@ -928,7 +1093,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.stroke();
   }
 
-  // Объёмные глаза босса
   [-20, 20].forEach(ex => {
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = INK;
@@ -963,7 +1127,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   ctx.fillRect(-13, 14, 6, 5);
   ctx.fillRect(7, 14, 6, 5);
 
-  // Глянцевый 3D-блик сверху слева на куполе босса
   ctx.fillStyle = 'rgba(255, 255, 255, 0.32)';
   ctx.beginPath();
   ctx.ellipse(-22, -26, 14, 6, -0.45, 0, Math.PI * 2);
