@@ -56,6 +56,7 @@ canvas {
   align-items: center;
   justify-content: center;
   transition: transform 0.08s ease;
+  touch-action: manipulation;
 }
 
 .icon-btn:active {
@@ -99,6 +100,10 @@ canvas {
   color: #1e1633;
   box-shadow: 0 10px 0 #1e1633, 0 20px 40px rgba(0, 0, 0, 0.5);
   animation: popIn 0.3s cubic-bezier(0.22, 1.35, 0.36, 1);
+}
+
+.card, .card button, .card input {
+  touch-action: manipulation;
 }
 
 @keyframes popIn {
