@@ -31,7 +31,6 @@ canvas {
   height: 100%;
 }
 
-/* Верхние кнопки HUD */
 .hud-top-right {
   position: absolute;
   top: 14px;
@@ -68,7 +67,6 @@ canvas {
   display: none;
 }
 
-/* Оверлеи */
 .overlay {
   position: absolute;
   inset: 0;
@@ -77,7 +75,7 @@ canvas {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(16, 11, 38, 0.78);
+  background: rgba(14, 10, 34, 0.80);
   backdrop-filter: blur(6px);
   transition: opacity 0.2s ease;
 }
@@ -99,7 +97,7 @@ canvas {
   text-align: center;
   color: #1e1633;
   box-shadow: 0 10px 0 #1e1633, 0 20px 40px rgba(0, 0, 0, 0.5);
-  animation: popIn 0.3s cubic-bezier(0.22, 1.35, 0.36, 1);
+  animation: popIn 0.28s cubic-bezier(0.22, 1.35, 0.36, 1);
 }
 
 .card, .card button, .card input {
@@ -126,20 +124,20 @@ canvas {
 }
 
 h1 {
-  font-size: 25px;
-  line-height: 1.15;
+  font-size: 30px;
+  line-height: 1.12;
   font-weight: 900;
   color: #ff5964;
   text-shadow: 2px 2px 0 #1e1633;
   -webkit-text-stroke: 1px #1e1633;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 h2 {
   font-size: 22px;
   font-weight: 900;
   color: #1e1633;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .subtitle {
@@ -148,6 +146,64 @@ h2 {
   font-weight: 600;
   line-height: 1.4;
   margin-bottom: 12px;
+}
+
+/* Сюжетная заставка перед вылетом */
+.intro-hero-art {
+  position: relative;
+  height: 115px;
+  border-radius: 18px;
+  border: 3px solid #1e1633;
+  background: radial-gradient(circle at 50% 35%, #3a2475 0%, #171036 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 -10px 20px rgba(0, 0, 0, 0.35);
+}
+
+.intro-cat-badge {
+  font-size: 46px;
+  animation: floatCat 2.2s ease-in-out infinite;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
+}
+
+@keyframes floatCat {
+  0%, 100% { transform: translateY(-4px) rotate(-3deg); }
+  50% { transform: translateY(5px) rotate(3deg); }
+}
+
+.intro-sector-tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #ffd166;
+  color: #1e1633;
+  border: 2px solid #1e1633;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.intro-story {
+  font-size: 13px;
+  font-weight: 700;
+  color: #3a3059;
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+
+.intro-intel {
+  background: #ffffff;
+  border: 2.5px solid #1e1633;
+  border-radius: 14px;
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.55;
+  margin-bottom: 14px;
 }
 
 .section-label {
@@ -160,7 +216,6 @@ h2 {
   margin: 10px 0 6px;
 }
 
-/* Кнопки выбора сложности и тембра */
 .diff-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -187,7 +242,6 @@ h2 {
   box-shadow: 0 2px 0 #1e1633;
 }
 
-/* Сетка 10 уровней */
 .levels-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -241,31 +295,21 @@ h2 {
   background: #ffffff;
   border: 2px solid #1e1633;
   border-radius: 11px;
-  padding: 6px 8px;
+  padding: 6px 6px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 12px;
 }
 
-.bonus-legend b {
-  display: inline-block;
-  background: #ffd166;
-  border: 1.5px solid #1e1633;
-  border-radius: 5px;
-  padding: 0 4px;
-  margin-right: 2px;
-}
-
-/* Основные кнопки */
 .btn-row {
   display: flex;
   gap: 8px;
 }
 
 .btn-play {
-  flex: 1.3;
+  flex: 1.35;
   padding: 13px 14px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 900;
   letter-spacing: 0.03em;
   color: #1e1633;
@@ -284,7 +328,7 @@ h2 {
 
 .btn-secondary {
   flex: 1;
-  padding: 13px 12px;
+  padding: 13px 10px;
   font-size: 14px;
   font-weight: 900;
   color: #1e1633;
@@ -300,7 +344,6 @@ h2 {
   box-shadow: 0 2px 0 #1e1633;
 }
 
-/* Настройки звука */
 .setting-row {
   background: #ffffff;
   border: 2.5px solid #1e1633;
@@ -317,6 +360,13 @@ h2 {
   font-size: 13px;
   font-weight: 800;
   margin-bottom: 6px;
+}
+
+.setting-hint {
+  font-size: 11px;
+  color: #6b5e8c;
+  font-weight: 600;
+  margin-top: 4px;
 }
 
 .toggle-chip {
