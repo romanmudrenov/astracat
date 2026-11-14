@@ -24,18 +24,7 @@ class PolySynth {
     this.recentTracks = [];
 
     this.bgmAudio = null;
-    this.bgmSource = null;
-    this.analyser = null;
-    this.freqData = null;
     this.currentTrackPath = '';
-
-    // Красивые мелодические лады (До-мажорная пентатоника и Лидийский аккорд для космической арфы)
-    this.melodyChords = [
-      [60, 64, 67, 71, 74], // Cmaj9
-      [65, 69, 72, 76, 79], // Fmaj9
-      [67, 71, 74, 77, 81], // G13
-      [69, 72, 76, 79, 83]  // Am9
-    ];
     this.shotStep = 0;
 
     this.scanMusicFolder();
@@ -69,7 +58,7 @@ class PolySynth {
         sel.value = curVal;
       }
       if (hint) {
-        hint.textContent = `Треков в music/: ${list.length} • Выстрелы синхронизированы с ритмом`;
+        hint.textContent = `Треков в music/: ${list.length} (+ boss.mp3 для боссов)`;
       }
     };
 
@@ -116,11 +105,6 @@ class PolySynth {
       this.compressor.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
 
-      // Анализатор ритма фоновой музыки
-      this.analyser = this.ctx.createAnalyser();
-      this.analyser.fftSize = 128;
-      this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
-
       const sampleRate = this.ctx.sampleRate;
       this.noiseBuffer = this.ctx.createBuffer(1, sampleRate * 2, sampleRate);
       const data = this.noiseBuffer.getChannelData(0);
@@ -138,22 +122,6 @@ class PolySynth {
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
-  }
-
-  // Возвращает текущую энергию ритма/баса играющего трека (0.0 .. 1.0)
-  getBeatEnergy() {
-    if (this.analyser && this.freqData && this.bgmAudio && !this.bgmAudio.paused) {
-      try {
-        this.analyser.getByteFrequencyData(this.freqData);
-        let bassSum = 0;
-        for (let i = 0; i < 8; i++) bassSum += this.freqData[i];
-        const energy = bassSum / (8 * 255);
-        if (energy > 0.05) return energy;
-      } catch (e) {}
-    }
-    // Если трек ещё грузится — плавный внутренний пульс 110 BPM
-    const t = this.ctx ? this.ctx.currentTime : performance.now() * 0.001;
-    return 0.4 + 0.4 * Math.sin(t * Math.PI * (110 / 30));
   }
 
   pickNextTrack() {
@@ -187,20 +155,8 @@ class PolySynth {
 
     try {
       const audio = new Audio(path);
-      audio.crossOrigin = 'anonymous';
       audio.loop = true;
       audio.volume = this.getEffectiveMusicVol();
-
-      // Подключаем трек к анализатору ритма (безопасно, без прерывания звука при CORS)
-      if (this.ctx && this.analyser) {
-        try {
-          const src = this.ctx.createMediaElementSource(audio);
-          src.connect(this.analyser);
-          this.analyser.connect(this.ctx.destination);
-          this.bgmSource = src;
-        } catch (err) {}
-      }
-
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(() => {
@@ -232,7 +188,6 @@ class PolySynth {
         this.bgmAudio.currentTime = 0;
       } catch (e) {}
       this.bgmAudio = null;
-      this.bgmSource = null;
     }
     this.currentTrackPath = '';
   }
@@ -285,7 +240,7 @@ class PolySynth {
     type = 'sine',
     detune = 0,
     time = null,
-    duration = 0.24,
+    duration = 0.22,
     attack = 0.018,
     decay = 0.08,
     sustain = 0.35,
@@ -403,62 +358,44 @@ class PolySynth {
     };
   }
 
-  // --- МЕЛОДИЧНЫЕ ВЫСТРЕЛЫ, СИНХРОНИЗИРОВАННЫЕ С РИТМОМ ФОНОВОГО ТРЕКА ---
+  // --- ЧИСТЫЕ МЕЛОДИЧНЫЕ ASMR-ВЫСТРЕЛЫ БЕЗ СИНХРОНИЗАЦИИ ---
   sfxShootWeapon(pan = 0, baseWeapon = 'droplet', secondary = 'none') {
     if (!this.ctx || this.muted) return;
     const now = this.ctx.currentTime;
-    const beat = this.getBeatEnergy(); // 0..1 энергия бита текущей музыки
-
-    // Каждые 8 выстрелов плавно меняем гармонию аккорда, а выбор ноты зависит от энергии бита
-    const chordIdx = Math.floor(this.shotStep / 8) % this.melodyChords.length;
-    const chord = this.melodyChords[chordIdx];
-    const beatOffset = beat > 0.55 ? 2 : 0; // на сильной доле бита звучит верхняя терция/квинта
-    const noteMidi = chord[(this.shotStep + beatOffset) % chord.length];
+    const notes = [60, 64, 67, 71, 74, 76, 79];
+    const noteMidi = notes[this.shotStep % notes.length];
     this.shotStep++;
-
-    const freq = this.midiToFreq(noteMidi);
-    const dynamicGain = 0.068 + beat * 0.032; // громкость и теплота дышат в такт музыке
+    const f = this.midiToFreq(noteMidi);
 
     if (baseWeapon === 'droplet') {
-      // 1. «Капельная Плазма» — мелодичная арфа + мягкий водный обертон в такт ритму
       this.playVoice({
-        time: now, freq, type: 'sine',
-        duration: 0.16, attack: 0.015, decay: 0.07, sustain: 0.3, release: 0.16,
-        gain: dynamicGain, filterFreq: 1350 + beat * 400, sendDelay: true, pan
+        time: now, freq: f * 0.75, slideTo: f * 1.4, type: 'sine',
+        duration: 0.12, attack: 0.012, decay: 0.05, sustain: 0.2, release: 0.12,
+        gain: 0.09, filterFreq: 1400, sendDelay: true, pan
       });
-      // На сильной доле бита добавляем октавный перелив
-      if (beat > 0.52) {
-        this.playVoice({
-          time: now + 0.035, freq: freq * 1.5, type: 'sine',
-          duration: 0.14, attack: 0.015, decay: 0.06, sustain: 0.25, release: 0.14,
-          gain: dynamicGain * 0.65, filterFreq: 1500, sendDelay: true, pan: -pan * 0.5
-        });
-      }
     } else if (baseWeapon === 'kalimba') {
-      // 2. «Калимба-Луч» — тёплый полифонический перебор 2 нот из аккорда
       this.playChord([noteMidi, noteMidi + 7], {
         time: now, type: 'sine',
-        duration: 0.18, attack: 0.012, decay: 0.08, sustain: 0.3, release: 0.16,
-        gain: dynamicGain * 0.85, filterFreq: 1600, sendDelay: true, pan
+        duration: 0.16, attack: 0.01, decay: 0.06, sustain: 0.25, release: 0.14,
+        gain: 0.08, filterFreq: 1600, sendDelay: true, pan
       });
     } else {
-      // 3. «Шёлковый Залп» — мягкий мажорный трезвучный перелив + бархатный шорох
-      this.playChord([noteMidi - 12, noteMidi - 5, noteMidi], {
+      this.playChord([noteMidi - 12, noteMidi], {
         time: now, type: 'sine',
-        duration: 0.17, attack: 0.016, decay: 0.07, sustain: 0.3, release: 0.15,
-        gain: dynamicGain * 0.72, filterFreq: 1350, sendDelay: true, pan
+        duration: 0.15, attack: 0.014, decay: 0.06, sustain: 0.25, release: 0.13,
+        gain: 0.075, filterFreq: 1300, sendDelay: true, pan
       });
       this.playNoise({
-        time: now, duration: 0.10, gain: 0.045,
-        filterType: 'bandpass', filterFreq: 900, filterEnd: 420
+        time: now, duration: 0.08, gain: 0.04,
+        filterType: 'bandpass', filterFreq: 900, filterEnd: 400
       });
     }
 
     if (secondary !== 'none') {
       this.playVoice({
-        time: now + 0.03, freq: this.midiToFreq(noteMidi + 12), type: 'sine',
-        duration: 0.14, attack: 0.014, decay: 0.06, sustain: 0.25, release: 0.14,
-        gain: 0.045, filterFreq: 1650, sendDelay: true, pan: -pan * 0.6
+        time: now + 0.025, freq: this.midiToFreq(noteMidi + 12), type: 'sine',
+        duration: 0.12, attack: 0.012, decay: 0.05, sustain: 0.2, release: 0.12,
+        gain: 0.05, filterFreq: 1650, sendDelay: true, pan: -pan * 0.6
       });
     }
   }
