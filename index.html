@@ -4,9 +4,34 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Астро-Кот</title>
-  <link rel="stylesheet" href="css/style.css?v=9" />
+  <link rel="stylesheet" href="css/style.css?v=10" />
+  <style>
+    #debug-banner {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 9999;
+      background: #d90429;
+      color: #fff;
+      font: 700 12px/1.35 monospace;
+      padding: 8px 12px;
+      word-break: break-word;
+    }
+  </style>
+  <script>
+    window.onerror = function(msg, url, line) {
+      var b = document.getElementById('debug-banner');
+      if (b) {
+        b.style.display = 'block';
+        var file = url ? url.split('/').pop().split('?')[0] : 'inline';
+        b.textContent = 'Ошибка в ' + file + ' (строка ' + line + '): ' + msg;
+      }
+    };
+  </script>
 </head>
 <body>
+  <div id="debug-banner"></div>
+
   <div id="game-wrap">
     <canvas id="game"></canvas>
 
@@ -191,10 +216,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=9"></script>
-  <script src="js/vfx.js?v=9"></script>
-  <script src="js/world3d.js?v=9"></script>
-  <script src="js/entities.js?v=9"></script>
-  <script src="js/game.js?v=9"></script>
+  <script src="js/synth.js?v=10" onerror="window.onerror('Не найден файл js/synth.js', 'index.html', 0)"></script>
+  <script src="js/vfx.js?v=10" onerror="window.onerror('Не найден файл js/vfx.js', 'index.html', 0)"></script>
+  <script src="js/world3d.js?v=10" onerror="window.onerror('Не найден файл js/world3d.js', 'index.html', 0)"></script>
+  <script src="js/entities.js?v=10" onerror="window.onerror('Не найден файл js/entities.js', 'index.html', 0)"></script>
+  <script src="js/game.js?v=10" onerror="window.onerror('Не найден файл js/game.js', 'index.html', 0)"></script>
 </body>
 </html>
