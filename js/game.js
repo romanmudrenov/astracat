@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'astro_cat_3d_deluxe_v6';
+  const STORAGE_KEY = 'astro_cat_3d_deluxe_v7';
 
   function loadProgress() {
     try {
@@ -50,7 +50,6 @@
     const rect = canvas.parentElement.getBoundingClientRect();
     W = Math.max(320, rect.width || window.innerWidth);
     H = Math.max(480, rect.height || window.innerHeight);
-    // Оптимальный DPR для плавных 60 FPS на смартфонах
     dpr = Math.min(window.devicePixelRatio || 1, 1.75);
     canvas.width = Math.floor(W * dpr);
     canvas.height = Math.floor(H * dpr);
@@ -257,7 +256,7 @@
     document.getElementById('intro-hero-art').style.background =
       `radial-gradient(circle at 50% 35%, ${lvl.skyBot} 0%, ${lvl.skyTop} 100%)`;
     document.getElementById('intro-intel').innerHTML =
-      `<div>👾 <b>Враги сектора:</b> ${lvl.enemiesDesc}</div>` +
+      `<div>🛸 <b>Корабли врагов:</b> ${lvl.enemiesDesc}</div>` +
       `<div>👑 <b>Пожиратель:</b> ${lvl.bossName}</div>` +
       `<div>⚡ <b>Оружие босса:</b> ${lvl.bossWeapon}</div>`;
 
@@ -372,7 +371,7 @@
   });
 
   // =========================================================================
-  // СОСТОЯНИЕ ИГРЫ
+  // СОСТОЯНИЕ ИГРЫ, ПРЕПЯТСТВИЯ И НЕСТАНДАРТНЫЕ СИТУАЦИИ НА КАРТЕ
   // =========================================================================
   let score = 0;
   let kills = 0;
@@ -381,6 +380,9 @@
   let wave = 1;
   let waveTimer = 0;
   let spawnTimer = 0;
+  let obstacleTimer = 4.5;
+  let eventTimer = 14.0;
+  let activeEvent = null; // { type: 'gravity' | 'wave' | 'sticky' | 'ignite' | 'underwater', timer, x, y, dir }
   let screenShake = 0;
   let warningBannerTimer = 0;
   let globalTime = 0;
@@ -390,6 +392,7 @@
   let bullets = [];
   let enemyBullets = [];
   let enemies = [];
+  let obstacles = [];
   let bonuses = [];
   let boss = null;
 
@@ -415,9 +418,11 @@
     pointer.active = false;
     boss = null;
     enemies = [];
+    obstacles = [];
     bullets = [];
     enemyBullets = [];
     bonuses = [];
+    activeEvent = null;
     if (vfx) vfx.clear();
     if (synth) synth.stopMusic();
 
@@ -481,6 +486,8 @@
     if (synth) {
       synth.init();
       synth.startMusic('normal');
+      if (lvl.theme === 'underwater') synth.sfxUnderwater(0);
+      else synth.sfxCosmicHum();
     }
 
     score = 0;
@@ -490,6 +497,9 @@
     wave = 1;
     waveTimer = 0;
     spawnTimer = 0.45;
+    obstacleTimer = 3.5;
+    eventTimer = 12.0;
+    activeEvent = null;
     screenShake = 0;
     warningBannerTimer = 0;
 
@@ -507,6 +517,7 @@
       secondaryLevel: 1,
       shield: false,
       turboTimer: 0,
+      stickyTimer: 0,
       squashX: 1,
       squashY: 1,
       blinkTimer: 2.5
@@ -515,6 +526,7 @@
     bullets = [];
     enemyBullets = [];
     enemies = [];
+    obstacles = [];
     bonuses = [];
     boss = null;
     if (vfx) vfx.clear();
@@ -541,6 +553,81 @@
     }
   });
 
+  // Спавн статичных препятствий на карте, которые нужно облетать
+  function spawnObstacle() {
+    const lvl = LEVELS[selectedLevelIdx];
+    const margin = 52;
+    const x = margin + Math.random() * (W - margin * 2);
+    obstacles.push({
+      kind: lvl.obstacleKind || 'tech_bulkhead',
+      x,
+      y: -45,
+      r: 24,
+      vy: 95
+    });
+  }
+
+  // Нестандартные ситуации на протяжении всей карты
+  function triggerRandomAnomaly(lvl) {
+    const pool = ['gravity', 'wave', 'sticky', 'ignite'];
+    if (lvl.theme === 'underwater') pool.push('underwater');
+    const type = pool[Math.floor(Math.random() * pool.length)];
+
+    if (type === 'gravity') {
+      activeEvent = {
+        type: 'gravity',
+        timer: 6.5,
+        x: W * (0.25 + Math.random() * 0.5),
+        y: H * 0.42
+      };
+      if (synth) synth.sfxGravity(0);
+      if (vfx) vfx.addPopup(W / 2, H * 0.30, '🌀 ГРАВИТАЦИОННАЯ ВОРОНКА!', '#bdb2ff', 1.15);
+    } else if (type === 'wave') {
+      activeEvent = {
+        type: 'wave',
+        timer: 5.5,
+        dir: Math.random() > 0.5 ? 1 : -1
+      };
+      if (synth) synth.sfxWave();
+      if (vfx) vfx.addPopup(W / 2, H * 0.30, '🌊 ЭНЕРГЕТИЧЕСКАЯ ВОЛНА!', '#48dbfb', 1.15);
+    } else if (type === 'sticky') {
+      activeEvent = {
+        type: 'sticky',
+        timer: 6.5,
+        x: W * (0.2 + Math.random() * 0.6),
+        y: H * 0.65,
+        r: 72
+      };
+      if (synth) synth.sfxSticky(0);
+      if (vfx) vfx.addPopup(W / 2, H * 0.30, '🍯 ЛИПКАЯ АНОМАЛИЯ!', '#ffafcc', 1.15);
+    } else if (type === 'ignite') {
+      activeEvent = {
+        type: 'ignite',
+        timer: 5.0
+      };
+      if (synth) synth.sfxIgnite(0);
+      if (vfx) {
+        vfx.triggerFlash('#ff6b35', 0.22);
+        vfx.addPopup(W / 2, H * 0.30, '🔥 ВСПЫШКА ВОЗГОРАНИЯ!', '#ff9f1c', 1.15);
+      }
+      // Выпускаем 4 огненных сгустка сверху
+      for (let k = 0; k < 4; k++) {
+        enemyBullets.push({
+          x: 45 + ((W - 90) * k) / 3,
+          y: -20 - k * 35,
+          vx: 0,
+          vy: 260,
+          r: 10,
+          color: '#ff6b35'
+        });
+      }
+    } else {
+      activeEvent = { type: 'underwater', timer: 5.5, dir: Math.random() > 0.5 ? 1 : -1 };
+      if (synth) synth.sfxUnderwater(0);
+      if (vfx) vfx.addPopup(W / 2, H * 0.30, '🫧 ПОДВОДНОЕ ТЕЧЕНИЕ!', '#00f5d4', 1.15);
+    }
+  }
+
   function spawnEnemy() {
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
@@ -548,7 +635,7 @@
     const margin = 44;
     const x = margin + Math.random() * (W - margin * 2);
 
-    const types = lvl.enemyTypes || ['ufo', 'meteor', 'space_fish'];
+    const types = lvl.enemyTypes || ['lsd_saucer', 'lsd_prism', 'lsd_spinner'];
     const typeIdx = Math.floor(Math.random() * types.length);
     const kind = types[typeIdx];
     const isHeavy = typeIdx === 1;
@@ -747,40 +834,41 @@
           enemyBullets.push({
             x: b.x + k * 12, y: b.y + 40,
             vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
-            r: 8, color: '#48dbfb'
+            r: 8, color: '#ff70a6'
           });
         }
         break;
       case 2:
-        b.shootTimer = 1.05;
+        b.shootTimer = 0.95;
         for (let k = -1; k <= 1; k++) {
-          const ang = toPlayer + k * 0.28;
+          const ang = toPlayer + k * 0.25;
           enemyBullets.push({
-            x: b.x + k * 24, y: b.y + 38,
-            vx: Math.cos(ang) * (spd * 0.9), vy: Math.sin(ang) * (spd * 0.9),
-            r: 12, color: '#ffafcc'
+            x: b.x + k * 22, y: b.y + 38,
+            vx: Math.cos(ang) * (spd * 1.1), vy: Math.sin(ang) * (spd * 1.1),
+            r: 9, color: '#ff002b'
           });
         }
         break;
       case 3:
-        b.shootTimer = 1.25;
-        [-45, -27, -9, 9, 27, 45].forEach(ox => {
+        b.shootTimer = 1.15;
+        const rCols = ['#ff5964', '#ff9f1c', '#ffd166', '#06d6a0', '#48dbfb'];
+        for (let k = -2; k <= 2; k++) {
+          const ang = Math.PI / 2 + k * 0.24;
           enemyBullets.push({
-            x: b.x + ox, y: b.y + 32,
-            vx: ox * 0.8, vy: spd * 1.15,
-            r: 8.5, color: '#ff5964'
+            x: b.x + k * 15, y: b.y + 34,
+            vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+            r: 8.5, color: rCols[k + 2]
           });
-        });
+        }
         break;
       case 4:
-        b.shootTimer = 1.35;
-        const sporeCount = b.phase === 3 ? 12 : 9;
-        for (let k = 0; k < sporeCount; k++) {
-          const ang = b.time * 1.5 + (Math.PI * 2 * k) / sporeCount;
+        b.shootTimer = 0.85;
+        for (let k = -1; k <= 1; k++) {
+          const ang = Math.PI / 2 + k * 0.35;
           enemyBullets.push({
-            x: b.x, y: b.y + 15,
-            vx: Math.cos(ang) * (spd * 0.88), vy: Math.sin(ang) * (spd * 0.88),
-            r: 7.5, color: '#80ed99'
+            x: b.x, y: b.y + 30,
+            vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25),
+            r: 7, color: '#48dbfb'
           });
         }
         break;
@@ -796,6 +884,29 @@
         });
         break;
       case 6:
+        b.shootTimer = 1.05;
+        for (let k = -1; k <= 1; k++) {
+          const ang = toPlayer + k * 0.28;
+          enemyBullets.push({
+            x: b.x + k * 24, y: b.y + 38,
+            vx: Math.cos(ang) * (spd * 0.9), vy: Math.sin(ang) * (spd * 0.9),
+            r: 12, color: '#ffafcc'
+          });
+        }
+        break;
+      case 7:
+        b.shootTimer = 1.25;
+        const sporeCount = b.phase === 3 ? 11 : 8;
+        for (let k = 0; k < sporeCount; k++) {
+          const ang = b.time * 1.5 + (Math.PI * 2 * k) / sporeCount;
+          enemyBullets.push({
+            x: b.x, y: b.y + 15,
+            vx: Math.cos(ang) * (spd * 0.88), vy: Math.sin(ang) * (spd * 0.88),
+            r: 8, color: '#00f5d4'
+          });
+        }
+        break;
+      case 8:
         b.shootTimer = 0.95;
         [-58, 58].forEach(cx => {
           enemyBullets.push({
@@ -810,39 +921,16 @@
           r: 10, color: '#ff5964'
         });
         break;
-      case 7:
-        b.shootTimer = 0.85;
-        for (let k = -1; k <= 1; k++) {
-          const ang = Math.PI / 2 + k * 0.35;
-          enemyBullets.push({
-            x: b.x, y: b.y + 30,
-            vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25),
-            r: 7, color: '#00f5d4'
-          });
-        }
-        break;
-      case 8:
-        b.shootTimer = 0.42;
+      case 9:
+        b.shootTimer = 0.45;
         for (let arm = 0; arm < 2; arm++) {
           const ang = b.time * 3.4 + arm * Math.PI;
           enemyBullets.push({
             x: b.x, y: b.y + 15,
-            vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
-            r: 8, color: '#ffd166'
+            vx: Math.cos(ang) * (spd * 1.15), vy: Math.sin(ang) * (spd * 1.15),
+            r: 7.5, color: '#caf0f8'
           });
         }
-        break;
-      case 9:
-        b.shootTimer = 1.15;
-        [-32, 32].forEach(ox => {
-          enemyBullets.push({
-            homing: true,
-            life: 3.4,
-            x: b.x + ox, y: b.y + 28,
-            vx: ox * 1.5, vy: spd * 0.85,
-            r: 9, color: '#bdb2ff'
-          });
-        });
         break;
       case 10:
       default:
@@ -886,6 +974,27 @@
       if (comboTimer <= 0) combo = 1;
     }
 
+    // Нестандартные аномалии на протяжении всей карты
+    eventTimer -= dt;
+    if (eventTimer <= 0 && !activeEvent) {
+      eventTimer = 17 + Math.random() * 6;
+      triggerRandomAnomaly(lvl);
+    }
+
+    if (activeEvent) {
+      activeEvent.timer -= dt;
+      if (activeEvent.timer <= 0) {
+        activeEvent = null;
+      }
+    }
+
+    // Статичные препятствия на карте (нужно облетать)
+    obstacleTimer -= dt;
+    if (obstacleTimer <= 0 && !boss) {
+      obstacleTimer = 4.2 + Math.random() * 2.2;
+      spawnObstacle();
+    }
+
     waveTimer += dt;
     if (!boss) {
       if (wave === 1 && waveTimer > 22) {
@@ -915,6 +1024,7 @@
     const p = player;
     if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
     if (p.turboTimer > 0) p.turboTimer = Math.max(0, p.turboTimer - dt);
+    if (p.stickyTimer > 0) p.stickyTimer = Math.max(0, p.stickyTimer - dt);
 
     p.blinkTimer -= dt;
     if (p.blinkTimer < -0.14) p.blinkTimer = 2.4 + Math.random() * 2;
@@ -922,7 +1032,32 @@
     p.squashX += (1 - p.squashX) * Math.min(1, dt * 14);
     p.squashY += (1 - p.squashY) * Math.min(1, dt * 14);
 
-    const moveSpeed = p.turboTimer > 0 ? 450 : 355;
+    // Влияние аномалий на корабль игрока
+    let speedFactor = 1.0;
+    if (activeEvent) {
+      if (activeEvent.type === 'gravity') {
+        const dx = activeEvent.x - p.x;
+        const dy = activeEvent.y - p.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 10 && dist < 280) {
+          p.x += (dx / dist) * 85 * dt;
+          p.y += (dy / dist) * 85 * dt;
+        }
+      } else if (activeEvent.type === 'wave' || activeEvent.type === 'underwater') {
+        p.x += activeEvent.dir * 95 * dt;
+      } else if (activeEvent.type === 'sticky') {
+        const d = Math.hypot(activeEvent.x - p.x, activeEvent.y - p.y);
+        if (d < activeEvent.r) {
+          speedFactor = 0.45;
+          if (p.stickyTimer <= 0) {
+            p.stickyTimer = 1.2;
+            if (synth) synth.sfxSticky(0);
+          }
+        }
+      }
+    }
+
+    const moveSpeed = (p.turboTimer > 0 ? 450 : 355) * speedFactor;
     let ix = 0, iy = 0;
     if (keys['ArrowLeft'] || keys['KeyA']) ix -= 1;
     if (keys['ArrowRight'] || keys['KeyD']) ix += 1;
@@ -940,8 +1075,8 @@
       const dy = pointer.y - p.y;
       p.vx = dx * 12;
       p.vy = dy * 12;
-      p.x += dx * Math.min(1, dt * 14);
-      p.y += dy * Math.min(1, dt * 14);
+      p.x += dx * Math.min(1, dt * 14 * speedFactor);
+      p.y += dy * Math.min(1, dt * 14 * speedFactor);
     } else {
       p.vx *= 0.82;
       p.vy *= 0.82;
@@ -962,6 +1097,34 @@
       p.squashX = 1.13;
       p.squashY = 0.89;
       firePlayerWeapon(p, lvl);
+    }
+
+    // Обновление препятствий на карте
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      const ob = obstacles[i];
+      ob.y += ob.vy * dt;
+
+      // Пули игрока расщепляются при попадании в статичное препятствие
+      for (let j = bullets.length - 1; j >= 0; j--) {
+        const b = bullets[j];
+        if (Math.hypot(b.x - ob.x, b.y - ob.y) < ob.r + b.r) {
+          bullets.splice(j, 1);
+          if (synth && Math.random() < 0.35) synth.sfxDisintegrate(((ob.x / W) * 2 - 1) * 0.6);
+          if (vfx) vfx.addBurst(b.x, b.y, ['#caf0f8', '#ffffff'], 4, 90);
+        }
+      }
+
+      // Столкновение корабля игрока с препятствием
+      if (Math.hypot(p.x - ob.x, p.y - ob.y) < p.r + ob.r - 4) {
+        obstacles.splice(i, 1);
+        if (lvl.theme === 'diamond' && synth) synth.sfxDisintegrate(0);
+        else if (lvl.theme === 'candy' || lvl.theme === 'organic') { if (synth) synth.sfxSticky(0); }
+        else if (lvl.theme === 'volcano') { if (synth) synth.sfxIgnite(0); }
+        damagePlayer();
+        continue;
+      }
+
+      if (ob.y > H + 60) obstacles.splice(i, 1);
     }
 
     for (let i = bullets.length - 1; i >= 0; i--) {
@@ -1030,650 +1193,3 @@
       }
 
       if (e.x < e.r + 10) {
-        e.x = e.r + 10;
-        e.vx = Math.abs(e.vx);
-      } else if (e.x > W - e.r - 10) {
-        e.x = W - e.r - 10;
-        e.vx = -Math.abs(e.vx);
-      }
-
-      if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt * 6);
-
-      e.shootTimer -= dt;
-      if (e.shootTimer <= 0 && e.y > 40 && e.y < H * 0.68) {
-        e.shootTimer = 1.85 / diff.bulletSpeed;
-        const ang = Math.atan2(p.y - e.y, p.x - e.x);
-        const spd = 225 * diff.bulletSpeed;
-        enemyBullets.push({
-          x: e.x, y: e.y + e.r * 0.7,
-          vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
-          r: 7, color: lvl.accent
-        });
-      }
-
-      for (let j = bullets.length - 1; j >= 0; j--) {
-        const b = bullets[j];
-        if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + b.r) {
-          e.hp -= b.dmg;
-          e.hitFlash = 1;
-
-          if (b.explosive) {
-            if (vfx) {
-              vfx.triggerFlash('#ffbe0b', 0.14);
-              vfx.addShockwave(b.x, b.y, '#ff9f1c', 85, 0.36);
-              vfx.addBurst(b.x, b.y, ['#ff9f1c', '#ff5964', '#ffd166', '#ffffff'], 12, 210);
-            }
-            bullets.splice(j, 1);
-          } else if (b.pierce && b.pierce > 0) {
-            b.pierce--;
-            if (vfx) vfx.addBurst(b.x, b.y, ['#ff70a6', '#ffffff'], 4, 100);
-          } else {
-            if (vfx) vfx.addBurst(b.x, b.y, ['#ffd166', '#ffffff'], 5, 110);
-            bullets.splice(j, 1);
-          }
-
-          if (e.hp <= 0) {
-            const pan = ((e.x / W) * 2 - 1) * 0.8;
-            if (synth) synth.sfxExplosion(pan, false);
-            if (vfx) {
-              vfx.addShockwave(e.x, e.y, lvl.accent, 75, 0.36);
-              vfx.addBurst(e.x, e.y, ['#ff5964', '#ffd166', lvl.accent, '#ffffff'], 15, 225);
-            }
-            const pts = Math.round(e.points * combo * diff.scoreMult);
-            score += pts;
-            kills++;
-            combo = Math.min(5, combo + 1);
-            comboTimer = 3.2;
-            if (vfx) vfx.addPopup(e.x, e.y, `+${pts}`, '#ffd166');
-            maybeDropFoodBonus(e.x, e.y, false);
-            enemies.splice(i, 1);
-            screenShake = Math.max(screenShake, 5.5);
-          } else {
-            const pan = ((e.x / W) * 2 - 1) * 0.8;
-            if (synth) synth.sfxHit(pan);
-          }
-          break;
-        }
-      }
-
-      if (!enemies[i]) continue;
-
-      if (Math.hypot(p.x - e.x, p.y - e.y) < p.r + e.r - 4) {
-        enemies.splice(i, 1);
-        if (vfx) {
-          vfx.addShockwave(e.x, e.y, '#ff5964', 70, 0.35);
-          vfx.addBurst(e.x, e.y, ['#ff5964', '#ffd166', '#ffffff'], 14, 200);
-        }
-        damagePlayer();
-        continue;
-      }
-
-      if (e.y > H + 50) enemies.splice(i, 1);
-    }
-
-    if (boss) updateBoss(dt);
-
-    for (let i = enemyBullets.length - 1; i >= 0; i--) {
-      const eb = enemyBullets[i];
-
-      if (eb.homing && eb.life > 0) {
-        eb.life -= dt;
-        const ang = Math.atan2(p.y - eb.y, p.x - eb.x);
-        eb.vx += Math.cos(ang) * 260 * dt;
-        eb.vy += Math.sin(ang) * 260 * dt;
-      }
-
-      eb.x += eb.vx * dt;
-      eb.y += eb.vy * dt;
-
-      if (Math.hypot(eb.x - p.x, eb.y - p.y) < p.r + eb.r - 4) {
-        enemyBullets.splice(i, 1);
-        damagePlayer();
-        continue;
-      }
-      if (eb.y > H + 25 || eb.y < -40 || eb.x < -25 || eb.x > W + 25) {
-        enemyBullets.splice(i, 1);
-      }
-    }
-
-    for (let i = bonuses.length - 1; i >= 0; i--) {
-      const bn = bonuses[i];
-      bn.phase += dt * 5;
-      bn.y += bn.vy * dt;
-
-      if (p.turboTimer > 0) {
-        const dx = p.x - bn.x;
-        const dy = p.y - bn.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < 260 && dist > 1) {
-          bn.x += (dx / dist) * 340 * dt;
-          bn.y += (dy / dist) * 340 * dt;
-        }
-      }
-
-      if (Math.hypot(p.x - bn.x, p.y - bn.y) < p.r + bn.r + 5) {
-        applyFoodBonus(bn);
-        bonuses.splice(i, 1);
-        continue;
-      }
-      if (bn.y > H + 30) bonuses.splice(i, 1);
-    }
-  }
-
-  function updateBoss(dt) {
-    const b = boss;
-    const lvl = LEVELS[selectedLevelIdx];
-    const diff = DIFFICULTIES[selectedDiffKey];
-
-    b.time += dt;
-    if (b.hitFlash > 0) b.hitFlash = Math.max(0, b.hitFlash - dt * 7);
-
-    if (b.y < b.targetY) {
-      b.y += 95 * dt;
-      return;
-    }
-
-    const hpRatio = b.hp / b.maxHp;
-    b.phase = hpRatio > 0.65 ? 1 : (hpRatio > 0.30 ? 2 : 3);
-
-    if (b.phase === 3 && vfx) {
-      b.smokeTimer -= dt;
-      if (b.smokeTimer <= 0) {
-        b.smokeTimer = 0.16;
-        vfx.addSmoke(b.x, b.y);
-      }
-    }
-
-    const sweepSpeed = (b.phase === 3 ? 2.1 : (b.phase === 2 ? 1.55 : 1.15)) + selectedLevelIdx * 0.05;
-    const span = Math.max(60, W / 2 - b.r - 24);
-    b.x = W / 2 + Math.sin(b.time * sweepSpeed) * span;
-
-    b.shootTimer -= dt;
-    if (b.shootTimer <= 0) {
-      fireUniqueBossWeapon(b, lvl, diff);
-    }
-
-    b.specialTimer -= dt;
-    if (b.specialTimer <= 0) {
-      if (b.phase === 2) {
-        b.specialTimer = 5.4;
-        if (enemies.length < 3) spawnEnemy();
-        maybeDropFoodBonus(b.x, b.y + 45, true);
-      } else if (b.phase === 3) {
-        if (lvl.id === 7 && !b.crossLasers.active) {
-          b.crossLasers.active = true;
-          b.crossLasers.charging = true;
-          b.crossLasers.timer = 1.1;
-          b.crossLasers.angle = 0.48;
-          if (synth) synth.sfxBossAlarm();
-        } else if (b.laserState === 'idle') {
-          b.laserState = 'charge';
-          b.laserTimer = 1.1;
-          b.laserX = player.x;
-          if (synth) synth.sfxBossAlarm();
-        }
-      }
-    }
-
-    if (b.crossLasers.active) {
-      b.crossLasers.timer -= dt;
-      if (b.crossLasers.charging) {
-        if (b.crossLasers.timer <= 0) {
-          b.crossLasers.charging = false;
-          b.crossLasers.timer = 1.2;
-          if (synth) synth.sfxExplosion(0, true);
-        }
-      } else {
-        b.crossLasers.angle = Math.max(0.08, b.crossLasers.angle - dt * 0.28);
-        const dy = player.y - (b.y + 15);
-        if (dy > 0) {
-          const beamOffset = Math.tan(b.crossLasers.angle) * dy;
-          if (Math.abs(Math.abs(player.x - b.x) - beamOffset) < 22 + player.r * 0.5) {
-            damagePlayer();
-          }
-        }
-        if (b.crossLasers.timer <= 0) {
-          b.crossLasers.active = false;
-          b.specialTimer = 4.2;
-        }
-      }
-    }
-
-    if (b.laserState === 'charge') {
-      b.laserTimer -= dt;
-      b.laserX += (player.x - b.laserX) * Math.min(1, dt * 3.5);
-      if (b.laserTimer <= 0) {
-        b.laserState = 'fire';
-        b.laserTimer = 0.72;
-        if (synth) synth.sfxExplosion(0, true);
-        if (vfx) vfx.triggerFlash('#ff006e', 0.3);
-        screenShake = 8;
-      }
-    } else if (b.laserState === 'fire') {
-      b.laserTimer -= dt;
-      if (Math.abs(player.x - b.laserX) < 26 + player.r * 0.6 && player.y > b.y) {
-        damagePlayer();
-      }
-      if (b.laserTimer <= 0) {
-        b.laserState = 'idle';
-        b.specialTimer = 4.2;
-      }
-    }
-
-    for (let j = bullets.length - 1; j >= 0; j--) {
-      const bul = bullets[j];
-      if (Math.hypot(bul.x - b.x, bul.y - b.y) < b.r + bul.r - 6) {
-        bullets.splice(j, 1);
-        b.hp -= bul.dmg;
-        b.hitFlash = 1;
-        score += 25;
-        if (vfx) {
-          if (bul.explosive) vfx.addShockwave(bul.x, bul.y, '#ff9f1c', 90, 0.38);
-          vfx.addBurst(bul.x, bul.y, ['#ffd166', lvl.accent, '#ffffff'], 6, 150);
-        }
-
-        if (b.hp <= 0) {
-          score += Math.round((2500 + lvl.id * 400) * diff.scoreMult);
-          kills++;
-          if (synth) synth.sfxExplosion(0, true);
-          if (vfx) {
-            vfx.triggerFlash('#ffffff', 0.55);
-            vfx.addShockwave(b.x, b.y, '#ffd166', 200, 0.65);
-            vfx.addBurst(b.x, b.y, ['#ff5964', '#ffd166', '#06d6a0', lvl.accent, '#ffffff'], 36, 330);
-          }
-          screenShake = 18;
-          boss = null;
-          enemyBullets = [];
-          enemies = [];
-          finishGame(true);
-          return;
-        }
-      }
-    }
-  }
-
-  function damagePlayer() {
-    if (player.invuln > 0 || state !== 'PLAYING') return;
-
-    if (player.shield) {
-      player.shield = false;
-      player.invuln = 1.1;
-      player.squashX = 1.3;
-      player.squashY = 0.75;
-      if (synth) synth.sfxShieldBlock();
-      if (vfx) {
-        vfx.addShockwave(player.x, player.y, '#48dbfb', 95, 0.42);
-        vfx.addBurst(player.x, player.y, ['#48dbfb', '#ffffff'], 15, 210);
-        vfx.addPopup(player.x, player.y - 20, 'ЩИТ ПОГЛОТИЛ УДАР!', '#48dbfb');
-      }
-      screenShake = 6;
-      return;
-    }
-
-    player.hp--;
-    player.invuln = 1.5;
-    player.squashX = 0.72;
-    player.squashY = 1.32;
-    if (player.secondaryLevel > 1) player.secondaryLevel = 1;
-    else player.secondaryWeapon = 'none';
-    combo = 1;
-    screenShake = 12;
-    if (synth) synth.sfxHurt();
-    if (vfx) {
-      vfx.triggerFlash('#ff5964', 0.35);
-      vfx.addBurst(player.x, player.y, ['#ff5964', '#ffd166', '#ffffff'], 16, 210);
-    }
-
-    if (player.hp <= 0) finishGame(false);
-  }
-
-  const victoryCatCanvas = document.getElementById('victory-cat-canvas');
-  const victoryCatCtx = victoryCatCanvas ? victoryCatCanvas.getContext('2d') : null;
-
-  function renderVictoryCat(t) {
-    if (!victoryCatCtx) return;
-    const vw = victoryCatCanvas.width;
-    const vh = victoryCatCanvas.height;
-    victoryCatCtx.clearRect(0, 0, vw, vh);
-
-    if (typeof drawFoodBonus === 'function') {
-      drawFoodBonus(victoryCatCtx, { type: 'pizza', x: 64, y: 52 + Math.sin(t * 4) * 6, r: 16, phase: t * 3 });
-      drawFoodBonus(victoryCatCtx, { type: 'sushi', x: 74, y: 105 + Math.cos(t * 4) * 6, r: 16, phase: t * 3 + 1 });
-      drawFoodBonus(victoryCatCtx, { type: 'burger', x: 256, y: 54 + Math.cos(t * 4) * 6, r: 16, phase: t * 3 + 2 });
-      drawFoodBonus(victoryCatCtx, { type: 'donut', x: 246, y: 106 + Math.sin(t * 4) * 6, r: 16, phase: t * 3 + 3 });
-    }
-
-    const jumpY = vh / 2 + 4 + Math.abs(Math.sin(t * 5)) * -8;
-    drawPortraitCat(victoryCatCtx, vw / 2, jumpY, 1.15, true);
-
-    victoryCatCtx.fillStyle = '#72efdd';
-    victoryCatCtx.font = '900 12px sans-serif';
-    victoryCatCtx.textAlign = 'center';
-    victoryCatCtx.fillText('МУР-МЯУ! ЕДА ДЛЯ КОТОВИИ-17!', vw / 2, 18);
-  }
-
-  function finishGame(victory) {
-    state = victory ? 'VICTORY' : 'GAMEOVER';
-    pointer.active = false;
-    pauseBtn.classList.add('hidden');
-    if (synth) synth.stopMusic();
-
-    const lvl = LEVELS[selectedLevelIdx];
-    const victoryWrap = document.getElementById('victory-cat-wrap');
-
-    if (victory) {
-      if (synth) synth.sfxVictory();
-      if (!progress.completed.includes(lvl.id)) progress.completed.push(lvl.id);
-      if (victoryWrap) {
-        victoryWrap.classList.remove('hidden');
-        renderVictoryCat(globalTime);
-      }
-    } else {
-      if (synth) synth.sfxGameOver();
-      if (victoryWrap) victoryWrap.classList.add('hidden');
-    }
-
-    if (score > progress.bestScore) progress.bestScore = score;
-    saveProgress(progress);
-
-    document.getElementById('end-badge').textContent = victory
-      ? `Сектор ${lvl.id} зачищен!`
-      : `Сектор ${lvl.id}: Корабль подбит`;
-    document.getElementById('end-title').textContent = victory
-      ? (lvl.id === 10 ? 'КОТОВИЯ-17 СПАСЕНА! 👑' : 'МИССИЯ ВЫПОЛНЕНА! 🏆')
-      : 'ИГРА ОКОНЧЕНА';
-    document.getElementById('end-subtitle').textContent = victory
-      ? `${lvl.bossName} повержен! Редж отправил груз еды на родную планету!`
-      : 'Попробуй ещё раз — подбери блюдо, чтобы получить второе орудие!';
-    document.getElementById('final-score').textContent = score;
-    document.getElementById('final-best').textContent = progress.bestScore;
-    document.getElementById('final-kills').textContent = kills;
-
-    const nextBtn = document.getElementById('next-level-btn');
-    if (victory) {
-      nextBtn.textContent = lvl.id < 10 ? `СЕКТОР ${lvl.id + 1} ➔` : 'ЗАНОВО С 1-ГО ➔';
-    } else {
-      nextBtn.textContent = 'ЕЩЁ РАЗ 🔄';
-    }
-
-    setTimeout(() => { endOverlay.classList.remove('hidden'); }, victory ? 480 : 320);
-  }
-
-  function drawPlayer(p) {
-    if (p.invuln > 0 && Math.floor(p.invuln * 16) % 2 === 0) return;
-
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    const tilt = Math.max(-0.24, Math.min(0.24, p.vx * 0.00055));
-    ctx.rotate(tilt);
-    ctx.scale(p.squashX, p.squashY);
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-
-    ctx.fillStyle = 'rgba(8, 5, 22, 0.36)';
-    ctx.beginPath();
-    ctx.ellipse(5, 27, 20, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    const flameH = 16 + Math.sin(globalTime * 38) * 5 + (p.turboTimer > 0 ? 10 : 0);
-    [-11, 11].forEach(ox => {
-      ctx.fillStyle = p.turboTimer > 0 ? '#06d6a0' : '#ff9f1c';
-      ctx.strokeStyle = INK;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(ox - 6, 18);
-      ctx.lineTo(ox, 18 + flameH);
-      ctx.lineTo(ox + 6, 18);
-      ctx.closePath();
-      ctx.fill(); ctx.stroke();
-    });
-
-    ctx.fillStyle = '#ff5964';
-    ctx.strokeStyle = INK;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-14, -2); ctx.lineTo(-32, 16); ctx.lineTo(-12, 20);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(14, -2); ctx.lineTo(32, 16); ctx.lineTo(12, 20);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-
-    if (p.secondaryWeapon !== 'none') {
-      ctx.fillStyle = '#ffd166';
-      [-24, 24].forEach(wx => {
-        roundRectPath(ctx, wx - 4, -2, 8, 16, 4);
-        ctx.fill(); ctx.stroke();
-      });
-    }
-
-    ctx.fillStyle = '#fff8eb';
-    ctx.beginPath();
-    ctx.ellipse(0, 2, 18, 26, 0, 0, Math.PI * 2);
-    ctx.fill(); ctx.stroke();
-
-    ctx.fillStyle = '#ff5964';
-    ctx.beginPath();
-    ctx.arc(0, -14, 13, Math.PI, 0);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-
-    ctx.fillStyle = '#48dbfb';
-    ctx.beginPath();
-    ctx.arc(0, -1, 13, 0, Math.PI * 2);
-    ctx.fill(); ctx.stroke();
-
-    ctx.fillStyle = '#ffb703';
-    ctx.beginPath();
-    ctx.moveTo(-8, -4); ctx.lineTo(-6, -11); ctx.lineTo(-2, -6);
-    ctx.moveTo(8, -4); ctx.lineTo(6, -11); ctx.lineTo(2, -6);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(0, 0, 8.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = INK;
-    if (p.blinkTimer < 0) {
-      ctx.fillRect(-5, -1, 3.5, 1.5);
-      ctx.fillRect(1.5, -1, 3.5, 1.5);
-    } else {
-      ctx.beginPath();
-      ctx.arc(-3.2, -1, 1.7, 0, Math.PI * 2);
-      ctx.arc(3.2, -1, 1.7, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.fillStyle = '#ff5964';
-    ctx.beginPath();
-    ctx.arc(0, 1.8, 1.6, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.beginPath();
-    ctx.ellipse(-5, -6, 4, 2.2, -0.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (p.shield) {
-      const pulse = 34 + Math.sin(globalTime * 8) * 2.5;
-      ctx.strokeStyle = '#48dbfb';
-      ctx.fillStyle = 'rgba(72, 219, 251, 0.18)';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(0, 0, pulse, 0, Math.PI * 2);
-      ctx.fill(); ctx.stroke();
-    }
-
-    ctx.restore();
-  }
-
-  function drawHUD() {
-    if ((state !== 'PLAYING' && state !== 'PAUSED') || !player) return;
-    const lvl = LEVELS[selectedLevelIdx];
-
-    ctx.save();
-    for (let i = 0; i < player.maxHp; i++) {
-      const hx = 22 + i * 24;
-      const hy = 26;
-      ctx.fillStyle = i < player.hp ? '#ff5964' : 'rgba(255,255,255,0.2)';
-      ctx.strokeStyle = INK;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(hx - 4, hy, 5.5, 0, Math.PI * 2);
-      ctx.arc(hx + 4, hy, 5.5, 0, Math.PI * 2);
-      ctx.moveTo(hx - 9, hy + 2);
-      ctx.lineTo(hx, hy + 11);
-      ctx.lineTo(hx + 9, hy + 2);
-      ctx.fill(); ctx.stroke();
-    }
-
-    ctx.fillStyle = '#fff8eb';
-    ctx.strokeStyle = INK;
-    ctx.lineWidth = 4;
-    ctx.font = '900 21px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.strokeText(`${score}`, 18, 62);
-    ctx.fillText(`${score}`, 18, 62);
-
-    ctx.fillStyle = lvl.accent;
-    ctx.font = '800 12px sans-serif';
-    const waveLabel = boss ? 'БОСС' : `ВОЛНА ${Math.min(4, wave)}/4`;
-    const subHud = combo > 1
-      ? `СЕКТОР ${lvl.id} • ${waveLabel} • x${combo}`
-      : `СЕКТОР ${lvl.id} • ${waveLabel}`;
-    ctx.strokeText(subHud, 18, 80);
-    ctx.fillText(subHud, 18, 80);
-
-    if (player.secondaryWeapon !== 'none') {
-      const wLabels = {
-        pizza:  '🍕 ПЛАЗМА + ВЕЕР',
-        sushi:  '🍣 ПЛАЗМА + СЮРИКЕНЫ',
-        donut:  '🍩 ПЛАЗМА + ЛАЗЕРЫ',
-        burger: '🍔 ПЛАЗМА + РАКЕТЫ'
-      };
-      ctx.fillStyle = '#ffd166';
-      ctx.font = '900 12px sans-serif';
-      const wText = wLabels[player.secondaryWeapon] + (player.secondaryLevel === 2 ? ' (УР.2)' : '');
-      ctx.strokeText(wText, 18, 98);
-      ctx.fillText(wText, 18, 98);
-    }
-
-    if (boss) {
-      const bw = Math.min(320, W - 170);
-      const bx = (W - bw) / 2;
-      const by = 18;
-
-      ctx.fillStyle = '#ffd166';
-      ctx.font = '900 11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.strokeText(lvl.bossName.toUpperCase(), W / 2, by + 32);
-      ctx.fillText(lvl.bossName.toUpperCase(), W / 2, by + 32);
-
-      roundRectPath(ctx, bx, by, bw, 15, 8);
-      ctx.fillStyle = INK;
-      ctx.fill();
-
-      const fillW = Math.max(0, (bw - 6) * (boss.hp / boss.maxHp));
-      if (fillW > 0) {
-        roundRectPath(ctx, bx + 3, by + 3, fillW, 9, 5);
-        ctx.fillStyle = boss.phase === 3 ? '#ff006e' : '#ff5964';
-        ctx.fill();
-      }
-    }
-
-    if (warningBannerTimer > 0 && Math.floor(warningBannerTimer * 6) % 2 === 0) {
-      ctx.fillStyle = '#ff5964';
-      ctx.strokeStyle = INK;
-      ctx.lineWidth = 5;
-      ctx.font = '900 26px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.strokeText('⚠ ВНИМАНИЕ: ПОЖИРАТЕЛЬ! ⚠', W / 2, H * 0.44);
-      ctx.fillText('⚠ ВНИМАНИЕ: ПОЖИРАТЕЛЬ! ⚠', W / 2, H * 0.44);
-    }
-
-    ctx.restore();
-  }
-
-  function render() {
-    const lvl = LEVELS[selectedLevelIdx];
-    ctx.save();
-    if (screenShake > 0) {
-      ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
-    }
-
-    if (world3d) {
-      world3d.render(ctx, lvl, W, H, player && player.turboTimer > 0);
-    } else {
-      ctx.fillStyle = lvl.skyMid;
-      ctx.fillRect(0, 0, W, H);
-    }
-
-    if (vfx) vfx.renderTrails(ctx);
-
-    for (const bn of bonuses) {
-      if (typeof drawFoodBonus === 'function') drawFoodBonus(ctx, bn);
-    }
-
-    for (const b of bullets) {
-      if (typeof drawPlayerBullet === 'function') drawPlayerBullet(ctx, b);
-    }
-
-    for (const e of enemies) {
-      if (typeof drawUniqueEnemy === 'function') drawUniqueEnemy(ctx, e);
-    }
-    if (boss && typeof drawUniqueBoss === 'function') {
-      drawUniqueBoss(ctx, boss, lvl, player, H);
-    }
-
-    for (const eb of enemyBullets) {
-      ctx.fillStyle = eb.color;
-      ctx.strokeStyle = INK;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(eb.x, eb.y, eb.r, 0, Math.PI * 2);
-      ctx.fill(); ctx.stroke();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(eb.x - 2, eb.y - 2, eb.r * 0.32, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    if (player && state !== 'GAMEOVER' && state !== 'START') {
-      drawPlayer(player);
-    }
-
-    if (vfx) vfx.renderForeground(ctx, W, H);
-
-    drawHUD();
-    ctx.restore();
-  }
-
-  let lastTime = performance.now();
-
-  function loop(now) {
-    const dt = Math.min((now - lastTime) / 1000, 0.05);
-    lastTime = now;
-    try {
-      update(dt);
-      render();
-    } catch (err) {
-      console.error(err);
-    }
-    requestAnimationFrame(loop);
-  }
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) pointer.active = false;
-    else lastTime = performance.now();
-  });
-
-  // Автоматический запуск вертикального комикса при открытии ссылки
-  loreOverlay.classList.remove('hidden');
-  startOverlay.classList.add('hidden');
-  renderLoreSlide();
-
-  requestAnimationFrame(loop);
-})();
