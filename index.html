@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Астро-Кот</title>
-  <link rel="stylesheet" href="css/style.css?v=4" />
+  <link rel="stylesheet" href="css/style.css?v=5" />
 </head>
 <body>
   <div id="game-wrap">
@@ -47,6 +47,7 @@
 
         <div class="btn-row">
           <button id="start-btn" class="btn-play">В ПОЛЁТ! 🚀</button>
+          <button id="lore-open-btn" class="btn-secondary">📖 История</button>
           <button id="menu-sound-btn" class="btn-secondary">🎛 Звук</button>
         </div>
 
@@ -54,7 +55,32 @@
       </div>
     </div>
 
-    <!-- СЮЖЕТНАЯ ЗАСТАВКА ПЕРЕД МИССИЕЙ -->
+    <!-- СЮЖЕТНЫЕ СЛАЙДЫ ПРЕДЫСТОРИИ (КОТОВИЯ-17 И КОТ РЕДЖ) -->
+    <div id="lore-overlay" class="overlay hidden">
+      <div class="card lore-card">
+        <div class="lore-dots" id="lore-dots">
+          <span class="dot active"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+
+        <div class="lore-art-box" id="lore-art-box">
+          <canvas id="lore-canvas" width="360" height="170"></canvas>
+        </div>
+
+        <h2 id="lore-title">ПЛАНЕТА КОТОВИЯ-17</h2>
+        <p class="intro-story" id="lore-text">
+          На родной планете Котовия-17 у кота по имени Редж заканчиваются запасы еды. Миски пустеют, а до ближайших продовольственных туманностей — световые годы!
+        </p>
+
+        <div class="btn-row">
+          <button id="lore-next-btn" class="btn-play">ДАЛЬШЕ ➔</button>
+          <button id="lore-skip-btn" class="btn-secondary">ПРОПУСТИТЬ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- БРИФИНГ ПЕРЕД КОНКРЕТНЫМ СЕКТОРОМ -->
     <div id="intro-overlay" class="overlay hidden">
       <div class="card intro-card">
         <div class="intro-hero-art" id="intro-hero-art">
@@ -63,13 +89,9 @@
         </div>
         <h2 id="intro-title">ЗВЁЗДНАЯ БУХТА</h2>
         <p class="intro-story" id="intro-story">
-          Астро-Кот выходит на орбиту! Собирай космическую еду, чтобы объединить её в Омега-Оружие!
+          Редж выходит на орбиту! Собирай космическую еду, чтобы объединить её в Омега-Оружие!
         </p>
-        <div class="intro-intel" id="intro-intel">
-          <div>👾 <b>Враги:</b> Слизни-НЛО и Зубастые Метеоры</div>
-          <div>👑 <b>Босс:</b> Доктор Кракен-Бот</div>
-          <div>⚡ <b>Оружие босса:</b> Плазменный веер и Мега-Луч</div>
-        </div>
+        <div class="intro-intel" id="intro-intel"></div>
         <div class="btn-row">
           <button id="intro-launch-btn" class="btn-play">ЗАПУСТИТЬ ДВИГАТЕЛИ! 🔥</button>
           <button id="intro-back-btn" class="btn-secondary">НАЗАД</button>
@@ -87,7 +109,7 @@
             <span>🎵 Музыка (папка music/)</span>
             <button id="toggle-music" class="toggle-chip">ВКЛ</button>
           </div>
-          <input id="music-vol" type="range" min="0" max="100" value="75" />
+          <input id="music-vol" type="range" min="0" max="100" value="35" />
           <div class="setting-hint">Файлы: music/level1.mp3 ... level10.mp3, boss.mp3</div>
         </div>
 
@@ -129,12 +151,18 @@
       </div>
     </div>
 
-    <!-- ЭКРАН ИТОГОВ УРОВНЯ -->
+    <!-- ЭКРАН ИТОГОВ УРОВНЯ С АНИМАЦИЕЙ ДОВОЛЬНОГО КОТА РЕДЖА -->
     <div id="end-overlay" class="overlay hidden">
       <div class="card">
         <div class="badge" id="end-badge">Сектор зачищен</div>
+
+        <!-- Живая анимация довольного Реджа с едой при победе -->
+        <div class="victory-cat-wrap" id="victory-cat-wrap">
+          <canvas id="victory-cat-canvas" width="320" height="145"></canvas>
+        </div>
+
         <h1 id="end-title">ПОБЕДА!</h1>
-        <p class="subtitle" id="end-subtitle">Босс повержен!</p>
+        <p class="subtitle" id="end-subtitle">Пожиратель повержен! Груз еды отправлен на Котовию-17!</p>
 
         <div class="stats-box">
           <div class="stat-col">
@@ -160,10 +188,10 @@
   </div>
 
   <!-- Модули из папки js/ -->
-  <script src="js/synth.js?v=4"></script>
-  <script src="js/vfx.js?v=4"></script>
-  <script src="js/world3d.js?v=4"></script>
-  <script src="js/entities.js?v=4"></script>
-  <script src="js/game.js?v=4"></script>
+  <script src="js/synth.js?v=5"></script>
+  <script src="js/vfx.js?v=5"></script>
+  <script src="js/world3d.js?v=5"></script>
+  <script src="js/entities.js?v=5"></script>
+  <script src="js/game.js?v=5"></script>
 </body>
 </html>
