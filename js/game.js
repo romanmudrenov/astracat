@@ -1,17 +1,18 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'astro_cat_3d_deluxe_v2';
+  const STORAGE_KEY = 'astro_cat_3d_deluxe_v3';
 
   function loadProgress() {
     try {
       const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
       return {
         bestScore: raw.bestScore || 0,
-        completed: Array.isArray(raw.completed) ? raw.completed : []
+        completed: Array.isArray(raw.completed) ? raw.completed : [],
+        loreSeen: Boolean(raw.loreSeen)
       };
     } catch (e) {
-      return { bestScore: 0, completed: [] };
+      return { bestScore: 0, completed: [], loreSeen: false };
     }
   }
 
@@ -29,6 +30,7 @@
   const vfx = typeof VFXEngine !== 'undefined' ? new VFXEngine() : null;
 
   const startOverlay = document.getElementById('start-overlay');
+  const loreOverlay = document.getElementById('lore-overlay');
   const introOverlay = document.getElementById('intro-overlay');
   const settingsOverlay = document.getElementById('settings-overlay');
   const pauseOverlay = document.getElementById('pause-overlay');
@@ -57,7 +59,296 @@
   resize();
 
   // =========================================================================
-  // МЕНЮ, СЮЖЕТНАЯ ЗАСТАВКА И НАСТРОЙКИ ЗВУКА
+  // СЛАЙДЫ ПРЕДЫСТОРИИ: ПЛАНЕТА КОТОВИЯ-17 И КОТ РЕДЖ
+  // =========================================================================
+  const LORE_SLIDES = [
+    {
+      title: 'ПЛАНЕТА КОТОВИЯ-17',
+      text: 'На родной планете Котовия-17 у кота по имени Редж заканчиваются запасы еды. Миски пустеют, а до ближайших продовольственных туманностей — световые годы!'
+    },
+    {
+      title: 'СЕКРЕТНЫЙ ОТРЯД «АСТРО-КОТ»',
+      text: 'Редж — один из 10 отважных котов, отобранных для секретной программы освоения запасов еды дальнего космоса. Его ракета готова к старту!'
+    },
+    {
+      title: 'БИТВА С ПОЖИРАТЕЛЯМИ КОСМОСА',
+      text: 'Реджу предстоит исследовать 10 галактик и сразиться со злобными Пожирателями Космоса, чтобы наладить поставки вкусной еды обратно на Котовию-17!'
+    }
+  ];
+
+  let loreSlideIdx = 0;
+  let launchAfterLore = false;
+  const loreCanvas = document.getElementById('lore-canvas');
+  const loreCtx = loreCanvas ? loreCanvas.getContext('2d') : null;
+
+  function renderLoreSlide(t = 0) {
+    const slide = LORE_SLIDES[loreSlideIdx];
+    document.getElementById('lore-title').textContent = slide.title;
+    document.getElementById('lore-text').textContent = slide.text;
+    document.getElementById('lore-next-btn').textContent =
+      loreSlideIdx < LORE_SLIDES.length - 1 ? 'ДАЛЬШЕ ➔' : 'К МИССИИ! 🚀';
+
+    const dots = document.querySelectorAll('#lore-dots .dot');
+    dots.forEach((d, i) => d.classList.toggle('active', i === loreSlideIdx));
+
+    if (!loreCtx) return;
+    const lw = loreCanvas.width;
+    const lh = loreCanvas.height;
+    loreCtx.clearRect(0, 0, lw, lh);
+
+    // Фон космоса на слайде
+    const bg = loreCtx.createLinearGradient(0, 0, 0, lh);
+    bg.addColorStop(0, '#140d33');
+    bg.addColorStop(1, '#2b1b63');
+    loreCtx.fillStyle = bg;
+    loreCtx.fillRect(0, 0, lw, lh);
+
+    // Звёзды
+    loreCtx.fillStyle = '#ffffff';
+    for (let i = 0; i < 24; i++) {
+      const sx = (i * 53 + t * 8) % lw;
+      const sy = (i * 29) % lh;
+      loreCtx.beginPath();
+      loreCtx.arc(sx, sy, (i % 2) + 1, 0, Math.PI * 2);
+      loreCtx.fill();
+    }
+
+    loreCtx.save();
+    loreCtx.lineJoin = 'round';
+    loreCtx.lineCap = 'round';
+
+    if (loreSlideIdx === 0) {
+      // Слайд 1: Планета Котовия-17 и грустный Редж у пустой миски
+      const pGrad = loreCtx.createRadialGradient(75, 110, 10, 90, 130, 80);
+      pGrad.addColorStop(0, '#ffafcc');
+      pGrad.addColorStop(1, '#7209b7');
+      loreCtx.fillStyle = pGrad;
+      loreCtx.strokeStyle = INK;
+      loreCtx.lineWidth = 3.5;
+      loreCtx.beginPath();
+      loreCtx.arc(90, 145, 72, 0, Math.PI * 2);
+      loreCtx.fill();
+      loreCtx.stroke();
+
+      // Кот Редж
+      const bob = Math.sin(t * 4) * 3;
+      drawPortraitCat(loreCtx, 185, 92 + bob, 1.05, false);
+
+      // Пустая миска
+      loreCtx.fillStyle = '#ff5964';
+      loreCtx.beginPath();
+      loreCtx.moveTo(245, 128);
+      loreCtx.lineTo(295, 128);
+      loreCtx.lineTo(288, 144);
+      loreCtx.lineTo(252, 144);
+      loreCtx.closePath();
+      loreCtx.fill();
+      loreCtx.stroke();
+
+      loreCtx.fillStyle = '#ffd166';
+      loreCtx.font = '900 13px sans-serif';
+      loreCtx.fillText('ПУСТО...', 244, 118 + Math.sin(t * 5) * 3);
+
+    } else if (loreSlideIdx === 1) {
+      // Слайд 2: Редж в скафандре и его сверкающая ракета (1 из 10 котов)
+      drawPortraitCat(loreCtx, 125, 92 + Math.sin(t * 4) * 4, 1.1, true);
+
+      // Мини-ракета справа
+      loreCtx.save();
+      loreCtx.translate(245, 90 + Math.cos(t * 4) * 5);
+      loreCtx.rotate(0.22);
+      loreCtx.fillStyle = '#fff8eb';
+      loreCtx.strokeStyle = INK;
+      loreCtx.lineWidth = 3;
+      loreCtx.beginPath();
+      loreCtx.ellipse(0, 0, 20, 34, 0, 0, Math.PI * 2);
+      loreCtx.fill();
+      loreCtx.stroke();
+
+      loreCtx.fillStyle = '#ff5964';
+      loreCtx.beginPath();
+      loreCtx.arc(0, -18, 15, Math.PI, 0);
+      loreCtx.fill();
+      loreCtx.stroke();
+
+      loreCtx.fillStyle = '#48dbfb';
+      loreCtx.beginPath();
+      loreCtx.arc(0, -2, 11, 0, Math.PI * 2);
+      loreCtx.fill();
+      loreCtx.stroke();
+      loreCtx.restore();
+
+    } else {
+      // Слайд 3: Пожиратель космоса и летающая пицца/суши
+      const wobble = Math.sin(t * 5) * 5;
+      loreCtx.fillStyle = '#9b5de5';
+      loreCtx.strokeStyle = INK;
+      loreCtx.lineWidth = 3.5;
+      loreCtx.beginPath();
+      loreCtx.arc(125, 92 + wobble, 36, Math.PI, 0);
+      loreCtx.quadraticCurveTo(165, 116, 125, 118);
+      loreCtx.quadraticCurveTo(85, 116, 89, 92 + wobble);
+      loreCtx.fill();
+      loreCtx.stroke();
+
+      loreCtx.fillStyle = '#ffffff';
+      loreCtx.beginPath();
+      loreCtx.arc(112, 88 + wobble, 9, 0, Math.PI * 2);
+      loreCtx.arc(138, 88 + wobble, 9, 0, Math.PI * 2);
+      loreCtx.fill();
+      loreCtx.stroke();
+      loreCtx.fillStyle = INK;
+      loreCtx.beginPath();
+      loreCtx.arc(114, 88 + wobble, 4, 0, Math.PI * 2);
+      loreCtx.arc(136, 88 + wobble, 4, 0, Math.PI * 2);
+      loreCtx.fill();
+
+      // Аппетитная еда справа
+      if (typeof drawFoodBonus === 'function') {
+        drawFoodBonus(loreCtx, { type: 'pizza', x: 245, y: 65, r: 18, phase: t * 4 });
+        drawFoodBonus(loreCtx, { type: 'burger', x: 285, y: 112, r: 18, phase: t * 4 + 1 });
+        drawFoodBonus(loreCtx, { type: 'sushi', x: 225, y: 120, r: 18, phase: t * 4 + 2 });
+      }
+    }
+
+    loreCtx.restore();
+  }
+
+  // Портрет рыжего кота Реджа (happy = true — довольный прищур и улыбка)
+  function drawPortraitCat(c, x, y, scale = 1, happy = true) {
+    c.save();
+    c.translate(x, y);
+    c.scale(scale, scale);
+    c.lineJoin = 'round';
+    c.lineCap = 'round';
+
+    // Прозрачный шлем скафандра
+    c.fillStyle = 'rgba(72, 219, 251, 0.24)';
+    c.strokeStyle = '#48dbfb';
+    c.lineWidth = 3;
+    c.beginPath();
+    c.arc(0, 0, 42, 0, Math.PI * 2);
+    c.fill();
+    c.stroke();
+
+    // Ушки Реджа
+    c.fillStyle = '#ffb703';
+    c.strokeStyle = INK;
+    c.lineWidth = 3;
+    c.beginPath();
+    c.moveTo(-24, -14); c.lineTo(-20, -36); c.lineTo(-6, -22);
+    c.moveTo(24, -14); c.lineTo(20, -36); c.lineTo(6, -22);
+    c.fill();
+    c.stroke();
+
+    // Голова кота с 3D-градиентом
+    const headGrad = c.createRadialGradient(-10, -10, 4, 0, 0, 30);
+    headGrad.addColorStop(0, '#fff3b0');
+    headGrad.addColorStop(0.6, '#ffb703');
+    headGrad.addColorStop(1, '#ca6702');
+    c.fillStyle = headGrad;
+    c.beginPath();
+    c.arc(0, 2, 28, 0, Math.PI * 2);
+    c.fill();
+    c.stroke();
+
+    // Румянец на щёчках
+    c.fillStyle = 'rgba(255, 89, 100, 0.45)';
+    c.beginPath();
+    c.ellipse(-15, 8, 5, 3, 0, 0, Math.PI * 2);
+    c.ellipse(15, 8, 5, 3, 0, 0, Math.PI * 2);
+    c.fill();
+
+    // Глаза: довольные дуги (^ ^) при победе или большие глаза
+    c.strokeStyle = INK;
+    c.lineWidth = 3.2;
+    if (happy) {
+      c.beginPath();
+      c.arc(-11, 0, 5.5, Math.PI, 0);
+      c.stroke();
+      c.beginPath();
+      c.arc(11, 0, 5.5, Math.PI, 0);
+      c.stroke();
+    } else {
+      c.fillStyle = INK;
+      c.beginPath();
+      c.arc(-11, 0, 3.8, 0, Math.PI * 2);
+      c.arc(11, 0, 3.8, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    // Носик и довольная кошачья улыбка
+    c.fillStyle = '#ff5964';
+    c.beginPath();
+    c.arc(0, 6, 3.2, 0, Math.PI * 2);
+    c.fill();
+
+    c.strokeStyle = INK;
+    c.lineWidth = 2.6;
+    c.beginPath();
+    if (happy) {
+      c.arc(-4.5, 9, 4.5, 0, Math.PI * 0.85);
+      c.stroke();
+      c.beginPath();
+      c.arc(4.5, 9, 4.5, Math.PI * 0.15, Math.PI);
+      c.stroke();
+    } else {
+      c.arc(0, 15, 5, Math.PI * 1.15, Math.PI * 1.85);
+      c.stroke();
+    }
+
+    // Блик на стекле шлема
+    c.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    c.beginPath();
+    c.ellipse(-16, -18, 9, 4.5, -0.5, 0, Math.PI * 2);
+    c.fill();
+
+    c.restore();
+  }
+
+  function openLoreSlides(autoLaunch = false) {
+    launchAfterLore = autoLaunch;
+    loreSlideIdx = 0;
+    if (synth) { synth.init(); synth.sfxPowerup(); }
+    startOverlay.classList.add('hidden');
+    loreOverlay.classList.remove('hidden');
+    renderLoreSlide(globalTime);
+  }
+
+  document.getElementById('lore-open-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    openLoreSlides(false);
+  });
+
+  document.getElementById('lore-next-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (synth) synth.sfxHit(0);
+    if (loreSlideIdx < LORE_SLIDES.length - 1) {
+      loreSlideIdx++;
+      renderLoreSlide(globalTime);
+    } else {
+      finishLoreSlides();
+    }
+  });
+
+  document.getElementById('lore-skip-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    finishLoreSlides();
+  });
+
+  function finishLoreSlides() {
+    progress.loreSeen = true;
+    saveProgress(progress);
+    loreOverlay.classList.add('hidden');
+    if (launchAfterLore) {
+      showIntro(selectedLevelIdx);
+    } else {
+      startOverlay.classList.remove('hidden');
+    }
+  }
+
+  // =========================================================================
+  // МЕНЮ И БРИФИНГ СЕКТОРА
   // =========================================================================
   const levelsGrid = document.getElementById('levels-grid');
   const selectedLevelInfo = document.getElementById('selected-level-info');
@@ -98,7 +389,6 @@
     });
   });
 
-  // Сюжетная заставка (Интро перед миссией)
   function showIntro(idx) {
     selectedLevelIdx = idx;
     const lvl = LEVELS[selectedLevelIdx];
@@ -111,7 +401,7 @@
       `radial-gradient(circle at 50% 35%, ${lvl.skyBot} 0%, ${lvl.skyTop} 100%)`;
     document.getElementById('intro-intel').innerHTML =
       `<div>👾 <b>Враги сектора:</b> ${lvl.enemiesDesc}</div>` +
-      `<div>👑 <b>Босс:</b> ${lvl.bossName}</div>` +
+      `<div>👑 <b>Пожиратель:</b> ${lvl.bossName}</div>` +
       `<div>⚡ <b>Оружие босса:</b> ${lvl.bossWeapon}</div>`;
 
     startOverlay.classList.add('hidden');
@@ -121,7 +411,12 @@
 
   document.getElementById('start-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    showIntro(selectedLevelIdx);
+    // При первом запуске показываем слайды предыстории Котовии-17 и Реджа
+    if (!progress.loreSeen) {
+      openLoreSlides(true);
+    } else {
+      showIntro(selectedLevelIdx);
+    }
   });
 
   document.getElementById('intro-launch-btn').addEventListener('click', (e) => {
@@ -135,7 +430,10 @@
     startOverlay.classList.remove('hidden');
   });
 
-  let state = 'START'; // 'START' | 'PLAYING' | 'PAUSED' | 'VICTORY' | 'GAMEOVER'
+  // =========================================================================
+  // НАСТРОЙКИ ЗВУКА
+  // =========================================================================
+  let state = 'START';
   let prevStateBeforeSettings = 'START';
 
   function openSettings() {
@@ -264,6 +562,7 @@
     endOverlay.classList.add('hidden');
     settingsOverlay.classList.add('hidden');
     introOverlay.classList.add('hidden');
+    loreOverlay.classList.add('hidden');
     pauseBtn.classList.add('hidden');
 
     renderLevelGrid();
@@ -342,10 +641,7 @@
       maxHp: diff.playerHp,
       invuln: 0,
       fireCooldown: 0,
-      // Суммируемая мощность оружия (1..5):
-      // 1: Плазма, 2: +Веер Пиццы, 3: +Авто-Сюрикены, 4: +Гипер-Лазеры, 5: +Бургер-Ракеты (ОМЕГА!)
       weaponPower: 1,
-      collectedFoods: [],
       shield: false,
       turboTimer: 0,
       squashX: 1,
@@ -363,6 +659,7 @@
     state = 'PLAYING';
     startOverlay.classList.add('hidden');
     introOverlay.classList.add('hidden');
+    loreOverlay.classList.add('hidden');
     endOverlay.classList.add('hidden');
     pauseOverlay.classList.add('hidden');
     settingsOverlay.classList.add('hidden');
@@ -443,7 +740,6 @@
     if (vfx) vfx.triggerFlash(lvl.accent, 0.28);
   }
 
-  // Бонусы из еды выпадают реже (~14% шанс), чтобы каждый был ценным
   function maybeDropFoodBonus(x, y, guaranteed = false) {
     if (!guaranteed && Math.random() > 0.14) return;
     const foods = ['pizza', 'sushi', 'donut', 'burger', 'milk'];
@@ -458,7 +754,6 @@
     const pan = ((p.x / W) * 2 - 1) * 0.7;
     if (synth) synth.sfxShoot(pan, p.weaponPower);
 
-    // 1. Базовая или усиленная плазма (всегда активна)
     bullets.push({
       kind: 'plasma',
       x: p.x,
@@ -470,7 +765,6 @@
       color: lvl.accent
     });
 
-    // 2. Уровень 2+: добавляется веер из кусков пиццы
     if (p.weaponPower >= 2) {
       const angles = p.weaponPower >= 4 ? [-0.28, -0.14, 0.14, 0.28] : [-0.20, 0.20];
       angles.forEach(ang => {
@@ -487,7 +781,6 @@
       });
     }
 
-    // 3. Уровень 3+: добавляются самонаводящиеся суши-сюрикены
     if (p.weaponPower >= 3) {
       [-18, 18].forEach(ox => {
         bullets.push({
@@ -505,7 +798,6 @@
       });
     }
 
-    // 4. Уровень 4+: добавляются пробивающие гипер-лазеры по краям
     if (p.weaponPower >= 4) {
       [-26, 26].forEach(ox => {
         bullets.push({
@@ -522,7 +814,6 @@
       });
     }
 
-    // 5. Уровень 5 (ОМЕГА-БЕНТО): добавляются тяжёлые взрывные бургер-ракеты
     if (p.weaponPower >= 5) {
       bullets.push({
         kind: 'burger_rocket',
@@ -554,7 +845,6 @@
       return;
     }
 
-    // Любая боевая еда (пицца, суши, пончик, бургер) суммирует уровень оружия до 5-го!
     if (player.weaponPower < 5) {
       player.weaponPower++;
     } else {
@@ -586,7 +876,6 @@
 
     switch (lvl.id) {
       case 1:
-        // Сектор 1 (Доктор Кракен-Бот): классический плазменный веер
         b.shootTimer = b.phase === 3 ? 0.85 : 1.15;
         for (let k = -2; k <= 2; k++) {
           const ang = Math.PI / 2 + k * 0.22;
@@ -599,7 +888,6 @@
         break;
 
       case 2:
-        // Сектор 2 (Королева Зефира): крупные пружинящие зефирные пузыри
         b.shootTimer = 1.05;
         for (let k = -1; k <= 1; k++) {
           const ang = toPlayer + k * 0.28;
@@ -612,7 +900,6 @@
         break;
 
       case 3:
-        // Сектор 3 (Мега-Бургер Дредноут): залп 6 кетчуп-ракет с ускорением
         b.shootTimer = 1.25;
         [-45, -27, -9, 9, 27, 45].forEach(ox => {
           enemyBullets.push({
@@ -624,7 +911,6 @@
         break;
 
       case 4:
-        // Сектор 4 (Споровый Левиафан): расширяющееся кольцо спор на 360 градусов
         b.shootTimer = 1.35;
         const sporeCount = b.phase === 3 ? 12 : 9;
         for (let k = 0; k < sporeCount; k++) {
@@ -638,7 +924,6 @@
         break;
 
       case 5:
-        // Сектор 5 (Ледяной Титан Фрост-9): скоростные прицельные ледяные осколки
         b.shootTimer = 0.72;
         [-18, 18].forEach(ox => {
           enemyBullets.push({
@@ -651,7 +936,6 @@
         break;
 
       case 6:
-        // Сектор 6 (Инферно-Краб Вулкан): магматический дождь сверху + залп клешней
         b.shootTimer = 0.95;
         [-58, 58].forEach(cx => {
           enemyBullets.push({
@@ -660,7 +944,6 @@
             r: 9, color: '#ffba08'
           });
         });
-        // Падающий сверху метеор лавы
         enemyBullets.push({
           x: 40 + Math.random() * (W - 80), y: -15,
           vx: 0, vy: spd * 1.1,
@@ -669,7 +952,6 @@
         break;
 
       case 7:
-        // Сектор 7 (Кибер-Сфинкс MK-IV): быстрые плазменные импульсы + перекрёстные лазеры
         b.shootTimer = 0.85;
         for (let k = -1; k <= 1; k++) {
           const ang = Math.PI / 2 + k * 0.35;
@@ -682,7 +964,6 @@
         break;
 
       case 8:
-        // Сектор 8 (Фараон-Скарабей): двойная спираль солнечных сфер
         b.shootTimer = 0.42;
         for (let arm = 0; arm < 2; arm++) {
           const ang = b.time * 3.4 + arm * Math.PI;
@@ -695,7 +976,6 @@
         break;
 
       case 9:
-        // Сектор 9 (Призрачный Адмирал): самонаводящиеся призрачные огни
         b.shootTimer = 1.15;
         [-32, 32].forEach(ox => {
           enemyBullets.push({
@@ -710,7 +990,6 @@
 
       case 10:
       default:
-        // Сектор 10 (Император Омега-Кракен): комбинированный шквал (спираль + прицельный веер)
         b.shootTimer = 0.68;
         for (let k = -2; k <= 2; k++) {
           const ang = toPlayer + k * 0.19;
@@ -729,6 +1008,17 @@
   // =========================================================================
   function update(dt) {
     globalTime += dt;
+
+    // Если открыты слайды предыстории — анимируем сцену
+    if (!loreOverlay.classList.contains('hidden')) {
+      renderLoreSlide(globalTime);
+    }
+
+    // Если открыт экран победы — анимируем довольного котика Реджа
+    if (state === 'VICTORY' && !endOverlay.classList.contains('hidden')) {
+      renderVictoryCat(globalTime);
+    }
+
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
 
@@ -816,7 +1106,6 @@
       firePlayerWeapon(p, lvl);
     }
 
-    // Снаряды игрока
     for (let i = bullets.length - 1; i >= 0; i--) {
       const b = bullets[i];
       if (b.homing) {
@@ -846,7 +1135,6 @@
       if (b.y < -30 || b.x < -30 || b.x > W + 30) bullets.splice(i, 1);
     }
 
-    // Враги
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
       e.phase += dt * 2.6;
@@ -932,7 +1220,6 @@
 
     if (boss) updateBoss(dt);
 
-    // Снаряды врагов и боссов
     for (let i = enemyBullets.length - 1; i >= 0; i--) {
       const eb = enemyBullets[i];
 
@@ -956,7 +1243,6 @@
       }
     }
 
-    // Бонусы из еды
     for (let i = bonuses.length - 1; i >= 0; i--) {
       const bn = bonuses[i];
       bn.phase += dt * 5;
@@ -1009,13 +1295,11 @@
     const span = Math.max(60, W / 2 - b.r - 24);
     b.x = W / 2 + Math.sin(b.time * sweepSpeed) * span;
 
-    // Уникальное оружие каждого из 10 боссов
     b.shootTimer -= dt;
     if (b.shootTimer <= 0) {
       fireUniqueBossWeapon(b, lvl, diff);
     }
 
-    // Спецатаки боссов (миньоны в фазе 2; мега-лазеры в фазе 3)
     b.specialTimer -= dt;
     if (b.specialTimer <= 0) {
       if (b.phase === 2) {
@@ -1024,7 +1308,6 @@
         maybeDropFoodBonus(b.x, b.y + 45, true);
       } else if (b.phase === 3) {
         if (lvl.id === 7 && !b.crossLasers.active) {
-          // Кибер-Сфинкс активирует двойные перекрёстные лазеры
           b.crossLasers.active = true;
           b.crossLasers.charging = true;
           b.crossLasers.timer = 1.1;
@@ -1039,7 +1322,6 @@
       }
     }
 
-    // Обработка двойных лазеров Кибер-Сфинкса
     if (b.crossLasers.active) {
       b.crossLasers.timer -= dt;
       if (b.crossLasers.charging) {
@@ -1064,7 +1346,6 @@
       }
     }
 
-    // Обработка центрального мега-лазера
     if (b.laserState === 'charge') {
       b.laserTimer -= dt;
       b.laserX += (player.x - b.laserX) * Math.min(1, dt * 3.5);
@@ -1140,7 +1421,6 @@
     player.invuln = 1.5;
     player.squashX = 0.72;
     player.squashY = 1.32;
-    // При попадании уровень оружия снижается на 1 (но не ниже 1)
     if (player.weaponPower > 1) player.weaponPower--;
     combo = 1;
     screenShake = 12;
@@ -1153,6 +1433,45 @@
     if (player.hp <= 0) finishGame(false);
   }
 
+  // Анимация довольного котика Реджа после каждой завершённой миссии
+  const victoryCatCanvas = document.getElementById('victory-cat-canvas');
+  const victoryCatCtx = victoryCatCanvas ? victoryCatCanvas.getContext('2d') : null;
+
+  function renderVictoryCat(t) {
+    if (!victoryCatCtx) return;
+    const vw = victoryCatCanvas.width;
+    const vh = victoryCatCanvas.height;
+    victoryCatCtx.clearRect(0, 0, vw, vh);
+
+    // Звёздочки радости вокруг Реджа
+    for (let i = 0; i < 12; i++) {
+      const a = t * 1.4 + (Math.PI * 2 * i) / 12;
+      const sx = vw / 2 + Math.cos(a) * (110 + (i % 3) * 18);
+      const sy = vh / 2 + Math.sin(a) * (46 + (i % 2) * 12);
+      victoryCatCtx.fillStyle = i % 2 === 0 ? '#ffd166' : '#06d6a0';
+      victoryCatCtx.beginPath();
+      victoryCatCtx.arc(sx, sy, 3.2, 0, Math.PI * 2);
+      victoryCatCtx.fill();
+    }
+
+    // Летающие трофеи еды, которые Редж отправляет на Котовию-17
+    if (typeof drawFoodBonus === 'function') {
+      drawFoodBonus(victoryCatCtx, { type: 'pizza', x: 64, y: 52 + Math.sin(t * 4) * 6, r: 16, phase: t * 3 });
+      drawFoodBonus(victoryCatCtx, { type: 'sushi', x: 74, y: 105 + Math.cos(t * 4) * 6, r: 16, phase: t * 3 + 1 });
+      drawFoodBonus(victoryCatCtx, { type: 'burger', x: 256, y: 54 + Math.cos(t * 4) * 6, r: 16, phase: t * 3 + 2 });
+      drawFoodBonus(victoryCatCtx, { type: 'donut', x: 246, y: 106 + Math.sin(t * 4) * 6, r: 16, phase: t * 3 + 3 });
+    }
+
+    // Довольный Редж в центре экрана победы (подпрыгивает и мурлычет)
+    const jumpY = vh / 2 + 4 + Math.abs(Math.sin(t * 5)) * -9;
+    drawPortraitCat(victoryCatCtx, vw / 2, jumpY, 1.15, true);
+
+    victoryCatCtx.fillStyle = '#ffd166';
+    victoryCatCtx.font = '900 12px sans-serif';
+    victoryCatCtx.textAlign = 'center';
+    victoryCatCtx.fillText('МУР-МЯУ! ЕДА ДЛЯ КОТОВИИ-17!', vw / 2, 18);
+  }
+
   function finishGame(victory) {
     state = victory ? 'VICTORY' : 'GAMEOVER';
     pointer.active = false;
@@ -1160,12 +1479,15 @@
     if (synth) synth.stopMusic();
 
     const lvl = LEVELS[selectedLevelIdx];
+    const victoryWrap = document.getElementById('victory-cat-wrap');
 
     if (victory) {
       if (synth) synth.sfxVictory();
       if (!progress.completed.includes(lvl.id)) progress.completed.push(lvl.id);
+      if (victoryWrap) victoryWrap.classList.remove('hidden');
     } else {
       if (synth) synth.sfxGameOver();
+      if (victoryWrap) victoryWrap.classList.add('hidden');
     }
 
     if (score > progress.bestScore) progress.bestScore = score;
@@ -1176,10 +1498,10 @@
       : `Сектор ${lvl.id}: Корабль подбит`;
     document.getElementById('end-badge').style.background = victory ? '#06d6a0' : '#ffd166';
     document.getElementById('end-title').textContent = victory
-      ? (lvl.id === 10 ? 'ГАЛАКТИКА СПАСЕНА! 👑' : 'ПОБЕДА! 🏆')
+      ? (lvl.id === 10 ? 'КОТОВИЯ-17 СПАСЕНА! 👑' : 'МИССИЯ ВЫПОЛНЕНА! 🏆')
       : 'ИГРА ОКОНЧЕНА';
     document.getElementById('end-subtitle').textContent = victory
-      ? `${lvl.bossName} повержен! Готов лететь дальше?`
+      ? `${lvl.bossName} повержен! Редж отправил груз еды на родную планету!`
       : 'Попробуй ещё раз — собирай еду, чтобы собрать Омега-Оружие!';
     document.getElementById('final-score').textContent = score;
     document.getElementById('final-best').textContent = progress.bestScore;
@@ -1196,7 +1518,7 @@
   }
 
   // =========================================================================
-  // ОБЪЁМНАЯ 3D-ОТРИСОВКА АСТРО-КОТА И HUD
+  // ОБЪЁМНАЯ 3D-ОТРИСОВКА РЕДЖА И HUD
   // =========================================================================
   function drawPlayer(p) {
     if (p.invuln > 0 && Math.floor(p.invuln * 16) % 2 === 0) return;
@@ -1211,13 +1533,11 @@
 
     const g3d = (l, m, d, r = 24) => (typeof make3DGrad === 'function' ? make3DGrad(ctx, 0, 0, r, l, m, d) : m);
 
-    // Мягкая 3D-тень под кораблём
     ctx.fillStyle = 'rgba(8, 5, 22, 0.38)';
     ctx.beginPath();
     ctx.ellipse(6, 28, 21, 9, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Пламя двигателей
     const flameH = 16 + Math.sin(globalTime * 38) * 5 + (p.turboTimer > 0 ? 10 : 0);
     [-11, 11].forEach(ox => {
       ctx.fillStyle = p.turboTimer > 0 ? '#06d6a0' : '#ff9f1c';
@@ -1232,7 +1552,6 @@
       ctx.stroke();
     });
 
-    // Крылья-стабилизаторы с 3D-градиентом
     ctx.fillStyle = g3d('#ffccd5', '#ff5964', '#800f2f', 28);
     ctx.strokeStyle = INK;
     ctx.lineWidth = 3;
@@ -1248,7 +1567,6 @@
     ctx.fill();
     ctx.stroke();
 
-    // Бортовые пушки при усилении оружия
     if (p.weaponPower >= 2) {
       ctx.fillStyle = g3d('#fff3b0', '#ffd166', '#ca6702', 14);
       [-24, 24].forEach(wx => {
@@ -1258,14 +1576,12 @@
       });
     }
 
-    // Объёмный 3D-корпус ракеты
     ctx.fillStyle = g3d('#ffffff', '#fff8eb', '#adb5bd', 26);
     ctx.beginPath();
     ctx.ellipse(0, 2, 18, 26, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // Носовой обтекатель
     ctx.fillStyle = g3d('#ffccd5', '#ff5964', '#9b2226', 16);
     ctx.beginPath();
     ctx.arc(0, -14, 13, Math.PI, 0);
@@ -1273,14 +1589,12 @@
     ctx.fill();
     ctx.stroke();
 
-    // Сферический 3D-колпак кабины
     ctx.fillStyle = g3d('#caf0f8', '#48dbfb', '#0077b6', 14);
     ctx.beginPath();
     ctx.arc(0, -1, 13, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // Объёмная голова Астро-Кота
     ctx.fillStyle = g3d('#fff3b0', '#ffb703', '#ca6702', 10);
     ctx.beginPath();
     ctx.moveTo(-8, -4); ctx.lineTo(-6, -11); ctx.lineTo(-2, -6);
@@ -1307,7 +1621,6 @@
     ctx.arc(0, 1.8, 1.6, 0, Math.PI * 2);
     ctx.fill();
 
-    // Глянцевый 3D-блик на стекле шлема
     ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
     ctx.beginPath();
     ctx.ellipse(-5, -6, 4, 2.2, -0.5, 0, Math.PI * 2);
@@ -1362,7 +1675,6 @@
     ctx.strokeText(subHud, 18, 80);
     ctx.fillText(subHud, 18, 80);
 
-    // Индикатор суммированного Супер-Оружия
     if (player.weaponPower > 1) {
       const powerTitles = {
         2: '🍕 ОРУЖИЕ УР.2 (+ВЕЕР)',
@@ -1406,8 +1718,8 @@
       ctx.lineWidth = 5;
       ctx.font = '900 26px sans-serif';
       ctx.textAlign = 'center';
-      ctx.strokeText('⚠ ВНИМАНИЕ: БОСС! ⚠', W / 2, H * 0.44);
-      ctx.fillText('⚠ ВНИМАНИЕ: БОСС! ⚠', W / 2, H * 0.44);
+      ctx.strokeText('⚠ ВНИМАНИЕ: ПОЖИРАТЕЛЬ! ⚠', W / 2, H * 0.44);
+      ctx.fillText('⚠ ВНИМАНИЕ: ПОЖИРАТЕЛЬ! ⚠', W / 2, H * 0.44);
     }
 
     ctx.restore();
