@@ -311,4 +311,308 @@ function drawPlayerBullet(ctx, b) {
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.ellipse(0, 0, b.r * 0.78
+    ctx.ellipse(0, 0, b.r * 0.78, b.r * 1.5, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawObstacle(ctx, ob) {
+  ctx.save();
+  ctx.translate(ob.x, ob.y);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 3;
+
+  if (ob.kind === 'lsd_shroom') {
+    ctx.fillStyle = '#e0aaff';
+    roundRectPath(ctx, -10, 0, 20, 24, 8);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff006e';
+    ctx.beginPath();
+    ctx.arc(0, 2, 26, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    drawWarts(ctx, [[-12, -10, 4], [10, -12, 4.5], [0, -18, 3.5]], '#ffd166', '#ffffff');
+  } else if (ob.kind === 'horror_monolith') {
+    ctx.fillStyle = '#2b2d42';
+    roundRectPath(ctx, -20, -26, 40, 52, 8);
+    ctx.fill(); ctx.stroke();
+  } else if (ob.kind === 'rainbow_prism' || ob.kind === 'diamond_cluster') {
+    ctx.fillStyle = ob.kind === 'diamond_cluster' ? '#4cc9f0' : '#ffd166';
+    ctx.beginPath();
+    ctx.moveTo(0, -28); ctx.lineTo(24, 0); ctx.lineTo(0, 28); ctx.lineTo(-24, 0);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  } else if (ob.kind === 'coral_reef' || ob.kind === 'bio_cocoon') {
+    ctx.fillStyle = ob.kind === 'coral_reef' ? '#ff5964' : '#52b788';
+    ctx.beginPath();
+    ctx.arc(0, 0, 24, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    drawWarts(ctx, [[-10, -8, 4.5], [10, -6, 4], [0, 10, 4.5]], '#ffd166', '#ffffff');
+  } else {
+    ctx.fillStyle = '#3a506b';
+    roundRectPath(ctx, -28, -15, 56, 30, 8);
+    ctx.fill(); ctx.stroke();
+    drawRivets(ctx, [[-20, -8], [20, -8], [-20, 8], [20, 8]]);
+  }
+  ctx.restore();
+}
+
+const SHIP_PALETTES = {
+  lsd_saucer:       ['#9b5de5', '#ff006e', '#00f5d4', true,  '#ffd166'],
+  lsd_prism:        ['#ff006e', '#ffd166', '#00f5d4', true,  '#9b5de5'],
+  lsd_spinner:      ['#00bbf9', '#f15bb5', '#fee440', true,  '#00f5d4'],
+  horror_fang:      ['#2b2d42', '#8d99ae', '#ff002b', true,  '#590d22'],
+  horror_skullship: ['#e2ece9', '#590d22', '#ff002b', true,  '#800f2f'],
+  horror_reaper:    ['#1a1423', '#590d22', '#ff002b', false, '#ff002b'],
+  rainbow_delta:    ['#ff5964', '#ffd166', '#48dbfb', false, '#ffffff'],
+  rainbow_shuttle:  ['#06d6a0', '#bdb2ff', '#ff9f1c', false, '#ffffff'],
+  rainbow_orbiter:  ['#48dbfb', '#ff8fab', '#ffd166', false, '#ffffff'],
+  tech_interceptor: ['#3a506b', '#5bc0be', '#ffd166', false, '#ffffff'],
+  tech_pod:         ['#1c2541', '#48dbfb', '#ff5964', false, '#ffffff'],
+  tech_drone:       ['#6fffe9', '#3a506b', '#ffffff', false, '#ffffff'],
+  ice_corvette:     ['#90e0ef', '#0077b6', '#ffffff', false, '#ffffff'],
+  ice_breaker:      ['#caf0f8', '#48cae4', '#023e8a', false, '#ffffff'],
+  ice_probe:        ['#48cae4', '#ade8f4', '#ff9f1c', false, '#ffffff'],
+  candy_cruiser:    ['#ffccd5', '#ff70a6', '#ffd166', true,  '#ff4d6d'],
+  candy_dart:       ['#ff8fab', '#bde0fe', '#ffffff', false, '#ffffff'],
+  candy_donutship:  ['#f4a261', '#ff70a6', '#48dbfb', true,  '#ffd166'],
+  sub_bathyscaphe:  ['#ffbe0b', '#0096c7', '#48dbfb', true,  '#ff5964'],
+  sub_manta:        ['#0096c7', '#00f5d4', '#ffd166', true,  '#023e8a'],
+  sub_hydro:        ['#48cae4', '#ff5964', '#ffffff', false, '#ffffff'],
+  lava_bomber:      ['#e63946', '#ffba08', '#370617', true,  '#ff9f1c'],
+  lava_shuttle:     ['#9b2226', '#f77f00', '#ffd166', false, '#ffffff'],
+  lava_drone:       ['#ff6b35', '#590d22', '#ffbe0b', false, '#ffffff'],
+  diamond_wing:     ['#caf0f8', '#4cc9f0', '#ffffff', false, '#ffffff'],
+  diamond_cruiser:  ['#90e0ef', '#4361ee', '#ffffff', false, '#ffffff'],
+  diamond_shard:    ['#ffffff', '#48dbfb', '#ff70a6', false, '#ffffff'],
+  bio_dreadnought:  ['#d90429', '#7209b7', '#ffbe0b', true,  '#ff758f'],
+  bio_corvette:     ['#38b000', '#80ed99', '#ffd166', true,  '#007f5f'],
+  bio_cell:         ['#9b5de5', '#ff006e', '#00f5d4', true,  '#ffd166']
+};
+
+function drawUniqueEnemy(ctx, e) {
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  const flash = e.hitFlash > 0;
+  const pal = SHIP_PALETTES[e.kind] || ['#9b5de5', '#ff006e', '#00f5d4', true, '#ffd166'];
+  const [bodyCol, wingCol, domeCol, hasWarts, wartCol] = pal;
+
+  ctx.fillStyle = 'rgba(8, 5, 22, 0.34)';
+  ctx.beginPath();
+  ctx.ellipse(4, e.r + 6, e.r * 0.78, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 3;
+
+  // Крылья корабля пришельцев
+  ctx.fillStyle = flash ? '#ffffff' : wingCol;
+  ctx.beginPath();
+  ctx.moveTo(0, 6);
+  ctx.lineTo(-26, -12);
+  ctx.lineTo(-18, 14);
+  ctx.lineTo(0, 22);
+  ctx.lineTo(18, 14);
+  ctx.lineTo(26, -12);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Фюзеляж
+  ctx.fillStyle = flash ? '#ffffff' : bodyCol;
+  ctx.beginPath();
+  ctx.ellipse(0, 2, 14, 22, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Носовая пушка
+  ctx.fillStyle = '#ffbe0b';
+  ctx.beginPath();
+  ctx.moveTo(-5, 20); ctx.lineTo(0, 28); ctx.lineTo(5, 20);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Кабина пилота
+  ctx.fillStyle = flash ? '#ffffff' : domeCol;
+  ctx.beginPath();
+  ctx.arc(0, 2, 7.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Мозоли/бородавки на кораблях пришельцев или заклёпки
+  if (hasWarts) {
+    drawWarts(ctx, [[-16, -2, 3.2], [16, -2, 3.2], [-11, 10, 2.8], [11, 10, 2.8]], wartCol, '#ffffff');
+  } else {
+    drawRivets(ctx, [[-16, -4], [16, -4], [-12, 10], [12, 10], [0, -12]]);
+  }
+
+  if (e.maxHp > 2 && e.hp < e.maxHp) {
+    const bw = 34;
+    ctx.fillStyle = INK;
+    ctx.fillRect(-bw / 2, -e.r - 12, bw, 6);
+    ctx.fillStyle = '#06d6a0';
+    ctx.fillRect(-bw / 2 + 1, -e.r - 11, (bw - 2) * (e.hp / e.maxHp), 4);
+  }
+
+  ctx.restore();
+}
+
+function drawUniqueBoss(ctx, b, lvl, player, H) {
+  if (b.crossLasers && b.crossLasers.active) {
+    ctx.save();
+    const angle = b.crossLasers.angle;
+    [-1, 1].forEach(dir => {
+      ctx.save();
+      ctx.translate(b.x, b.y + 15);
+      ctx.rotate(dir * angle);
+      if (b.crossLasers.charging) {
+        ctx.strokeStyle = 'rgba(0, 245, 212, 0.7)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 8]);
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(0, H);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = 'rgba(0, 245, 212, 0.35)';
+        ctx.fillRect(-18, 0, 36, H);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-6, 0, 12, H);
+      }
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+
+  if (b.laserState === 'charge') {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 0, 110, 0.75)';
+    ctx.lineWidth = 3.5;
+    ctx.setLineDash([10, 8]);
+    ctx.beginPath();
+    ctx.moveTo(b.laserX, b.y + 40); ctx.lineTo(b.laserX, H);
+    ctx.stroke();
+    ctx.restore();
+  } else if (b.laserState === 'fire') {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 0, 110, 0.35)';
+    ctx.fillRect(b.laserX - 32, b.y + 35, 64, H - b.y);
+    ctx.fillStyle = '#ffbe0b';
+    ctx.fillRect(b.laserX - 15, b.y + 35, 30, H - b.y);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(b.laserX - 5, b.y + 35, 10, H - b.y);
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  const flash = b.hitFlash > 0;
+  const lookX = player ? Math.max(-4, Math.min(4, (player.x - b.x) * 0.02)) : 0;
+
+  // Щупальца осьминогов с присосками/мозолями
+  const tentacleCount = lvl.id === 10 ? 6 : 4;
+  for (let i = 0; i < tentacleCount; i++) {
+    const t = i - (tentacleCount - 1) / 2;
+    const waveX = Math.sin(b.time * 5 + t * 1.4) * 14;
+    const baseX = t * (lvl.id === 10 ? 20 : 28);
+    const tipX = baseX * 1.2 - waveX * 0.6;
+
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 14;
+    ctx.beginPath();
+    ctx.moveTo(baseX, 24);
+    ctx.quadraticCurveTo(baseX + waveX, 52, tipX, 74);
+    ctx.stroke();
+
+    ctx.strokeStyle = lvl.accent;
+    ctx.lineWidth = 8;
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffd166';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 1.6;
+    [
+      [baseX + waveX * 0.25, 38, 3.2],
+      [baseX + waveX * 0.65, 54, 2.8],
+      [tipX, 68, 2.4]
+    ].forEach(([sx, sy, sr]) => {
+      ctx.beginPath();
+      ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    });
+  }
+
+  // Купол осьминога-пожирателя
+  ctx.fillStyle = flash ? '#ffffff' : lvl.bossColor;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(0, 0, 56, Math.PI, 0);
+  ctx.quadraticCurveTo(60, 34, 0, 36);
+  ctx.quadraticCurveTo(-60, 34, -56, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Мозоли на голове осьминога
+  drawWarts(
+    ctx,
+    [[-38, -18, 5.5], [38, -18, 5.5], [-42, 6, 4.8], [42, 6, 4.8], [-18, -38, 4.5], [18, -38, 4.5]],
+    '#3c096c',
+    lvl.accent
+  );
+
+  // Корона
+  ctx.fillStyle = '#ffd166';
+  ctx.beginPath();
+  ctx.moveTo(-22, -48); ctx.lineTo(-12, -74); ctx.lineTo(0, -54); ctx.lineTo(12, -74); ctx.lineTo(22, -48);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Глаза босса
+  [-20, 20].forEach(ex => {
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.arc(ex, -4, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = b.phase === 3 ? '#d90429' : INK;
+    ctx.beginPath();
+    ctx.arc(ex + lookX, -2, flash ? 4 : 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(ex + lookX - 2, -4, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 4.5;
+  ctx.beginPath();
+  ctx.moveTo(-34, -20); ctx.lineTo(-8, -13);
+  ctx.moveTo(34, -20); ctx.lineTo(8, -13);
+  ctx.stroke();
+
+  ctx.fillStyle = INK;
+  roundRectPath(ctx, -20, 14, 40, 11, 5);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-13, 14, 6, 5);
+  ctx.fillRect(7, 14, 6, 5);
+
+  ctx.restore();
+}
