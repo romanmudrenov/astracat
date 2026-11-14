@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Астро-Кот</title>
-  <link rel="stylesheet" href="css/style.css?v=10" />
+  <link rel="stylesheet" href="css/style.css?v=11" />
   <style>
     #debug-banner {
       display: none;
@@ -45,7 +45,10 @@
     <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="start-overlay" class="overlay hidden">
       <div class="card">
-        <div class="badge">Космическая экспедиция</div>
+        <div class="top-wallet-row">
+          <span class="badge" style="margin-bottom:0;">Котовия-17</span>
+          <span class="wallet-pill" id="menu-coins">🪙 0</span>
+        </div>
         <h1>АСТРО-КОТ</h1>
 
         <div class="section-label">Уровень сложности</div>
@@ -55,33 +58,50 @@
           <button class="pill-btn" data-diff="hard">Ас</button>
         </div>
 
-        <div class="section-label">Выбор сектора (1–10)</div>
-        <div class="levels-grid" id="levels-grid"></div>
+        <div class="section-label">Выбор сектора (1, 2, 3, 7, 10)</div>
+        <div class="levels-grid five-cols" id="levels-grid"></div>
         
         <div class="selected-level-box" id="selected-level-info">
           <strong>Сектор 1: ЛСД-Туманность</strong><br>
           <span>Босс: Доктор Кракен-Бот</span>
         </div>
 
-        <div class="bonus-legend">
-          <span>🍕 Веер</span>
-          <span>🍣 Сюрикен</span>
-          <span>🍩 Лазер</span>
-          <span>🍔 Ракеты</span>
-          <span>🥛 Щит</span>
+        <div class="btn-row" style="margin-bottom:8px;">
+          <button id="start-btn" class="btn-play">В ПОЛЁТ! 🚀</button>
+          <button id="hangar-open-btn" class="btn-hangar">🛠 АНГАР</button>
         </div>
 
         <div class="btn-row">
-          <button id="start-btn" class="btn-play">В ПОЛЁТ! 🚀</button>
           <button id="lore-open-btn" class="btn-secondary">📖 Комикс</button>
           <button id="menu-sound-btn" class="btn-secondary">🎛 Звук</button>
         </div>
 
-        <div class="best-line" id="start-best">Общий рекорд: 0 • Пройдено: 0/10</div>
+        <div class="best-line" id="start-best">Рекорд: 0 • Пройдено: 0/5</div>
       </div>
     </div>
 
-    <!-- КОМИКС ПРЕДЫСТОРИИ (ВЕРТИКАЛЬНЫЕ СЛАЙДЫ) -->
+    <!-- МЕНЮ ПРОКАЧКИ: 3 КОРАБЛЯ И 3 БАЗОВЫХ ОРУЖИЯ -->
+    <div id="hangar-overlay" class="overlay hidden">
+      <div class="card hangar-card">
+        <div class="top-wallet-row">
+          <span class="badge" style="margin-bottom:0;">Космоверфь</span>
+          <span class="wallet-pill" id="hangar-coins">🪙 0</span>
+        </div>
+        <h2>АНГАР И ПРОКАЧКА</h2>
+
+        <div class="section-label">1. Космические корабли (3 класса)</div>
+        <div class="shop-list" id="ships-list"></div>
+
+        <div class="section-label">2. Базовое оружие (3 типа)</div>
+        <div class="shop-list" id="weapons-list"></div>
+
+        <div class="btn-row" style="margin-top:12px;">
+          <button id="hangar-close-btn" class="btn-play">ГОТОВО ✔</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- КОМИКС ПРЕДЫСТОРИИ -->
     <div id="lore-overlay" class="overlay">
       <div class="card lore-card">
         <div class="lore-dots" id="lore-dots">
@@ -127,7 +147,7 @@
     <!-- НАСТРОЙКИ ЗВУКА И ВЫБОР ТРЕКА -->
     <div id="settings-overlay" class="overlay hidden">
       <div class="card">
-        <h2>НАСТРОЙКИ ЗВУКА</h2>
+        <h2>НАСТРОЙКИ ЗВУКА (64-POLY ASMR)</h2>
 
         <div class="setting-row">
           <div class="setting-head">
@@ -141,16 +161,15 @@
               <option value="auto">🎲 Авто (все треки из music/)</option>
             </select>
           </div>
-          <div class="setting-hint" id="tracks-found-hint">Поиск треков level1.mp3 ... level15.mp3 в music/</div>
+          <div class="setting-hint" id="tracks-found-hint">Поиск треков в папке music/...</div>
         </div>
 
         <div class="setting-row">
           <div class="setting-head">
-            <span>✨ ASMR-эффекты и взрывы (SFX +50%)</span>
+            <span>✨ ASMR-звуки и взрывы (SFX)</span>
             <button id="toggle-sfx" class="toggle-chip">ВКЛ</button>
           </div>
           <input id="sfx-vol" type="range" min="0" max="150" value="108" />
-          <div class="setting-hint">Базовая громкость усилена на +50% (108%)</div>
         </div>
 
         <div class="setting-row">
@@ -160,12 +179,12 @@
           <div class="diff-row" id="timbre-row" style="margin-bottom:0;">
             <button class="pill-btn active" data-timbre="space">Бархат</button>
             <button class="pill-btn" data-timbre="classic">Кристалл</button>
-            <button class="pill-btn" data-timbre="chiptune">Ретро</button>
+            <button class="pill-btn" data-timbre="chiptune">Капли</button>
           </div>
         </div>
 
         <div class="btn-row" style="margin-top:14px;">
-          <button id="test-chord-btn" class="btn-secondary">🎶 Тест звука</button>
+          <button id="test-chord-btn" class="btn-secondary">🎶 Тест ASMR</button>
           <button id="settings-close-btn" class="btn-play">ГОТОВО ✔</button>
         </div>
       </div>
@@ -191,7 +210,7 @@
           <canvas id="victory-cat-canvas" width="320" height="145"></canvas>
         </div>
         <h1 id="end-title">ПОБЕДА!</h1>
-        <p class="subtitle" id="end-subtitle">Пожиратель повержен! Груз еды отправлен на Котовию-17!</p>
+        <p class="subtitle" id="end-subtitle">Пожиратель повержен!</p>
 
         <div class="stats-box">
           <div class="stat-col">
@@ -199,8 +218,8 @@
             <strong id="final-score">0</strong>
           </div>
           <div class="stat-col">
-            <span>Рекорд</span>
-            <strong id="final-best">0</strong>
+            <span>Заработано</span>
+            <strong id="final-coins">+0 🪙</strong>
           </div>
           <div class="stat-col">
             <span>Сбито</span>
@@ -216,10 +235,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=10" onerror="window.onerror('Не найден файл js/synth.js', 'index.html', 0)"></script>
-  <script src="js/vfx.js?v=10" onerror="window.onerror('Не найден файл js/vfx.js', 'index.html', 0)"></script>
-  <script src="js/world3d.js?v=10" onerror="window.onerror('Не найден файл js/world3d.js', 'index.html', 0)"></script>
-  <script src="js/entities.js?v=10" onerror="window.onerror('Не найден файл js/entities.js', 'index.html', 0)"></script>
-  <script src="js/game.js?v=10" onerror="window.onerror('Не найден файл js/game.js', 'index.html', 0)"></script>
+  <script src="js/synth.js?v=11" onerror="window.onerror('Не найден файл js/synth.js', 'index.html', 0)"></script>
+  <script src="js/vfx.js?v=11" onerror="window.onerror('Не найден файл js/vfx.js', 'index.html', 0)"></script>
+  <script src="js/world3d.js?v=11" onerror="window.onerror('Не найден файл js/world3d.js', 'index.html', 0)"></script>
+  <script src="js/entities.js?v=11" onerror="window.onerror('Не найден файл js/entities.js', 'index.html', 0)"></script>
+  <script src="js/game.js?v=11" onerror="window.onerror('Не найден файл js/game.js', 'index.html', 0)"></script>
 </body>
 </html>
