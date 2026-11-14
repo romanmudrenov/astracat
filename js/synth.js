@@ -11,11 +11,11 @@ class PolySynth {
     this.muted = false;
     this.musicEnabled = true;
     this.sfxEnabled = true;
-    this.musicVolume = 0.75;
+    // Базовая громкость музыки в 2 раза тише (0.35 вместо 0.75)
+    this.musicVolume = 0.35;
     this.sfxVolume = 0.85;
-    this.timbre = 'space'; // По умолчанию бархатный ASMR-тембр
+    this.timbre = 'space';
 
-    // HTML5 Audio плеер для пользовательских треков из папки music/
     this.bgmAudio = null;
     this.currentTrackPath = '';
   }
@@ -33,7 +33,6 @@ class PolySynth {
       this.compressor.attack.setValueAtTime(0.01, this.ctx.currentTime);
       this.compressor.release.setValueAtTime(0.2, this.ctx.currentTime);
 
-      // Мягкое пространственное эхо для ASMR-звуков
       this.delayNode = this.ctx.createDelay(1.0);
       this.delayNode.delayTime.setValueAtTime(0.22, this.ctx.currentTime);
       const delayFilter = this.ctx.createBiquadFilter();
@@ -53,7 +52,6 @@ class PolySynth {
       this.compressor.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
 
-      // Буфер мягкого розового/белого шума для ASMR-шорохов и взрывов
       const sampleRate = this.ctx.sampleRate;
       this.noiseBuffer = this.ctx.createBuffer(1, sampleRate, sampleRate);
       const data = this.noiseBuffer.getChannelData(0);
@@ -72,7 +70,12 @@ class PolySynth {
     }
   }
 
-  // Воспроизведение пользовательских файлов из папки music/ (music/level1.mp3 .. music/boss.mp3)
+  // Делим громкость трека дополнительно на 2, чтобы музыка звучала мягко на фоне
+  getEffectiveMusicVol() {
+    if (this.muted || !this.musicEnabled) return 0;
+    return Math.max(0, Math.min(1, this.musicVolume * 0.5));
+  }
+
   playTrack(filename) {
     this.init();
     const path = `music/${filename}`;
@@ -85,12 +88,10 @@ class PolySynth {
     try {
       const audio = new Audio(path);
       audio.loop = true;
-      audio.volume = (this.muted || !this.musicEnabled) ? 0 : this.musicVolume;
+      audio.volume = this.getEffectiveMusicVol();
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(() => {
-          // Если файл ещё не загружен в папку music/, тихо игнорируем без ошибок
-        });
+        playPromise.catch(() => {});
       }
       this.bgmAudio = audio;
     } catch (e) {}
@@ -118,7 +119,7 @@ class PolySynth {
 
   updateMusicVolume() {
     if (this.bgmAudio) {
-      this.bgmAudio.volume = (this.muted || !this.musicEnabled) ? 0 : this.musicVolume;
+      this.bgmAudio.volume = this.getEffectiveMusicVol();
     }
   }
 
@@ -144,7 +145,6 @@ class PolySynth {
     return requestedType;
   }
 
-  // Полифонический ASMR-голос с бархатным фильтром и плавной атакой
   playVoice({
     freq = 440,
     slideTo = null,
@@ -267,9 +267,7 @@ class PolySynth {
     };
   }
 
-  // --- МЯГКИЕ ASMR-ЗВУКИ ИГРОВЫХ СОБЫТИЙ ---
   sfxShoot(pan = 0, weaponLevel = 1) {
-    // Бархатный плазменный «пуф-пиу» без резких высоких частот
     this.playVoice({
       freq: 520 + weaponLevel * 45,
       slideTo: 165,
@@ -301,7 +299,6 @@ class PolySynth {
   }
 
   sfxHit(pan = 0) {
-    // Мягкий деревянно-пузырьковый отклик попадания
     this.playVoice({
       freq: 240,
       slideTo: 110,
@@ -319,7 +316,6 @@ class PolySynth {
 
   sfxExplosion(pan = 0, big = false) {
     const dur = big ? 0.55 : 0.26;
-    // Глубокий мягкий саб-хлопок + розовый шум
     this.playNoise({
       duration: dur,
       gain: big ? 0.22 : 0.13,
@@ -345,7 +341,6 @@ class PolySynth {
   sfxPowerup() {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    // Переливающийся ASMR-колокольчик (арпеджио мажорного нонаккорда)
     [60, 64, 67, 71, 74, 79].forEach((m, i) => {
       this.playVoice({
         freq: this.midiToFreq(m),
