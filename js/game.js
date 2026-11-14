@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'astro_cat_3d_deluxe_v8';
+  const STORAGE_KEY = 'astro_cat_hangar_v1';
   const BORDER_INK = typeof INK !== 'undefined' ? INK : '#1e1633';
 
   function loadProgress() {
@@ -9,11 +9,25 @@
       const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
       return {
         bestScore: raw.bestScore || 0,
+        coins: typeof raw.coins === 'number' ? raw.coins : 0,
         completed: Array.isArray(raw.completed) ? raw.completed : [],
+        unlockedShips: Array.isArray(raw.unlockedShips) && raw.unlockedShips.length ? raw.unlockedShips : ['shuttle'],
+        equippedShip: raw.equippedShip || 'shuttle',
+        unlockedWeapons: Array.isArray(raw.unlockedWeapons) && raw.unlockedWeapons.length ? raw.unlockedWeapons : ['droplet'],
+        equippedWeapon: raw.equippedWeapon || 'droplet',
         loreSeen: Boolean(raw.loreSeen)
       };
     } catch (e) {
-      return { bestScore: 0, completed: [], loreSeen: false };
+      return {
+        bestScore: 0,
+        coins: 0,
+        completed: [],
+        unlockedShips: ['shuttle'],
+        equippedShip: 'shuttle',
+        unlockedWeapons: ['droplet'],
+        equippedWeapon: 'droplet',
+        loreSeen: false
+      };
     }
   }
 
@@ -31,6 +45,7 @@
   const vfx = typeof VFXEngine !== 'undefined' ? new VFXEngine() : null;
 
   const startOverlay = document.getElementById('start-overlay');
+  const hangarOverlay = document.getElementById('hangar-overlay');
   const loreOverlay = document.getElementById('lore-overlay');
   const introOverlay = document.getElementById('intro-overlay');
   const settingsOverlay = document.getElementById('settings-overlay');
@@ -59,8 +74,155 @@
   window.addEventListener('resize', resize);
   resize();
 
+  function getActiveShip() {
+    if (typeof SHIPS_CATALOG === 'undefined') return { id: 'shuttle', hpBonus: 0, speedMult: 1, fireRateMult: 1, dmgMult: 1, coinMult: 1, hullColor: '#fff8eb', wingColor: '#ff5964' };
+    return SHIPS_CATALOG.find(s => s.id === progress.equippedShip) || SHIPS_CATALOG[0];
+  }
+
+  function getActiveBaseWeapon() {
+    if (typeof WEAPONS_CATALOG === 'undefined') return { id: 'droplet', dmgBonus: 1, bulletColor: '#48dbfb' };
+    return WEAPONS_CATALOG.find(w => w.id === progress.equippedWeapon) || WEAPONS_CATALOG[0];
+  }
+
+  function updateCoinsUI() {
+    const mEl = document.getElementById('menu-coins');
+    const hEl = document.getElementById('hangar-coins');
+    if (mEl) mEl.textContent = `🪙 ${progress.coins}`;
+    if (hEl) hEl.textContent = `🪙 ${progress.coins}`;
+  }
+
   // =========================================================================
-  // ВЕРТИКАЛЬНЫЕ СЛАЙДЫ КОМИКСА (ПОДДЕРЖКА .jpg, .png, .jpeg И ЗАПАСНОГО АРТА)
+  // АНГАР И ПРОКАЧКА (3 КОРАБЛЯ И 3 БАЗОВЫХ ОРУДИЯ)
+  // =========================================================================
+  function renderHangar() {
+    updateCoinsUI();
+    const shipsList = document.getElementById('ships-list');
+    const weaponsList = document.getElementById('weapons-list');
+    if (!shipsList || !weaponsList || typeof SHIPS_CATALOG === 'undefined' || typeof WEAPONS_CATALOG === 'undefined') return;
+
+    shipsList.innerHTML = '';
+    SHIPS_CATALOG.forEach(ship => {
+      const owned = progress.unlockedShips.includes(ship.id);
+      const equipped = progress.equippedShip === ship.id;
+      const item = document.createElement('div');
+      item.className = 'shop-item' + (equipped ? ' equipped' : '');
+
+      let btnClass = 'shop-action-btn ';
+      let btnLabel = '';
+      if (equipped) {
+        btnClass += 'active';
+        btnLabel = 'ВЫБРАН ✔';
+      } else if (owned) {
+        btnClass += 'equip';
+        btnLabel = 'ВЫБРАТЬ';
+      } else {
+        btnClass += 'buy';
+        btnLabel = `${ship.price} 🪙`;
+      }
+
+      item.innerHTML = `
+        <div class="shop-info">
+          <strong>🚀 ${ship.name}</strong>
+          <span>${ship.desc}</span>
+        </div>
+        <button class="${btnClass}">${btnLabel}</button>
+      `;
+
+      item.querySelector('button').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (synth) synth.init();
+        if (equipped) return;
+        if (owned) {
+          progress.equippedShip = ship.id;
+          saveProgress(progress);
+          if (synth) synth.sfxPowerup();
+          renderHangar();
+        } else if (progress.coins >= ship.price) {
+          progress.coins -= ship.price;
+          progress.unlockedShips.push(ship.id);
+          progress.equippedShip = ship.id;
+          saveProgress(progress);
+          if (synth) synth.sfxVictory();
+          renderHangar();
+        } else {
+          if (synth) synth.sfxHurt();
+        }
+      });
+
+      shipsList.appendChild(item);
+    });
+
+    weaponsList.innerHTML = '';
+    WEAPONS_CATALOG.forEach(wp => {
+      const owned = progress.unlockedWeapons.includes(wp.id);
+      const equipped = progress.equippedWeapon === wp.id;
+      const item = document.createElement('div');
+      item.className = 'shop-item' + (equipped ? ' equipped' : '');
+
+      let btnClass = 'shop-action-btn ';
+      let btnLabel = '';
+      if (equipped) {
+        btnClass += 'active';
+        btnLabel = 'УСТАНОВЛЕНО ✔';
+      } else if (owned) {
+        btnClass += 'equip';
+        btnLabel = 'ВЫБРАТЬ';
+      } else {
+        btnClass += 'buy';
+        btnLabel = `${wp.price} 🪙`;
+      }
+
+      item.innerHTML = `
+        <div class="shop-info">
+          <strong>🔫 ${wp.name}</strong>
+          <span>${wp.desc}</span>
+        </div>
+        <button class="${btnClass}">${btnLabel}</button>
+      `;
+
+      item.querySelector('button').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (synth) synth.init();
+        if (equipped) return;
+        if (owned) {
+          progress.equippedWeapon = wp.id;
+          saveProgress(progress);
+          if (synth) synth.sfxPowerup();
+          renderHangar();
+        } else if (progress.coins >= wp.price) {
+          progress.coins -= wp.price;
+          progress.unlockedWeapons.push(wp.id);
+          progress.equippedWeapon = wp.id;
+          saveProgress(progress);
+          if (synth) synth.sfxVictory();
+          renderHangar();
+        } else {
+          if (synth) synth.sfxHurt();
+        }
+      });
+
+      weaponsList.appendChild(item);
+    });
+  }
+
+  document.getElementById('hangar-open-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (synth) { synth.init(); synth.sfxHit(0); }
+    renderHangar();
+    startOverlay.classList.add('hidden');
+    hangarOverlay.classList.remove('hidden');
+  });
+
+  document.getElementById('hangar-close-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (synth) synth.sfxHit(0);
+    hangarOverlay.classList.add('hidden');
+    renderLevelGrid();
+    startOverlay.classList.remove('hidden');
+  });
+
+  // =========================================================================
+  // КОМИКС ПРЕДЫСТОРИИ
   // =========================================================================
   const LORE_SLIDES = [
     {
@@ -76,7 +238,7 @@
     {
       baseName: 'slide3',
       title: 'БИТВА С ПОЖИРАТЕЛЯМИ КОСМОСА',
-      text: 'Реджу предстоит исследовать 10 галактик и сразиться со злобными Пожирателями Космоса, чтобы наладить отправку вкусной еды на родную планету!'
+      text: 'Реджу предстоит исследовать 5 ключевых галактик и сразиться со злобными Пожирателями Космоса, зарабатывая монеты на улучшение флота!'
     }
   ];
 
@@ -229,12 +391,10 @@
   const selectedLevelInfo = document.getElementById('selected-level-info');
 
   function renderLevelGrid() {
-    if (typeof LEVELS === 'undefined') {
-      selectedLevelInfo.innerHTML =
-        '<strong style="color:#ff8fab;">Проверьте файл js/entities.js в репозитории!</strong><br>' +
-        '<span>Убедитесь, что он сохранён без ошибок.</span>';
-      return;
-    }
+    updateCoinsUI();
+    if (typeof LEVELS === 'undefined') return;
+    if (selectedLevelIdx >= LEVELS.length) selectedLevelIdx = 0;
+
     levelsGrid.innerHTML = '';
     LEVELS.forEach((lvl, idx) => {
       const btn = document.createElement('button');
@@ -251,11 +411,13 @@
     });
 
     const cur = LEVELS[selectedLevelIdx];
+    const ship = getActiveShip();
+    const wp = getActiveBaseWeapon();
     selectedLevelInfo.innerHTML =
-      `<strong>Сектор ${cur.id}: ${cur.name}</strong><br>` +
-      `<span>Босс: ${cur.bossName}</span>`;
+      `<strong>Сектор ${cur.id}: ${cur.name}</strong> (Награда: +${cur.coinReward} 🪙)<br>` +
+      `<span>Корабль: ${ship.name} • Оружие: ${wp.name}</span>`;
     document.getElementById('start-best').textContent =
-      `Общий рекорд: ${progress.bestScore} • Пройдено: ${progress.completed.length}/10`;
+      `Рекорд: ${progress.bestScore} • Пройдено: ${progress.completed.length}/${LEVELS.length}`;
   }
   renderLevelGrid();
 
@@ -275,7 +437,7 @@
     const lvl = LEVELS[selectedLevelIdx];
     if (synth) { synth.init(); synth.sfxPowerup(); }
 
-    document.getElementById('intro-sector-tag').textContent = `СЕКТОР ${lvl.id} / 10`;
+    document.getElementById('intro-sector-tag').textContent = `СЕКТОР ${lvl.id}`;
     document.getElementById('intro-title').textContent = lvl.name.toUpperCase();
     document.getElementById('intro-story').textContent = lvl.story;
     document.getElementById('intro-hero-art').style.background =
@@ -283,7 +445,7 @@
     document.getElementById('intro-intel').innerHTML =
       `<div>🛸 <b>Корабли врагов:</b> ${lvl.enemiesDesc}</div>` +
       `<div>👑 <b>Пожиратель:</b> ${lvl.bossName}</div>` +
-      `<div>⚡ <b>Оружие босса:</b> ${lvl.bossWeapon}</div>`;
+      `<div>🪙 <b>Награда за сектор:</b> +${lvl.coinReward} монет</div>`;
 
     startOverlay.classList.add('hidden');
     endOverlay.classList.add('hidden');
@@ -396,9 +558,10 @@
   });
 
   // =========================================================================
-  // СОСТОЯНИЕ ИГРЫ
+  // СОСТОЯНИЕ ИГРЫ И ЭКОНОМИКА МОНЕТ
   // =========================================================================
   let score = 0;
+  let runCoins = 0;
   let kills = 0;
   let combo = 1;
   let comboTimer = 0;
@@ -456,6 +619,7 @@
     settingsOverlay.classList.add('hidden');
     introOverlay.classList.add('hidden');
     loreOverlay.classList.add('hidden');
+    hangarOverlay.classList.add('hidden');
     pauseBtn.classList.add('hidden');
 
     renderLevelGrid();
@@ -508,6 +672,8 @@
     selectedLevelIdx = idx;
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
+    const ship = getActiveShip();
+    const wp = getActiveBaseWeapon();
 
     if (synth) {
       synth.init();
@@ -517,6 +683,7 @@
     }
 
     score = 0;
+    runCoins = 0;
     kills = 0;
     combo = 1;
     comboTimer = 0;
@@ -529,14 +696,18 @@
     screenShake = 0;
     warningBannerTimer = 0;
 
+    const totalHp = diff.playerHp + (ship.hpBonus || 0);
+
     player = {
       x: W / 2,
       y: H - 105,
       vx: 0,
       vy: 0,
       r: 23,
-      hp: diff.playerHp,
-      maxHp: diff.playerHp,
+      hp: totalHp,
+      maxHp: totalHp,
+      ship,
+      baseWeapon: wp,
       invuln: 0,
       fireCooldown: 0,
       secondaryWeapon: 'none',
@@ -561,6 +732,7 @@
     startOverlay.classList.add('hidden');
     introOverlay.classList.add('hidden');
     loreOverlay.classList.add('hidden');
+    hangarOverlay.classList.add('hidden');
     endOverlay.classList.add('hidden');
     pauseOverlay.classList.add('hidden');
     settingsOverlay.classList.add('hidden');
@@ -583,13 +755,7 @@
     const lvl = LEVELS[selectedLevelIdx];
     const margin = 52;
     const x = margin + Math.random() * (W - margin * 2);
-    obstacles.push({
-      kind: lvl.obstacleKind || 'tech_bulkhead',
-      x,
-      y: -45,
-      r: 24,
-      vy: 95
-    });
+    obstacles.push({ kind: lvl.obstacleKind || 'lsd_shroom', x, y: -45, r: 24, vy: 95 });
   }
 
   function triggerRandomAnomaly(lvl) {
@@ -653,7 +819,9 @@
       amp: 65 + Math.random() * 60,
       turnTimer: 0.5 + Math.random() * 1.1,
       shootTimer: (isHeavy ? 1.45 : 1.85) + Math.random() * 0.9,
-      hitFlash: 0, points: isHeavy ? 180 : 120
+      hitFlash: 0,
+      points: isHeavy ? 180 : 120,
+      coinValue: isHeavy ? 28 : 16
     });
   }
 
@@ -666,8 +834,7 @@
       x: W / 2, y: -110, targetY: Math.min(150, H * 0.22),
       r: 62, hp: totalHp, maxHp: totalHp, phase: 1, time: 0, hitFlash: 0,
       smokeTimer: 0, shootTimer: 1.1, specialTimer: 4.5,
-      laserState: 'idle', laserTimer: 0, laserX: W / 2,
-      crossLasers: { active: false, charging: false, timer: 0, angle: 0.35 }
+      laserState: 'idle', laserTimer: 0, laserX: W / 2
     };
     warningBannerTimer = 2.4;
     if (synth) { synth.sfxBossAlarm(); synth.setMusicMode('boss'); }
@@ -681,32 +848,58 @@
     bonuses.push({ type: chosen, x, y, r: 18, vy: 108, phase: Math.random() * Math.PI * 2 });
   }
 
-  function firePlayerWeapon(p, lvl) {
+  // СТРЕЛЬБА БАЗОВЫМ ОРУЖИЕМ ИЗ АНГАРА + БОНУСНЫМ ОРУДИЕМ ИЗ ЕДЫ
+  function firePlayerWeapon(p) {
     const pan = ((p.x / W) * 2 - 1) * 0.7;
-    if (synth) synth.sfxShootWeapon(pan, p.secondaryWeapon, p.secondaryLevel);
+    const baseId = p.baseWeapon.id;
+    const dmgScale = (p.ship.dmgMult || 1) * (p.baseWeapon.dmgBonus || 1);
 
-    bullets.push({ kind: 'plasma', x: p.x, y: p.y - 25, vx: 0, vy: -710, r: 6.5, dmg: 1.1, color: lvl.accent });
+    if (synth) synth.sfxShootWeapon(pan, baseId, p.secondaryWeapon);
 
+    if (baseId === 'droplet') {
+      bullets.push({
+        kind: 'plasma', x: p.x, y: p.y - 25, vx: 0, vy: -720, r: 6.5,
+        dmg: 1.1 * dmgScale, color: '#48dbfb'
+      });
+    } else if (baseId === 'kalimba') {
+      [-11, 11].forEach(ox => {
+        bullets.push({
+          kind: 'kalimba_crystal', x: p.x + ox, y: p.y - 24, vx: 0, vy: -840, r: 6,
+          dmg: 0.95 * dmgScale, color: '#72efdd'
+        });
+      });
+    } else {
+      // Шёлковый дробовик (3 веерных импульса)
+      [-0.18, 0, 0.18].forEach(ang => {
+        bullets.push({
+          kind: 'plasma', x: p.x, y: p.y - 24,
+          vx: Math.sin(ang) * 740, vy: -Math.cos(ang) * 740, r: 6.5,
+          dmg: 0.85 * dmgScale, color: '#ff8fab'
+        });
+      });
+    }
+
+    // Бонусное 2-е орудие из еды
     const lv2 = p.secondaryLevel >= 2;
     if (p.secondaryWeapon === 'pizza') {
       const angles = lv2 ? [-0.28, -0.14, 0.14, 0.28] : [-0.20, 0.20];
       angles.forEach(ang => {
-        bullets.push({ kind: 'pizza_slice', x: p.x, y: p.y - 22, vx: Math.sin(ang) * 670, vy: -Math.cos(ang) * 670, r: 7.5, dmg: 1.15, color: '#ffd166' });
+        bullets.push({ kind: 'pizza_slice', x: p.x, y: p.y - 22, vx: Math.sin(ang) * 670, vy: -Math.cos(ang) * 670, r: 7.5, dmg: 1.15 * dmgScale, color: '#ffd166' });
       });
     } else if (p.secondaryWeapon === 'sushi') {
       const offsets = lv2 ? [-22, -12, 12, 22] : [-18, 18];
       offsets.forEach(ox => {
-        bullets.push({ kind: 'shuriken', homing: true, x: p.x + ox, y: p.y - 18, vx: ox * 4.5, vy: -610, rot: 0, r: 8.5, dmg: 1.4, color: '#06d6a0' });
+        bullets.push({ kind: 'shuriken', homing: true, x: p.x + ox, y: p.y - 18, vx: ox * 4.5, vy: -610, rot: 0, r: 8.5, dmg: 1.4 * dmgScale, color: '#06d6a0' });
       });
     } else if (p.secondaryWeapon === 'donut') {
       const offsets = lv2 ? [-26, -15, 15, 26] : [-20, 20];
       offsets.forEach(ox => {
-        bullets.push({ kind: 'laser_bolt', pierce: lv2 ? 3 : 2, x: p.x + ox, y: p.y - 20, vx: 0, vy: -890, r: 6.5, dmg: 1.35, color: '#ff70a6' });
+        bullets.push({ kind: 'laser_bolt', pierce: lv2 ? 3 : 2, x: p.x + ox, y: p.y - 20, vx: 0, vy: -890, r: 6.5, dmg: 1.35 * dmgScale, color: '#ff70a6' });
       });
     } else if (p.secondaryWeapon === 'burger') {
       const offsets = lv2 ? [-16, 16] : [0];
       offsets.forEach(ox => {
-        bullets.push({ kind: 'burger_rocket', explosive: true, x: p.x + ox, y: p.y - 30, vx: 0, vy: -580, r: 11, dmg: 3.1, color: '#ff9f1c' });
+        bullets.push({ kind: 'burger_rocket', explosive: true, x: p.x + ox, y: p.y - 30, vx: 0, vy: -580, r: 11, dmg: 3.1 * dmgScale, color: '#ff9f1c' });
       });
     }
   }
@@ -750,79 +943,38 @@
     const spd = 235 * diff.bulletSpeed;
     const toPlayer = player ? Math.atan2(player.y - b.y, player.x - b.x) : Math.PI / 2;
 
-    switch (lvl.id) {
-      case 1:
-        b.shootTimer = b.phase === 3 ? 0.85 : 1.15;
-        for (let k = -2; k <= 2; k++) {
-          const ang = Math.PI / 2 + k * 0.22;
-          enemyBullets.push({ x: b.x + k * 12, y: b.y + 40, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 8, color: '#ff70a6' });
-        }
-        break;
-      case 2:
-        b.shootTimer = 0.95;
-        for (let k = -1; k <= 1; k++) {
-          const ang = toPlayer + k * 0.25;
-          enemyBullets.push({ x: b.x + k * 22, y: b.y + 38, vx: Math.cos(ang) * (spd * 1.1), vy: Math.sin(ang) * (spd * 1.1), r: 9, color: '#ff002b' });
-        }
-        break;
-      case 3:
-        b.shootTimer = 1.15;
-        const rCols = ['#ff5964', '#ff9f1c', '#ffd166', '#06d6a0', '#48dbfb'];
-        for (let k = -2; k <= 2; k++) {
-          const ang = Math.PI / 2 + k * 0.24;
-          enemyBullets.push({ x: b.x + k * 15, y: b.y + 34, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 8.5, color: rCols[k + 2] });
-        }
-        break;
-      case 4:
-        b.shootTimer = 0.85;
-        for (let k = -1; k <= 1; k++) {
-          const ang = Math.PI / 2 + k * 0.35;
-          enemyBullets.push({ x: b.x, y: b.y + 30, vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25), r: 7, color: '#48dbfb' });
-        }
-        break;
-      case 5:
-        b.shootTimer = 0.72;
-        [-18, 18].forEach(ox => {
-          enemyBullets.push({ x: b.x + ox, y: b.y + 35, vx: Math.cos(toPlayer) * (spd * 1.35), vy: Math.sin(toPlayer) * (spd * 1.35), r: 7.5, color: '#90e0ef' });
-        });
-        break;
-      case 6:
-        b.shootTimer = 1.05;
-        for (let k = -1; k <= 1; k++) {
-          const ang = toPlayer + k * 0.28;
-          enemyBullets.push({ x: b.x + k * 24, y: b.y + 38, vx: Math.cos(ang) * (spd * 0.9), vy: Math.sin(ang) * (spd * 0.9), r: 12, color: '#ffafcc' });
-        }
-        break;
-      case 7:
-        b.shootTimer = 1.25;
-        const sporeCount = b.phase === 3 ? 11 : 8;
-        for (let k = 0; k < sporeCount; k++) {
-          const ang = b.time * 1.5 + (Math.PI * 2 * k) / sporeCount;
-          enemyBullets.push({ x: b.x, y: b.y + 15, vx: Math.cos(ang) * (spd * 0.88), vy: Math.sin(ang) * (spd * 0.88), r: 8, color: '#00f5d4' });
-        }
-        break;
-      case 8:
-        b.shootTimer = 0.95;
-        [-58, 58].forEach(cx => {
-          enemyBullets.push({ x: b.x + cx, y: b.y + 24, vx: Math.cos(toPlayer) * spd, vy: Math.sin(toPlayer) * spd, r: 9, color: '#ffba08' });
-        });
-        enemyBullets.push({ x: 40 + Math.random() * (W - 80), y: -15, vx: 0, vy: spd * 1.1, r: 10, color: '#ff5964' });
-        break;
-      case 9:
-        b.shootTimer = 0.45;
-        for (let arm = 0; arm < 2; arm++) {
-          const ang = b.time * 3.4 + arm * Math.PI;
-          enemyBullets.push({ x: b.x, y: b.y + 15, vx: Math.cos(ang) * (spd * 1.15), vy: Math.sin(ang) * (spd * 1.15), r: 7.5, color: '#caf0f8' });
-        }
-        break;
-      case 10:
-      default:
-        b.shootTimer = 0.68;
-        for (let k = -2; k <= 2; k++) {
-          const ang = toPlayer + k * 0.19;
-          enemyBullets.push({ x: b.x, y: b.y + 36, vx: Math.cos(ang) * (spd * 1.15), vy: Math.sin(ang) * (spd * 1.15), r: 8, color: '#ff006e' });
-        }
-        break;
+    if (lvl.id === 1) {
+      b.shootTimer = b.phase === 3 ? 0.85 : 1.15;
+      for (let k = -2; k <= 2; k++) {
+        const ang = Math.PI / 2 + k * 0.22;
+        enemyBullets.push({ x: b.x + k * 12, y: b.y + 40, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 8, color: '#ff70a6' });
+      }
+    } else if (lvl.id === 2) {
+      b.shootTimer = 0.95;
+      for (let k = -1; k <= 1; k++) {
+        const ang = toPlayer + k * 0.25;
+        enemyBullets.push({ x: b.x + k * 22, y: b.y + 38, vx: Math.cos(ang) * (spd * 1.1), vy: Math.sin(ang) * (spd * 1.1), r: 9, color: '#ff002b' });
+      }
+    } else if (lvl.id === 3) {
+      b.shootTimer = 1.15;
+      const rCols = ['#ff5964', '#ff9f1c', '#ffd166', '#06d6a0', '#48dbfb'];
+      for (let k = -2; k <= 2; k++) {
+        const ang = Math.PI / 2 + k * 0.24;
+        enemyBullets.push({ x: b.x + k * 15, y: b.y + 34, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 8.5, color: rCols[k + 2] });
+      }
+    } else if (lvl.id === 7) {
+      b.shootTimer = 1.25;
+      const sporeCount = b.phase === 3 ? 11 : 8;
+      for (let k = 0; k < sporeCount; k++) {
+        const ang = b.time * 1.5 + (Math.PI * 2 * k) / sporeCount;
+        enemyBullets.push({ x: b.x, y: b.y + 15, vx: Math.cos(ang) * (spd * 0.88), vy: Math.sin(ang) * (spd * 0.88), r: 8, color: '#00f5d4' });
+      }
+    } else {
+      b.shootTimer = 0.68;
+      for (let k = -2; k <= 2; k++) {
+        const ang = toPlayer + k * 0.19;
+        enemyBullets.push({ x: b.x, y: b.y + 36, vx: Math.cos(ang) * (spd * 1.15), vy: Math.sin(ang) * (spd * 1.15), r: 8, color: '#ff006e' });
+      }
     }
   }
 
@@ -908,7 +1060,7 @@
     p.squashX += (1 - p.squashX) * Math.min(1, dt * 14);
     p.squashY += (1 - p.squashY) * Math.min(1, dt * 14);
 
-    let speedFactor = 1.0;
+    let speedFactor = p.ship.speedMult || 1.0;
     if (activeEvent) {
       if (activeEvent.type === 'gravity') {
         const dx = activeEvent.x - p.x;
@@ -923,7 +1075,7 @@
       } else if (activeEvent.type === 'sticky') {
         const d = Math.hypot(activeEvent.x - p.x, activeEvent.y - p.y);
         if (d < activeEvent.r) {
-          speedFactor = 0.45;
+          speedFactor *= 0.45;
           if (p.stickyTimer <= 0) {
             p.stickyTimer = 1.2;
             if (synth) synth.sfxSticky(0);
@@ -950,8 +1102,8 @@
       const dy = pointer.y - p.y;
       p.vx = dx * 12;
       p.vy = dy * 12;
-      p.x += dx * Math.min(1, dt * 14 * speedFactor);
-      p.y += dy * Math.min(1, dt * 14 * speedFactor);
+      p.x += dx * Math.min(1, dt * 14 * (speedFactor / (p.ship.speedMult || 1)));
+      p.y += dy * Math.min(1, dt * 14 * (speedFactor / (p.ship.speedMult || 1)));
     } else {
       p.vx *= 0.82;
       p.vy *= 0.82;
@@ -965,13 +1117,14 @@
 
     p.fireCooldown -= dt;
     const wantsFire = keys['Space'] || keys['KeyZ'] || pointer.active;
-    const fireInterval = p.turboTimer > 0 ? 0.13 : 0.18;
+    const baseInterval = p.turboTimer > 0 ? 0.13 : 0.18;
+    const fireInterval = baseInterval * (p.ship.fireRateMult || 1.0);
 
     if (wantsFire && p.fireCooldown <= 0) {
       p.fireCooldown = fireInterval;
       p.squashX = 1.13;
       p.squashY = 0.89;
-      firePlayerWeapon(p, lvl);
+      firePlayerWeapon(p);
     }
 
     for (let i = obstacles.length - 1; i >= 0; i--) {
@@ -989,9 +1142,6 @@
 
       if (Math.hypot(p.x - ob.x, p.y - ob.y) < p.r + ob.r - 4) {
         obstacles.splice(i, 1);
-        if (lvl.theme === 'diamond' && synth) synth.sfxDisintegrate(0);
-        else if (lvl.theme === 'candy' || lvl.theme === 'organic') { if (synth) synth.sfxSticky(0); }
-        else if (lvl.theme === 'volcano') { if (synth) synth.sfxIgnite(0); }
         damagePlayer();
         continue;
       }
@@ -1081,11 +1231,7 @@
           e.hitFlash = 1;
 
           if (b.explosive) {
-            if (vfx) {
-              vfx.triggerFlash('#ffbe0b', 0.14);
-              vfx.addShockwave(b.x, b.y, '#ff9f1c', 85, 0.36);
-              vfx.addBurst(b.x, b.y, ['#ff9f1c', '#ff5964', '#ffd166', '#ffffff'], 12, 210);
-            }
+            if (vfx && vfx.addRealisticExplosion) vfx.addRealisticExplosion(b.x, b.y, '#ff9f1c', 0.95);
             bullets.splice(j, 1);
           } else if (b.pierce && b.pierce > 0) {
             b.pierce--;
@@ -1099,23 +1245,22 @@
             const pan = ((e.x / W) * 2 - 1) * 0.8;
             if (synth) {
               synth.sfxExplosion(pan, false);
-              if (lvl.theme === 'diamond') synth.sfxDisintegrate(pan);
-              else if (lvl.theme === 'underwater') synth.sfxUnderwater(pan);
-              else if (lvl.theme === 'volcano') synth.sfxIgnite(pan);
+              if (lvl.theme === 'underwater') synth.sfxUnderwater(pan);
             }
-            if (vfx) {
-              vfx.addShockwave(e.x, e.y, lvl.accent, 75, 0.36);
-              vfx.addBurst(e.x, e.y, ['#ff5964', '#ffd166', lvl.accent, '#ffffff'], 15, 225);
+            if (vfx && vfx.addRealisticExplosion) {
+              vfx.addRealisticExplosion(e.x, e.y, lvl.accent, 1.0);
             }
             const pts = Math.round(e.points * combo * diff.scoreMult);
+            const earnedCoins = Math.round(e.coinValue * (p.ship.coinMult || 1));
             score += pts;
+            runCoins += earnedCoins;
             kills++;
             combo = Math.min(5, combo + 1);
             comboTimer = 3.2;
-            if (vfx) vfx.addPopup(e.x, e.y, `+${pts}`, '#ffd166');
+            if (vfx) vfx.addPopup(e.x, e.y, `+${earnedCoins} 🪙`, '#ffd6a5');
             maybeDropFoodBonus(e.x, e.y, false);
             enemies.splice(i, 1);
-            screenShake = Math.max(screenShake, 5.5);
+            screenShake = Math.max(screenShake, 7);
           } else {
             const pan = ((e.x / W) * 2 - 1) * 0.8;
             if (synth) synth.sfxHit(pan);
@@ -1128,10 +1273,7 @@
 
       if (Math.hypot(p.x - e.x, p.y - e.y) < p.r + e.r - 4) {
         enemies.splice(i, 1);
-        if (vfx) {
-          vfx.addShockwave(e.x, e.y, '#ff5964', 70, 0.35);
-          vfx.addBurst(e.x, e.y, ['#ff5964', '#ffd166', '#ffffff'], 14, 200);
-        }
+        if (vfx && vfx.addRealisticExplosion) vfx.addRealisticExplosion(e.x, e.y, '#ff5964', 1.0);
         damagePlayer();
         continue;
       }
@@ -1143,12 +1285,6 @@
 
     for (let i = enemyBullets.length - 1; i >= 0; i--) {
       const eb = enemyBullets[i];
-      if (eb.homing && eb.life > 0) {
-        eb.life -= dt;
-        const ang = Math.atan2(p.y - eb.y, p.x - eb.x);
-        eb.vx += Math.cos(ang) * 260 * dt;
-        eb.vy += Math.sin(ang) * 260 * dt;
-      }
       eb.x += eb.vx * dt;
       eb.y += eb.vy * dt;
 
@@ -1221,41 +1357,11 @@
         b.specialTimer = 5.4;
         if (enemies.length < 3) spawnEnemy();
         maybeDropFoodBonus(b.x, b.y + 45, true);
-      } else if (b.phase === 3) {
-        if (lvl.id === 4 && !b.crossLasers.active) {
-          b.crossLasers.active = true;
-          b.crossLasers.charging = true;
-          b.crossLasers.timer = 1.1;
-          b.crossLasers.angle = 0.48;
-          if (synth) synth.sfxBossAlarm();
-        } else if (b.laserState === 'idle') {
-          b.laserState = 'charge';
-          b.laserTimer = 1.1;
-          b.laserX = player.x;
-          if (synth) synth.sfxBossAlarm();
-        }
-      }
-    }
-
-    if (b.crossLasers.active) {
-      b.crossLasers.timer -= dt;
-      if (b.crossLasers.charging) {
-        if (b.crossLasers.timer <= 0) {
-          b.crossLasers.charging = false;
-          b.crossLasers.timer = 1.2;
-          if (synth) synth.sfxExplosion(0, true);
-        }
-      } else {
-        b.crossLasers.angle = Math.max(0.08, b.crossLasers.angle - dt * 0.28);
-        const dy = player.y - (b.y + 15);
-        if (dy > 0) {
-          const beamOffset = Math.tan(b.crossLasers.angle) * dy;
-          if (Math.abs(Math.abs(player.x - b.x) - beamOffset) < 22 + player.r * 0.5) damagePlayer();
-        }
-        if (b.crossLasers.timer <= 0) {
-          b.crossLasers.active = false;
-          b.specialTimer = 4.2;
-        }
+      } else if (b.phase === 3 && b.laserState === 'idle') {
+        b.laserState = 'charge';
+        b.laserTimer = 1.1;
+        b.laserX = player.x;
+        if (synth) synth.sfxBossAlarm();
       }
     }
 
@@ -1286,20 +1392,20 @@
         b.hitFlash = 1;
         score += 25;
         if (vfx) {
-          if (bul.explosive) vfx.addShockwave(bul.x, bul.y, '#ff9f1c', 90, 0.38);
-          vfx.addBurst(bul.x, bul.y, ['#ffd166', lvl.accent, '#ffffff'], 6, 150);
+          if (bul.explosive && vfx.addRealisticExplosion) vfx.addRealisticExplosion(bul.x, bul.y, '#ff9f1c', 1.1);
+          else vfx.addBurst(bul.x, bul.y, ['#ffd166', lvl.accent, '#ffffff'], 6, 150);
         }
 
         if (b.hp <= 0) {
           score += Math.round((2500 + lvl.id * 400) * diff.scoreMult);
+          runCoins += Math.round((lvl.coinReward || 350) * (player.ship.coinMult || 1));
           kills++;
           if (synth) synth.sfxExplosion(0, true);
           if (vfx) {
-            vfx.triggerFlash('#ffffff', 0.55);
-            vfx.addShockwave(b.x, b.y, '#ffd166', 200, 0.65);
-            vfx.addBurst(b.x, b.y, ['#ff5964', '#ffd166', '#06d6a0', lvl.accent, '#ffffff'], 36, 330);
+            vfx.triggerFlash('#ffffff', 0.65);
+            if (vfx.addRealisticExplosion) vfx.addRealisticExplosion(b.x, b.y, lvl.accent, 2.2);
           }
-          screenShake = 18;
+          screenShake = 22;
           boss = null;
           enemyBullets = [];
           enemies = [];
@@ -1339,7 +1445,7 @@
     if (synth) synth.sfxHurt();
     if (vfx) {
       vfx.triggerFlash('#ff5964', 0.35);
-      vfx.addBurst(player.x, player.y, ['#ff5964', '#ffd166', '#ffffff'], 16, 210);
+      if (vfx.addRealisticExplosion) vfx.addRealisticExplosion(player.x, player.y, '#ff5964', 1.1);
     }
 
     if (player.hp <= 0) finishGame(false);
@@ -1367,7 +1473,7 @@
     victoryCatCtx.fillStyle = '#72efdd';
     victoryCatCtx.font = '900 12px sans-serif';
     victoryCatCtx.textAlign = 'center';
-    victoryCatCtx.fillText('МУР-МЯУ! ЕДА ДЛЯ КОТОВИИ-17!', vw / 2, 18);
+    victoryCatCtx.fillText('МУР-МЯУ! ЕДА И МОНЕТЫ ДЛЯ КОТОВИИ-17!', vw / 2, 18);
   }
 
   function finishGame(victory) {
@@ -1378,6 +1484,9 @@
 
     const lvl = LEVELS[selectedLevelIdx];
     const victoryWrap = document.getElementById('victory-cat-wrap');
+
+    // Сохраняем заработанные в бою монеты даже при поражении (при победе — полный бонус)
+    progress.coins += runCoins;
 
     if (victory) {
       if (synth) synth.sfxVictory();
@@ -1401,15 +1510,15 @@
       ? (lvl.id === 10 ? 'КОТОВИЯ-17 СПАСЕНА! 👑' : 'МИССИЯ ВЫПОЛНЕНА! 🏆')
       : 'ИГРА ОКОНЧЕНА';
     document.getElementById('end-subtitle').textContent = victory
-      ? `${lvl.bossName} повержен! Редж отправил груз еды на родную планету!`
-      : 'Попробуй ещё раз — подбери блюдо, чтобы получить второе орудие!';
+      ? `${lvl.bossName} повержен! Загляни в Ангар, чтобы прокачать корабль!`
+      : `Ты собрал +${runCoins} 🪙! Прокачай корабль или оружие в Ангаре!`;
     document.getElementById('final-score').textContent = score;
-    document.getElementById('final-best').textContent = progress.bestScore;
+    document.getElementById('final-coins').textContent = `+${runCoins} 🪙`;
     document.getElementById('final-kills').textContent = kills;
 
     const nextBtn = document.getElementById('next-level-btn');
     if (victory) {
-      nextBtn.textContent = lvl.id < 10 ? `СЕКТОР ${lvl.id + 1} ➔` : 'ЗАНОВО С 1-ГО ➔';
+      nextBtn.textContent = selectedLevelIdx < LEVELS.length - 1 ? 'ДАЛЬШЕ ➔' : 'ЗАНОВО С 1-ГО ➔';
     } else {
       nextBtn.textContent = 'ЕЩЁ РАЗ 🔄';
     }
@@ -1435,6 +1544,7 @@
     ctx.restore();
   }
 
+  // ОТРИСОВКА 3 РАЗНЫХ КОРАБЛЕЙ ИГРОКА (ШАТТЛ, ПЕРЕХВАТЧИК, ЛИНКОР)
   function drawPlayer(p) {
     if (p.invuln > 0 && Math.floor(p.invuln * 16) % 2 === 0) return;
 
@@ -1446,8 +1556,12 @@
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
 
+    const shipId = p.ship.id;
+    const hullCol = p.ship.hullColor || '#fff8eb';
+    const wingCol = p.ship.wingColor || '#ff5964';
+
     ctx.fillStyle = 'rgba(8, 5, 22, 0.36)';
-    ctx.beginPath(); ctx.ellipse(5, 27, 20, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(5, 27, 22, 8, 0, 0, Math.PI * 2); ctx.fill();
 
     const flameH = 16 + Math.sin(globalTime * 38) * 5 + (p.turboTimer > 0 ? 10 : 0);
     [-11, 11].forEach(ox => {
@@ -1460,18 +1574,31 @@
       ctx.fill(); ctx.stroke();
     });
 
-    ctx.fillStyle = '#ff5964';
+    ctx.fillStyle = wingCol;
     ctx.strokeStyle = BORDER_INK;
     ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-14, -2); ctx.lineTo(-32, 16); ctx.lineTo(-12, 20);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
 
-    ctx.beginPath();
-    ctx.moveTo(14, -2); ctx.lineTo(32, 16); ctx.lineTo(12, 20);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
+    if (shipId === 'interceptor') {
+      // Стреловидные неоновые крылья Перехватчика
+      ctx.beginPath();
+      ctx.moveTo(-12, -8); ctx.lineTo(-36, 14); ctx.lineTo(-14, 18);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(12, -8); ctx.lineTo(36, 14); ctx.lineTo(14, 18);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (shipId === 'dreadnought') {
+      // Широкие бронированные крылья Линкора
+      roundRectPath(ctx, -36, -4, 72, 22, 8);
+      ctx.fill(); ctx.stroke();
+    } else {
+      // Классические стабилизаторы Шаттла
+      ctx.beginPath();
+      ctx.moveTo(-14, -2); ctx.lineTo(-32, 16); ctx.lineTo(-12, 20);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(14, -2); ctx.lineTo(32, 16); ctx.lineTo(12, 20);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
 
     if (p.secondaryWeapon !== 'none') {
       ctx.fillStyle = '#ffd166';
@@ -1481,12 +1608,16 @@
       });
     }
 
-    ctx.fillStyle = '#fff8eb';
-    ctx.beginPath(); ctx.ellipse(0, 2, 18, 26, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // Корпус
+    ctx.fillStyle = hullCol;
+    ctx.beginPath();
+    ctx.ellipse(0, 2, shipId === 'dreadnought' ? 21 : 18, 26, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
 
-    ctx.fillStyle = '#ff5964';
+    ctx.fillStyle = wingCol;
     ctx.beginPath(); ctx.arc(0, -14, 13, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
 
+    // Кабина с Реджем
     ctx.fillStyle = '#48dbfb';
     ctx.beginPath(); ctx.arc(0, -1, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
@@ -1495,7 +1626,6 @@
     ctx.moveTo(-8, -4); ctx.lineTo(-6, -11); ctx.lineTo(-2, -6);
     ctx.moveTo(8, -4); ctx.lineTo(6, -11); ctx.lineTo(2, -6);
     ctx.fill();
-
     ctx.beginPath(); ctx.arc(0, 0, 8.5, 0, Math.PI * 2); ctx.fill();
 
     ctx.fillStyle = BORDER_INK;
@@ -1511,9 +1641,6 @@
 
     ctx.fillStyle = '#ff5964';
     ctx.beginPath(); ctx.arc(0, 1.8, 1.6, 0, Math.PI * 2); ctx.fill();
-
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.beginPath(); ctx.ellipse(-5, -6, 4, 2.2, -0.5, 0, Math.PI * 2); ctx.fill();
 
     if (p.shield) {
       const pulse = 34 + Math.sin(globalTime * 8) * 2.5;
@@ -1532,27 +1659,27 @@
 
     ctx.save();
     for (let i = 0; i < player.maxHp; i++) {
-      const hx = 22 + i * 24;
+      const hx = 20 + i * 21;
       const hy = 26;
       ctx.fillStyle = i < player.hp ? '#ff5964' : 'rgba(255,255,255,0.2)';
       ctx.strokeStyle = BORDER_INK;
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2.2;
       ctx.beginPath();
-      ctx.arc(hx - 4, hy, 5.5, 0, Math.PI * 2);
-      ctx.arc(hx + 4, hy, 5.5, 0, Math.PI * 2);
-      ctx.moveTo(hx - 9, hy + 2);
-      ctx.lineTo(hx, hy + 11);
-      ctx.lineTo(hx + 9, hy + 2);
+      ctx.arc(hx - 3.5, hy, 5, 0, Math.PI * 2);
+      ctx.arc(hx + 3.5, hy, 5, 0, Math.PI * 2);
+      ctx.moveTo(hx - 8, hy + 2);
+      ctx.lineTo(hx, hy + 10);
+      ctx.lineTo(hx + 8, hy + 2);
       ctx.fill(); ctx.stroke();
     }
 
     ctx.fillStyle = '#fff8eb';
     ctx.strokeStyle = BORDER_INK;
     ctx.lineWidth = 4;
-    ctx.font = '900 21px sans-serif';
+    ctx.font = '900 20px sans-serif';
     ctx.textAlign = 'left';
-    ctx.strokeText(`${score}`, 18, 62);
-    ctx.fillText(`${score}`, 18, 62);
+    ctx.strokeText(`${score}  •  🪙 ${runCoins}`, 18, 60);
+    ctx.fillText(`${score}  •  🪙 ${runCoins}`, 18, 60);
 
     ctx.fillStyle = lvl.accent;
     ctx.font = '800 12px sans-serif';
@@ -1560,22 +1687,8 @@
     const subHud = combo > 1
       ? `СЕКТОР ${lvl.id} • ${waveLabel} • x${combo}`
       : `СЕКТОР ${lvl.id} • ${waveLabel}`;
-    ctx.strokeText(subHud, 18, 80);
-    ctx.fillText(subHud, 18, 80);
-
-    if (player.secondaryWeapon !== 'none') {
-      const wLabels = {
-        pizza:  '🍕 ПЛАЗМА + ВЕЕР',
-        sushi:  '🍣 ПЛАЗМА + СЮРИКЕНЫ',
-        donut:  '🍩 ПЛАЗМА + ЛАЗЕРЫ',
-        burger: '🍔 ПЛАЗМА + РАКЕТЫ'
-      };
-      ctx.fillStyle = '#ffd166';
-      ctx.font = '900 12px sans-serif';
-      const wText = wLabels[player.secondaryWeapon] + (player.secondaryLevel === 2 ? ' (УР.2)' : '');
-      ctx.strokeText(wText, 18, 98);
-      ctx.fillText(wText, 18, 98);
-    }
+    ctx.strokeText(subHud, 18, 78);
+    ctx.fillText(subHud, 18, 78);
 
     if (boss) {
       const bw = Math.min(320, W - 170);
