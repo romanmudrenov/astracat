@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Астро-Кот</title>
-  <link rel="stylesheet" href="css/style.css?v=6" />
+  <link rel="stylesheet" href="css/style.css?v=7" />
 </head>
 <body>
   <div id="game-wrap">
@@ -17,9 +17,10 @@
       <button id="mute-btn" class="icon-btn" title="Звук (M)">🔊</button>
     </div>
 
-    <!-- ГЛАВНОЕ МЕНЮ -->
-    <div id="start-overlay" class="overlay">
+    <!-- ГЛАВНОЕ МЕНЮ (открывается сразу после комикса) -->
+    <div id="start-overlay" class="overlay hidden">
       <div class="card">
+        <div class="badge">Космическая экспедиция</div>
         <h1>АСТРО-КОТ</h1>
 
         <div class="section-label">Уровень сложности</div>
@@ -47,7 +48,7 @@
 
         <div class="btn-row">
           <button id="start-btn" class="btn-play">В ПОЛЁТ! 🚀</button>
-          <button id="lore-open-btn" class="btn-secondary">📖 История</button>
+          <button id="lore-open-btn" class="btn-secondary">📖 Комикс</button>
           <button id="menu-sound-btn" class="btn-secondary">🎛 Звук</button>
         </div>
 
@@ -55,9 +56,10 @@
       </div>
     </div>
 
-    <!-- СЮЖЕТНЫЕ СЛАЙДЫ ПРЕДЫСТОРИИ (КОТОВИЯ-17 И КОТ РЕДЖ) -->
-    <div id="lore-overlay" class="overlay hidden">
+    <!-- КОМИКС ПРЕДЫСТОРИИ (запускается автоматически при открытии ссылки) -->
+    <div id="lore-overlay" class="overlay">
       <div class="card lore-card">
+        <div class="badge">Комикс • Котовия-17</div>
         <div class="lore-dots" id="lore-dots">
           <span class="dot active"></span>
           <span class="dot"></span>
@@ -65,17 +67,19 @@
         </div>
 
         <div class="lore-art-box" id="lore-art-box">
-          <canvas id="lore-canvas" width="360" height="170"></canvas>
+          <!-- Если загружены img/slide1.png .. slide3.png, покажутся они; иначе работает живая Canvas-сцена -->
+          <img id="lore-img" class="hidden" alt="Слайд комикса" />
+          <canvas id="lore-canvas" width="360" height="185"></canvas>
         </div>
 
         <h2 id="lore-title">ПЛАНЕТА КОТОВИЯ-17</h2>
         <p class="intro-story" id="lore-text">
-          На родной планете Котовия-17 у кота по имени Редж заканчиваются запасы еды. Миски пустеют, а до ближайших продовольственных туманностей — световые годы!
+          На родной планете Котовия-17 у кота по имени Редж заканчивается еда. Миски пустеют, а до ближайших продовольственных туманностей — световые годы!
         </p>
 
         <div class="btn-row">
           <button id="lore-next-btn" class="btn-play">ДАЛЬШЕ ➔</button>
-          <button id="lore-skip-btn" class="btn-secondary">ПРОПУСТИТЬ</button>
+          <button id="lore-skip-btn" class="btn-secondary">В МЕНЮ</button>
         </div>
       </div>
     </div>
@@ -188,10 +192,10 @@
   </div>
 
   <!-- Модули из папки js/ -->
-  <script src="js/synth.js?v=6"></script>
-  <script src="js/vfx.js?v=6"></script>
-  <script src="js/world3d.js?v=6"></script>
-  <script src="js/entities.js?v=6"></script>
-  <script src="js/game.js?v=6"></script>
+  <script src="js/synth.js?v=7"></script>
+  <script src="js/vfx.js?v=7"></script>
+  <script src="js/world3d.js?v=7"></script>
+  <script src="js/entities.js?v=7"></script>
+  <script src="js/game.js?v=7"></script>
 </body>
 </html>
