@@ -8,7 +8,6 @@ class PolySynth {
     this.delayNode = null;
     this.noiseBuffer = null;
 
-    // 64-голосная полифония
     this.maxVoices = 64;
     this.activeVoices = [];
 
@@ -16,7 +15,7 @@ class PolySynth {
     this.musicEnabled = true;
     this.sfxEnabled = true;
     this.musicVolume = 0.50;
-    this.sfxVolume = 1.08;
+    this.sfxVolume = 1.10;
     this.timbre = 'space';
 
     this.availableTracks = ['level1.mp3', 'level2.mp3', 'level3.mp3', 'level4.mp3'];
@@ -25,9 +24,27 @@ class PolySynth {
 
     this.bgmAudio = null;
     this.currentTrackPath = '';
+    this.pendingTrack = null;
     this.shotStep = 0;
 
     this.scanMusicFolder();
+    this.setupAutoUnlock();
+  }
+
+  // Автоматическая разблокировка музыки заставки при открытии страницы или первом касании
+  setupAutoUnlock() {
+    const unlock = () => {
+      this.init();
+      if (this.pendingTrack && (!this.bgmAudio || this.bgmAudio.paused)) {
+        const t = this.pendingTrack;
+        this.pendingTrack = null;
+        this.playTrack(t.file, t.fallback);
+      } else if (this.bgmAudio && this.bgmAudio.paused && this.musicEnabled && !this.muted) {
+        this.bgmAudio.play().catch(() => {});
+      }
+    };
+    window.addEventListener('pointerdown', unlock, { passive: true });
+    window.addEventListener('keydown', unlock, { passive: true });
   }
 
   scanMusicFolder() {
@@ -58,7 +75,7 @@ class PolySynth {
         sel.value = curVal;
       }
       if (hint) {
-        hint.textContent = `Треков в music/: ${list.length} (+ boss.mp3 для боссов)`;
+        hint.textContent = `Заставка: intro.mp3 • Босс: boss.mp3 • Уровней: ${list.length}`;
       }
     };
 
@@ -145,7 +162,6 @@ class PolySynth {
   }
 
   playTrack(filename, fallbackTrack = null) {
-    this.init();
     const path = `music/${filename}`;
     if (this.currentTrackPath === path && this.bgmAudio && !this.bgmAudio.paused) {
       return;
@@ -157,17 +173,34 @@ class PolySynth {
       const audio = new Audio(path);
       audio.loop = true;
       audio.volume = this.getEffectiveMusicVol();
+
+      audio.onerror = () => {
+        if (fallbackTrack && filename !== fallbackTrack) {
+          this.playTrack(fallbackTrack, null);
+        }
+      };
+
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(() => {
-          if (fallbackTrack) this.playTrack(fallbackTrack);
+          // Если браузер ждёт первого клика по странице — запоминаем трек и включаем при касании
+          this.pendingTrack = { file: filename, fallback: fallbackTrack };
         });
       }
       this.bgmAudio = audio;
     } catch (e) {}
   }
 
+  // Музыка заставки и меню: пытается запустить music/intro.mp3 (если его ещё нет — включает level1.mp3)
+  startIntroMusic() {
+    this.playTrack('intro.mp3', 'level1.mp3');
+  }
+
   startMusic(mode = 'normal') {
+    if (mode === 'intro') {
+      this.startIntroMusic();
+      return;
+    }
     if (mode === 'boss') {
       const prevTrack = this.recentTracks[this.recentTracks.length - 1] || 'level1.mp3';
       this.playTrack('boss.mp3', prevTrack);
@@ -241,10 +274,10 @@ class PolySynth {
     detune = 0,
     time = null,
     duration = 0.22,
-    attack = 0.018,
+    attack = 0.016,
     decay = 0.08,
     sustain = 0.35,
-    release = 0.15,
+    release = 0.14,
     gain = 0.11,
     filterFreq = 1450,
     sendDelay = true,
@@ -267,7 +300,7 @@ class PolySynth {
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.Q.setValueAtTime(0.85, t0);
-    const maxCut = this.timbre === 'space' ? 1350 : (this.timbre === 'classic' ? 1750 : 2050);
+    const maxCut = this.timbre === 'space' ? 1400 : (this.timbre === 'classic' ? 1800 : 2100);
     filter.frequency.setValueAtTime(Math.min(filterFreq, maxCut), t0);
 
     const env = this.ctx.createGain();
@@ -358,7 +391,7 @@ class PolySynth {
     };
   }
 
-  // --- ЧИСТЫЕ МЕЛОДИЧНЫЕ ASMR-ВЫСТРЕЛЫ БЕЗ СИНХРОНИЗАЦИИ ---
+  // ЧИСТЫЕ ЗВУКИ ОРУЖИЯ (включая Фрактальные сюрикены, Электрический удар и Волновую пушку)
   sfxShootWeapon(pan = 0, baseWeapon = 'droplet', secondary = 'none') {
     if (!this.ctx || this.muted) return;
     const now = this.ctx.currentTime;
@@ -385,13 +418,35 @@ class PolySynth {
         duration: 0.15, attack: 0.014, decay: 0.06, sustain: 0.25, release: 0.13,
         gain: 0.075, filterFreq: 1300, sendDelay: true, pan
       });
-      this.playNoise({
-        time: now, duration: 0.08, gain: 0.04,
-        filterType: 'bandpass', filterFreq: 900, filterEnd: 400
-      });
     }
 
-    if (secondary !== 'none') {
+    // Озвучка спец-оружия 1-го уровня и бонусных орудий
+    if (secondary === 'fractal_shuriken' || secondary === 'sushi') {
+      // Переливающийся кристальный спин сюрикена
+      this.playVoice({
+        time: now + 0.015, freq: 1046.5, slideTo: 1567.98, type: 'sine',
+        duration: 0.09, attack: 0.006, decay: 0.04, sustain: 0.2, release: 0.08,
+        gain: 0.065, filterFreq: 2000, sendDelay: true, pan: -pan * 0.6
+      });
+    } else if (secondary === 'electric_shock') {
+      // Мягкий ASMR-разряд электрической дуги
+      this.playNoise({
+        time: now, duration: 0.08, gain: 0.075,
+        filterType: 'bandpass', filterFreq: 1750, filterEnd: 620
+      });
+      this.playVoice({
+        time: now, freq: 880, slideTo: 220, type: 'triangle',
+        duration: 0.08, attack: 0.005, decay: 0.04, sustain: 0.15, release: 0.05,
+        gain: 0.07, filterFreq: 1850, pan
+      });
+    } else if (secondary === 'wave_cannon') {
+      // Глубокий пульсирующий импульс волновой пушки
+      this.playVoice({
+        time: now, freq: 340, slideTo: 120, type: 'sine',
+        duration: 0.16, attack: 0.01, decay: 0.06, sustain: 0.3, release: 0.1,
+        gain: 0.10, filterFreq: 950, sendDelay: true, pan
+      });
+    } else if (secondary !== 'none') {
       this.playVoice({
         time: now + 0.025, freq: this.midiToFreq(noteMidi + 12), type: 'sine',
         duration: 0.12, attack: 0.012, decay: 0.05, sustain: 0.2, release: 0.12,
