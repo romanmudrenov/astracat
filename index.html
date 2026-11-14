@@ -1,10 +1,9 @@
-html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Астро-Кот: Звёздный Патруль — 10 Уровней</title>
+  <title>Астро-Кот: 10 Звёздных Секторов</title>
   <style>
     * {
       box-sizing: border-box;
@@ -12,6 +11,7 @@ html
       padding: 0;
       user-select: none;
       -webkit-user-select: none;
+      touch-action: none;
     }
 
     html, body {
@@ -19,7 +19,7 @@ html
       height: 100%;
       overflow: hidden;
       background: #140f2d;
-      font-family: 'Segoe UI', Roboto, 'Trebuchet MS', system-ui, sans-serif;
+      font-family: 'Segoe UI', Roboto, 'Trebuchet MS', sans-serif;
     }
 
     #game-wrap {
@@ -29,18 +29,17 @@ html
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #140f2d;
+      background: #120d29;
     }
 
     canvas {
       display: block;
       width: 100%;
       height: 100%;
-      touch-action: none;
     }
 
-    /* Верхняя панель быстрых кнопок поверх canvas */
-    #top-controls {
+    /* Верхние кнопки HUD */
+    .hud-top-right {
       position: absolute;
       top: 12px;
       right: 12px;
@@ -49,33 +48,29 @@ html
       gap: 8px;
     }
 
-    .hud-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
       border: 3px solid #1e1633;
       background: #ffd166;
       color: #1e1633;
-      font-size: 19px;
+      font-size: 18px;
       font-weight: 900;
       cursor: pointer;
       box-shadow: 0 4px 0 #1e1633;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.08s ease, background 0.15s ease;
+      transition: transform 0.08s ease;
     }
 
-    .hud-btn:hover {
-      background: #ffe08a;
-    }
-
-    .hud-btn:active {
+    .icon-btn:active {
       transform: translateY(3px);
       box-shadow: 0 1px 0 #1e1633;
     }
 
-    .hud-btn.hidden {
+    .icon-btn.hidden {
       display: none;
     }
 
@@ -83,15 +78,14 @@ html
     .overlay {
       position: absolute;
       inset: 0;
-      z-index: 30;
+      z-index: 20;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 14px;
       background: rgba(16, 11, 38, 0.76);
-      backdrop-filter: blur(6px);
-      transition: opacity 0.22s ease;
+      backdrop-filter: blur(5px);
+      transition: opacity 0.2s ease;
     }
 
     .overlay.hidden {
@@ -101,31 +95,21 @@ html
 
     .card {
       width: 100%;
-      max-width: 470px;
+      max-width: 460px;
       max-height: 94vh;
       overflow-y: auto;
-      touch-action: pan-y;
       background: #fff8eb;
       border: 4px solid #1e1633;
-      border-radius: 26px;
-      padding: 20px 18px;
+      border-radius: 24px;
+      padding: 18px 18px 20px;
       text-align: center;
       color: #1e1633;
-      box-shadow: 0 10px 0 #1e1633, 0 22px 44px rgba(0, 0, 0, 0.5);
-      animation: popIn 0.3s cubic-bezier(0.22, 1.35, 0.36, 1);
-    }
-
-    .card::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .card::-webkit-scrollbar-thumb {
-      background: #cbbba0;
-      border-radius: 999px;
+      box-shadow: 0 9px 0 #1e1633, 0 18px 36px rgba(0, 0, 0, 0.45);
+      animation: popIn 0.28s cubic-bezier(0.22, 1.35, 0.36, 1);
     }
 
     @keyframes popIn {
-      0% { transform: scale(0.86) translateY(14px); opacity: 0; }
+      0% { transform: scale(0.88) translateY(12px); opacity: 0; }
       100% { transform: scale(1) translateY(0); opacity: 1; }
     }
 
@@ -135,16 +119,16 @@ html
       color: #1e1633;
       font-weight: 900;
       font-size: 11px;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.07em;
       text-transform: uppercase;
-      padding: 4px 12px;
+      padding: 4px 11px;
       border-radius: 999px;
       border: 2.5px solid #1e1633;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     h1 {
-      font-size: clamp(22px, 5vw, 27px);
+      font-size: 24px;
       line-height: 1.15;
       font-weight: 900;
       color: #ff5964;
@@ -154,7 +138,7 @@ html
     }
 
     h2 {
-      font-size: 22px;
+      font-size: 21px;
       font-weight: 900;
       color: #1e1633;
       margin-bottom: 10px;
@@ -164,199 +148,120 @@ html
       font-size: 13px;
       color: #4a3f6b;
       font-weight: 600;
-      line-height: 1.38;
+      line-height: 1.35;
       margin-bottom: 12px;
     }
 
     .section-label {
+      text-align: left;
       font-size: 11px;
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: #5c507d;
-      text-align: left;
-      margin-bottom: 6px;
+      margin: 10px 0 6px;
     }
 
-    /* Селектор сложности */
+    /* Выбор сложности */
     .diff-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 7px;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
-    .diff-btn {
+    .pill-btn {
       padding: 8px 6px;
-      border-radius: 13px;
+      font-size: 12px;
+      font-weight: 900;
+      border-radius: 12px;
       border: 2.5px solid #1e1633;
       background: #ffffff;
       color: #1e1633;
-      font-size: 13px;
-      font-weight: 800;
       cursor: pointer;
       box-shadow: 0 3px 0 #1e1633;
-      transition: transform 0.08s ease, background 0.12s ease;
+      transition: transform 0.06s ease, background 0.12s ease;
     }
 
-    .diff-btn:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 #1e1633;
-    }
-
-    .diff-btn.active {
+    .pill-btn.active {
       background: #ffd166;
-      transform: translateY(-1px);
+      transform: translateY(1px);
+      box-shadow: 0 2px 0 #1e1633;
     }
 
-    .diff-desc {
-      font-size: 11.5px;
-      font-weight: 700;
-      color: #5c507d;
-      margin-bottom: 12px;
-      min-height: 16px;
-    }
-
-    /* Сетка выбора 10 уровней */
+    /* Сетка 10 уровней */
     .levels-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 7px;
-      margin-bottom: 10px;
+      gap: 6px;
+      margin-bottom: 8px;
     }
 
     .lvl-btn {
       position: relative;
-      padding: 7px 4px 6px;
-      border-radius: 14px;
+      padding: 7px 2px 6px;
+      border-radius: 12px;
       border: 2.5px solid #1e1633;
       background: #ffffff;
       color: #1e1633;
+      font-weight: 900;
+      font-size: 14px;
       cursor: pointer;
       box-shadow: 0 3px 0 #1e1633;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       gap: 2px;
-      transition: transform 0.08s ease, box-shadow 0.08s ease;
-    }
-
-    .lvl-btn:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 #1e1633;
     }
 
     .lvl-btn.active {
-      outline: 3px solid #ff5964;
-      outline-offset: 1px;
-      transform: translateY(-2px);
-      box-shadow: 0 5px 0 #1e1633;
+      background: #48dbfb;
+      transform: translateY(1px);
+      box-shadow: 0 2px 0 #1e1633;
     }
 
-    .lvl-icon {
-      font-size: 16px;
-      line-height: 1;
-    }
-
-    .lvl-num {
-      font-size: 12px;
-      font-weight: 900;
-      line-height: 1;
-    }
-
-    .lvl-star {
-      position: absolute;
-      top: -6px;
-      right: -5px;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #ffd166;
-      border: 2px solid #1e1633;
+    .lvl-btn .star {
       font-size: 10px;
-      font-weight: 900;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      line-height: 1;
+      color: #ffb703;
+      text-shadow: 0 1px 0 #1e1633;
+    }
+
+    .selected-level-box {
+      background: #f2e8d5;
+      border: 2px solid #1e1633;
+      border-radius: 12px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
       color: #1e1633;
-    }
-
-    /* Карточка выбранного биома */
-    .biome-preview {
-      background: #ffffff;
-      border: 2.5px solid #1e1633;
-      border-radius: 15px;
-      padding: 10px 12px;
-      margin-bottom: 13px;
-      text-align: left;
-      display: flex;
-      align-items: center;
-      gap: 11px;
-    }
-
-    .biome-swatch {
-      width: 44px;
-      height: 44px;
-      border-radius: 13px;
-      border: 2.5px solid #1e1633;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
-    }
-
-    .biome-info-title {
-      font-size: 14px;
-      font-weight: 900;
-      color: #1e1633;
-      margin-bottom: 2px;
-    }
-
-    .biome-info-desc {
-      font-size: 11.5px;
-      font-weight: 600;
-      color: #524673;
-      line-height: 1.3;
-    }
-
-    .biome-info-boss {
-      font-size: 11px;
-      font-weight: 800;
-      color: #d90429;
-      margin-top: 3px;
+      margin-bottom: 12px;
     }
 
     /* Кнопки действий */
-    .action-row {
+    .btn-row {
       display: flex;
-      gap: 9px;
-      margin-bottom: 10px;
+      gap: 8px;
     }
 
-    .btn-primary {
+    .btn-play {
       flex: 1;
-      padding: 14px 16px;
-      font-size: 18px;
+      padding: 13px 14px;
+      font-size: 16px;
       font-weight: 900;
       letter-spacing: 0.03em;
       color: #1e1633;
       background: #06d6a0;
-      border: 3.5px solid #1e1633;
-      border-radius: 16px;
+      border: 3px solid #1e1633;
+      border-radius: 15px;
       cursor: pointer;
       box-shadow: 0 5px 0 #1e1633;
-      transition: transform 0.08s ease, background 0.15s ease;
+      transition: transform 0.08s ease;
     }
 
-    .btn-primary:hover {
-      background: #1be7b2;
-    }
-
-    .btn-primary:active {
-      transform: translateY(4px);
-      box-shadow: 0 1px 0 #1e1633;
+    .btn-play:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #1e1633;
     }
 
     .btn-secondary {
@@ -366,132 +271,84 @@ html
       color: #1e1633;
       background: #ffd166;
       border: 3px solid #1e1633;
-      border-radius: 16px;
+      border-radius: 15px;
       cursor: pointer;
       box-shadow: 0 5px 0 #1e1633;
-      transition: transform 0.08s ease, background 0.15s ease;
-      white-space: nowrap;
-    }
-
-    .btn-secondary:hover {
-      background: #ffe08a;
     }
 
     .btn-secondary:active {
-      transform: translateY(4px);
-      box-shadow: 0 1px 0 #1e1633;
-    }
-
-    .btn-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 9px;
-    }
-
-    .controls-hint {
-      font-size: 11.5px;
-      color: #5c507d;
-      background: #f2e8d5;
-      border: 2px solid #e0d2b8;
-      border-radius: 12px;
-      padding: 7px 10px;
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-
-    .best-line {
-      font-size: 12.5px;
-      font-weight: 800;
-      color: #6b5e8c;
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #1e1633;
     }
 
     /* Настройки звука */
-    .setting-box {
+    .setting-row {
       background: #ffffff;
       border: 2.5px solid #1e1633;
-      border-radius: 16px;
-      padding: 12px 14px;
-      margin-bottom: 11px;
+      border-radius: 14px;
+      padding: 10px 12px;
+      margin-bottom: 9px;
       text-align: left;
     }
 
-    .setting-header {
+    .setting-head {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      margin-bottom: 8px;
-      font-size: 14px;
+      align-items: center;
+      font-size: 13px;
       font-weight: 800;
+      margin-bottom: 6px;
     }
 
-    .toggle-pill {
-      padding: 4px 11px;
+    .toggle-chip {
+      padding: 3px 10px;
       border-radius: 999px;
       border: 2px solid #1e1633;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 900;
       cursor: pointer;
       background: #06d6a0;
-      color: #1e1633;
     }
 
-    .toggle-pill.off {
-      background: #e2dce8;
-      color: #6b5e8c;
+    .toggle-chip.off {
+      background: #ff758f;
     }
 
     input[type="range"] {
       width: 100%;
       accent-color: #ff5964;
-      height: 8px;
       cursor: pointer;
     }
 
-    .timbre-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      margin-top: 6px;
-    }
-
-    .timbre-btn {
-      padding: 8px 4px;
-      border-radius: 11px;
-      border: 2.5px solid #1e1633;
-      background: #f7f2e7;
-      font-size: 12px;
-      font-weight: 800;
-      cursor: pointer;
-      color: #1e1633;
-    }
-
-    .timbre-btn.active {
-      background: #48dbfb;
-    }
-
-    /* Статистика финала */
     .stats-box {
       background: #ffffff;
       border: 3px solid #1e1633;
-      border-radius: 16px;
-      padding: 11px 14px;
-      margin: 12px 0 16px;
+      border-radius: 15px;
+      padding: 10px 12px;
+      margin: 12px 0 14px;
       display: flex;
       justify-content: space-around;
     }
 
     .stat-col span {
       display: block;
-      font-size: 11px;
+      font-size: 10px;
       text-transform: uppercase;
       font-weight: 800;
       color: #6b5e8c;
     }
 
     .stat-col strong {
-      font-size: 21px;
+      font-size: 20px;
       font-weight: 900;
       color: #1e1633;
+    }
+
+    .best-line {
+      margin-top: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #5c507d;
     }
   </style>
 </head>
@@ -499,113 +356,100 @@ html
   <div id="game-wrap">
     <canvas id="game"></canvas>
 
-    <!-- Быстрые кнопки во время игры -->
-    <div id="top-controls">
-      <button id="mute-btn" class="hud-btn" title="Быстрый звук (M)" aria-label="Звук">🔊</button>
-      <button id="pause-btn" class="hud-btn hidden" title="Пауза (P / Esc)" aria-label="Пауза">⏸</button>
+    <div class="hud-top-right">
+      <button id="pause-btn" class="icon-btn hidden" title="Пауза (P)">⏸</button>
+      <button id="settings-open-btn" class="icon-btn" title="Настройки синтезатора">⚙️</button>
+      <button id="mute-btn" class="icon-btn" title="Звук (M)">🔊</button>
     </div>
 
-    <!-- 1. ГЛАВНОЕ МЕНЮ -->
+    <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="start-overlay" class="overlay">
       <div class="card">
-        <div class="badge">PolySynth Arcade • 10 Уровней</div>
+        <div class="badge">10 Секторов • PolySynth</div>
         <h1>АСТРО-КОТ:<br>ЗВЁЗДНЫЙ ПАТРУЛЬ</h1>
+        <p class="subtitle">Выбери сектор галактики, настрой сложность и прорвись к финальному боссу!</p>
 
-        <div class="section-label">Уровень сложности:</div>
+        <div class="section-label">Уровень сложности</div>
         <div class="diff-row" id="diff-row">
-          <button class="diff-btn" data-diff="easy">Курсант</button>
-          <button class="diff-btn active" data-diff="normal">Пилот</button>
-          <button class="diff-btn" data-diff="hard">Ас</button>
+          <button class="pill-btn" data-diff="easy">Курсант</button>
+          <button class="pill-btn active" data-diff="normal">Пилот</button>
+          <button class="pill-btn" data-diff="hard">Ас</button>
         </div>
-        <div class="diff-desc" id="diff-desc">5 ♥ • Стандартный баланс • ×1.0 очки</div>
 
-        <div class="section-label">Выбор уровня (1–10):</div>
+        <div class="section-label">Выбор уровня (1–10)</div>
         <div class="levels-grid" id="levels-grid"></div>
-
-        <div class="biome-preview" id="biome-preview">
-          <div class="biome-swatch" id="biome-swatch">🪐</div>
-          <div>
-            <div class="biome-info-title" id="biome-title">Уровень 1: Звёздная Бухта</div>
-            <div class="biome-info-desc" id="biome-desc">Классический звёздный сектор с кольцевыми планетами.</div>
-            <div class="biome-info-boss" id="biome-boss">Босс: Доктор Кракен-Бот</div>
-          </div>
+        <div class="selected-level-box" id="selected-level-info">
+          Уровень 1: Звёздная Бухта — Босс: Доктор Кракен-Бот
         </div>
 
-        <div class="action-row">
-          <button id="open-sound-btn" class="btn-secondary">🎵 Звук</button>
-          <button id="start-btn" class="btn-primary">В ПОЛЁТ! 🚀</button>
+        <div class="btn-row">
+          <button id="start-btn" class="btn-play">В ПОЛЁТ! 🚀</button>
+          <button id="menu-sound-btn" class="btn-secondary">🎛 Звук</button>
         </div>
 
-        <div class="controls-hint">
-          ПК: <b>WASD / Стрелки</b> + <b>Пробел</b>, <b>P</b> — пауза &nbsp;|&nbsp; Смартфон: <b>палец по экрану</b>
-        </div>
-        <div class="best-line" id="start-best">Рекорд: 0 • Пройдено уровней: 0/10</div>
+        <div class="best-line" id="start-best">Общий рекорд: 0 • Пройдено: 0/10</div>
       </div>
     </div>
 
-    <!-- 2. НАСТРОЙКИ ЗВУКА (ПОЛИФОНИЧЕСКИЙ СИНТЕЗАТОР) -->
-    <div id="sound-overlay" class="overlay hidden">
+    <!-- НАСТРОЙКИ СИНТЕЗАТОРА -->
+    <div id="settings-overlay" class="overlay hidden">
       <div class="card">
         <div class="badge">Web Audio PolySynth</div>
         <h2>НАСТРОЙКИ ЗВУКА</h2>
-        <p class="subtitle">Встроенный многоголосый синтезатор с мастер-компрессором и стереопанорамой.</p>
 
-        <div class="setting-box">
-          <div class="setting-header">
-            <span>🎶 Громкость музыки: <strong id="music-vol-label">75%</strong></span>
-            <button id="music-toggle-btn" class="toggle-pill">ВКЛ</button>
+        <div class="setting-row">
+          <div class="setting-head">
+            <span>🎵 Фоновая музыка</span>
+            <button id="toggle-music" class="toggle-chip">ВКЛ</button>
           </div>
-          <input type="range" id="music-vol-slider" min="0" max="100" value="75" />
+          <input id="music-vol" type="range" min="0" max="100" value="75" />
         </div>
 
-        <div class="setting-box">
-          <div class="setting-header">
-            <span>💥 Громкость эффектов: <strong id="sfx-vol-label">85%</strong></span>
-            <button id="sfx-toggle-btn" class="toggle-pill">ВКЛ</button>
+        <div class="setting-row">
+          <div class="setting-head">
+            <span>💥 Звуковые эффекты (SFX)</span>
+            <button id="toggle-sfx" class="toggle-chip">ВКЛ</button>
           </div>
-          <input type="range" id="sfx-vol-slider" min="0" max="100" value="85" />
+          <input id="sfx-vol" type="range" min="0" max="100" value="85" />
         </div>
 
-        <div class="setting-box">
-          <div class="setting-header" style="margin-bottom: 4px;">
+        <div class="setting-row">
+          <div class="setting-head">
             <span>🎹 Тембр синтезатора</span>
           </div>
-          <div class="timbre-row" id="timbre-row">
-            <button class="timbre-btn active" data-timbre="classic">Классика</button>
-            <button class="timbre-btn" data-timbre="retro">Ретро-чип</button>
-            <button class="timbre-btn" data-timbre="space">Мягкий космос</button>
+          <div class="diff-row" id="timbre-row" style="margin-bottom:0;">
+            <button class="pill-btn active" data-timbre="classic">Классика</button>
+            <button class="pill-btn" data-timbre="chiptune">8-Бит</button>
+            <button class="pill-btn" data-timbre="space">Мягкий</button>
           </div>
         </div>
 
-        <div class="action-row" style="margin-bottom: 0;">
-          <button id="test-sound-btn" class="btn-secondary">Проверить звук 🎹</button>
-          <button id="close-sound-btn" class="btn-primary">ГОТОВО ✔</button>
+        <div class="btn-row" style="margin-top:12px;">
+          <button id="test-chord-btn" class="btn-secondary">🎶 Тест аккорда</button>
+          <button id="settings-close-btn" class="btn-play">ГОТОВО ✔</button>
         </div>
       </div>
     </div>
 
-    <!-- 3. МЕНЮ ПАУЗЫ -->
+    <!-- ПАУЗА -->
     <div id="pause-overlay" class="overlay hidden">
       <div class="card">
-        <div class="badge" id="pause-badge">Уровень 1 • Пилот</div>
-        <h2>ПАУЗА ⏸</h2>
-        <p class="subtitle">Корабль на орбите. Можете настроить синтезатор или выбрать другой сектор.</p>
-
-        <div class="btn-stack">
-          <button id="resume-btn" class="btn-primary">ПРОДОЛЖИТЬ ▶</button>
-          <button id="pause-sound-btn" class="btn-secondary">🎵 НАСТРОЙКИ ЗВУКА</button>
-          <button id="pause-restart-btn" class="btn-secondary" style="background:#48dbfb;">ЗАНОВО УРОВЕНЬ 🔄</button>
-          <button id="pause-menu-btn" class="btn-secondary" style="background:#ff9f1c;">В ГЛАВНОЕ МЕНЮ 🏠</button>
+        <div class="badge">Пауза</div>
+        <h2>ПОЛЁТ ПРИОСТАНОВЛЕН</h2>
+        <p class="subtitle">Управление: WASD / Стрелки + Пробел или палец по экрану.</p>
+        <div class="btn-row">
+          <button id="resume-btn" class="btn-play">ПРОДОЛЖИТЬ ▶</button>
+          <button id="pause-menu-btn" class="btn-secondary">В МЕНЮ</button>
         </div>
       </div>
     </div>
 
-    <!-- 4. ЭКРАН ПОБЕДЫ / ПОРАЖЕНИЯ -->
+    <!-- ЭКРАН ЗАВЕРШЕНИЯ УРОВНЯ -->
     <div id="end-overlay" class="overlay hidden">
       <div class="card">
-        <div class="badge" id="end-badge">Миссия завершена</div>
+        <div class="badge" id="end-badge">Сектор зачищен</div>
         <h1 id="end-title">ПОБЕДА!</h1>
-        <p class="subtitle" id="end-subtitle">Сектор зачищен!</p>
+        <p class="subtitle" id="end-subtitle">Босс повержен!</p>
 
         <div class="stats-box">
           <div class="stat-col">
@@ -622,10 +466,9 @@ html
           </div>
         </div>
 
-        <div class="btn-stack">
-          <button id="next-level-btn" class="btn-primary">СЛЕДУЮЩИЙ УРОВЕНЬ ➔</button>
-          <button id="restart-btn" class="btn-secondary" style="background:#48dbfb;">ИГРАТЬ СНОВА 🔄</button>
-          <button id="end-menu-btn" class="btn-secondary">В ГЛАВНОЕ МЕНЮ 🏠</button>
+        <div class="btn-row">
+          <button id="next-level-btn" class="btn-play">ДАЛЬШЕ ➔</button>
+          <button id="end-menu-btn" class="btn-secondary">В МЕНЮ</button>
         </div>
       </div>
     </div>
@@ -636,203 +479,116 @@ html
       'use strict';
 
       // =========================================================================
-      // 1. КОНФИГУРАЦИЯ 10 УРОВНЕЙ И 3 УРОВНЕЙ СЛОЖНОСТИ
+      // 1. КОНФИГУРАЦИЯ 10 УНИКАЛЬНЫХ УРОВНЕЙ И СЛОЖНОСТИ
       // =========================================================================
-      const DIFFICULTIES = {
-        easy: {
-          id: 'easy',
-          name: 'Курсант',
-          desc: '7 ♥ • Плавный темп и больше бонусов • ×0.8 очки',
-          playerHp: 7,
-          enemyHpMult: 0.85,
-          speedMult: 0.78,
-          bonusChance: 0.42,
-          scoreMult: 0.8
-        },
-        normal: {
-          id: 'normal',
-          name: 'Пилот',
-          desc: '5 ♥ • Стандартный баланс • ×1.0 очки',
-          playerHp: 5,
-          enemyHpMult: 1.0,
-          speedMult: 1.0,
-          bonusChance: 0.30,
-          scoreMult: 1.0
-        },
-        hard: {
-          id: 'hard',
-          name: 'Ас',
-          desc: '3 ♥ • Быстрые атаки и плотные волны • ×1.5 очки',
-          playerHp: 3,
-          enemyHpMult: 1.25,
-          speedMult: 1.24,
-          bonusChance: 0.24,
-          scoreMult: 1.5
-        }
-      };
-
       const LEVELS = [
         {
           id: 1,
           name: 'Звёздная Бухта',
-          icon: '🪐',
-          accent: '#8338ec',
-          desc: 'Классический звёздный сектор с кольцевыми планетами.',
           bossName: 'Доктор Кракен-Бот',
           theme: 'space',
-          musicStyle: 'bright',
-          sky: ['#171136', '#241954', '#311f6b'],
-          nebulaA: 'rgba(255, 107, 157, 0.09)',
-          nebulaB: 'rgba(72, 219, 251, 0.09)',
-          enemyColors: { ufo: '#8ac926', meteor: '#e07a5f', wasp: '#9b5de5', crab: '#00bbf9' },
-          bossColors: { dome: '#9b5de5', rage: '#ff4d6d', tentacle: '#f15bb5', crown: '#ffd166', style: 'kraken' },
-          bossHp: 170
+          skyTop: '#171136', skyMid: '#241954', skyBot: '#311f6b',
+          nebula1: 'rgba(255, 107, 157, 0.11)', nebula2: 'rgba(72, 219, 251, 0.10)',
+          accent: '#48dbfb', bossColor: '#9b5de5', enemyTint: '#8ac926',
+          bpm: 126, rootOffset: 0, hpMult: 1.0
         },
         {
           id: 2,
           name: 'Туманность Сахарной Ваты',
-          icon: '🍭',
-          accent: '#ff5d8f',
-          desc: 'Розовые облака зефира, леденцовые кристаллы и радужные пузыри.',
           bossName: 'Королева Зефира',
           theme: 'candy',
-          musicStyle: 'bright',
-          sky: ['#38124a', '#6b1d6c', '#a63a8b'],
-          nebulaA: 'rgba(255, 182, 217, 0.14)',
-          nebulaB: 'rgba(189, 224, 254, 0.12)',
-          enemyColors: { ufo: '#ff70a6', meteor: '#ff9770', wasp: '#c77dff', crab: '#70d6ff' },
-          bossColors: { dome: '#ff8fab', rage: '#ff0a54', tentacle: '#bde0fe', crown: '#fff0f3', style: 'candy' },
-          bossHp: 195
+          skyTop: '#4a1942', skyMid: '#893168', skyBot: '#c8558c',
+          nebula1: 'rgba(255, 214, 232, 0.20)', nebula2: 'rgba(255, 230, 109, 0.14)',
+          accent: '#ffafcc', bossColor: '#ff70a6', enemyTint: '#ff9ebb',
+          bpm: 130, rootOffset: 2, hpMult: 1.12
         },
         {
           id: 3,
           name: 'Пояс Пончиковых Астероидов',
-          icon: '🍩',
-          accent: '#e07a5f',
-          desc: 'Карамельный каньон с космическими пончиками в глазури и посыпкой.',
           bossName: 'Мега-Бургер Дредноут',
-          theme: 'donut',
-          musicStyle: 'bright',
-          sky: ['#2b1710', '#542a1b', '#804129'],
-          nebulaA: 'rgba(255, 183, 3, 0.10)',
-          nebulaB: 'rgba(251, 133, 0, 0.09)',
-          enemyColors: { ufo: '#ffb703', meteor: '#d4a373', wasp: '#fb8500', crab: '#ff595e' },
-          bossColors: { dome: '#e09f3e', rage: '#d62828', tentacle: '#8ac926', crown: '#ffbe0b', style: 'burger' },
-          bossHp: 220
+          theme: 'donuts',
+          skyTop: '#2b193d', skyMid: '#48284a', skyBot: '#7a3b69',
+          nebula1: 'rgba(255, 183, 3, 0.14)', nebula2: 'rgba(251, 86, 7, 0.12)',
+          accent: '#ffb703', bossColor: '#f77f00', enemyTint: '#fcbf49',
+          bpm: 132, rootOffset: 4, hpMult: 1.24
         },
         {
           id: 4,
           name: 'Изумрудные Джунгли Орбиты',
-          icon: '🌿',
-          accent: '#06d6a0',
-          desc: 'Биолюминесцентные папоротники, светящиеся споры и космо-медузы.',
           bossName: 'Споровый Левиафан',
           theme: 'jungle',
-          musicStyle: 'mystic',
-          sky: ['#072421', '#0d473d', '#156e5c'],
-          nebulaA: 'rgba(6, 214, 160, 0.11)',
-          nebulaB: 'rgba(131, 56, 236, 0.08)',
-          enemyColors: { ufo: '#52b788', meteor: '#74c69d', wasp: '#b5179e', crab: '#00b4d8' },
-          bossColors: { dome: '#2ec4b6', rage: '#ff006e', tentacle: '#9ef01a', crown: '#ffbe0b', style: 'mushroom' },
-          bossHp: 245
+          skyTop: '#0b2e26', skyMid: '#134e3f', skyBot: '#1f7a5c',
+          nebula1: 'rgba(128, 237, 153, 0.16)', nebula2: 'rgba(255, 209, 102, 0.11)',
+          accent: '#06d6a0', bossColor: '#38b000', enemyTint: '#70e000',
+          bpm: 128, rootOffset: 5, hpMult: 1.36
         },
         {
           id: 5,
           name: 'Ледяная Комета Криона',
-          icon: '❄️',
-          accent: '#48dbfb',
-          desc: 'Северное сияние, дрейфующие айсберги и хрустальные снежинки.',
           bossName: 'Ледяной Титан Фрост-9',
           theme: 'ice',
-          musicStyle: 'mystic',
-          sky: ['#0b1f42', '#17437d', '#2570bd'],
-          nebulaA: 'rgba(72, 219, 251, 0.13)',
-          nebulaB: 'rgba(114, 239, 221, 0.11)',
-          enemyColors: { ufo: '#48cae4', meteor: '#90e0ef', wasp: '#7209b7', crab: '#4361ee' },
-          bossColors: { dome: '#48dbfb', rage: '#3a0ca3', tentacle: '#caf0f8', crown: '#ffffff', style: 'ice' },
-          bossHp: 270
+          skyTop: '#0d253f', skyMid: '#184e77', skyBot: '#1e6091',
+          nebula1: 'rgba(144, 224, 239, 0.20)', nebula2: 'rgba(202, 240, 248, 0.16)',
+          accent: '#90e0ef', bossColor: '#48cae4', enemyTint: '#ade8f4',
+          bpm: 134, rootOffset: -2, hpMult: 1.48
         },
         {
           id: 6,
           name: 'Вулканическая Кузница Магмы',
-          icon: '🌋',
-          accent: '#f94144',
-          desc: 'Раскалённые планетоиды с трещинами лавы и огненными искрами.',
           bossName: 'Инферно-Краб Вулкан',
           theme: 'lava',
-          musicStyle: 'cyber',
-          sky: ['#210808', '#52110d', '#8c2114'],
-          nebulaA: 'rgba(255, 107, 0, 0.14)',
-          nebulaB: 'rgba(255, 0, 84, 0.10)',
-          enemyColors: { ufo: '#f3722c', meteor: '#592e2e', wasp: '#f9c74f', crab: '#f94144' },
-          bossColors: { dome: '#d00000', rage: '#ffba08', tentacle: '#f48c06', crown: '#ffea00', style: 'lava' },
-          bossHp: 295
+          skyTop: '#2b0909', skyMid: '#591414', skyBot: '#942911',
+          nebula1: 'rgba(255, 107, 53, 0.20)', nebula2: 'rgba(255, 190, 11, 0.15)',
+          accent: '#ff6b35', bossColor: '#e63946', enemyTint: '#f77f00',
+          bpm: 138, rootOffset: -5, hpMult: 1.60
         },
         {
           id: 7,
           name: 'Кибер-Сити Неонополис',
-          icon: '🌆',
-          accent: '#00f5d4',
-          desc: 'Неоновая сетка гиперпространства, голограммы и цифровой дождь.',
           bossName: 'Кибер-Сфинкс MK-IV',
           theme: 'cyber',
-          musicStyle: 'cyber',
-          sky: ['#0d0620', '#1c0b42', '#35116e'],
-          nebulaA: 'rgba(0, 245, 212, 0.11)',
-          nebulaB: 'rgba(241, 91, 181, 0.12)',
-          enemyColors: { ufo: '#00f5d4', meteor: '#7b2cbf', wasp: '#f15bb5', crab: '#00bbf9' },
-          bossColors: { dome: '#3a0ca3', rage: '#f72585', tentacle: '#00f5d4', crown: '#fee440', style: 'cyber' },
-          bossHp: 320
+          skyTop: '#0f0726', skyMid: '#1d1147', skyBot: '#361973',
+          nebula1: 'rgba(0, 245, 212, 0.16)', nebula2: 'rgba(241, 91, 181, 0.16)',
+          accent: '#00f5d4', bossColor: '#f15bb5', enemyTint: '#00bbf9',
+          bpm: 140, rootOffset: 1, hpMult: 1.72
         },
         {
           id: 8,
           name: 'Золотая Пустыня Дюн',
-          icon: '🏜️',
-          accent: '#f4a261',
-          desc: 'Двойное солнце, парящие пирамиды и золотые песчаные вихри.',
           bossName: 'Фараон-Скарабей',
           theme: 'desert',
-          musicStyle: 'bright',
-          sky: ['#381d0e', '#7a3f1a', '#bf6b24'],
-          nebulaA: 'rgba(255, 209, 102, 0.13)',
-          nebulaB: 'rgba(6, 214, 160, 0.08)',
-          enemyColors: { ufo: '#e9c46a', meteor: '#bc6c25', wasp: '#2a9d8f', crab: '#e76f51' },
-          bossColors: { dome: '#f4a261', rage: '#e63946', tentacle: '#2a9d8f', crown: '#ffd166', style: 'pharaoh' },
-          bossHp: 345
+          skyTop: '#3d2516', skyMid: '#774926', skyBot: '#b57436',
+          nebula1: 'rgba(255, 209, 102, 0.20)', nebula2: 'rgba(255, 159, 28, 0.14)',
+          accent: '#ffd166', bossColor: '#e09f3e', enemyTint: '#f4a261',
+          bpm: 132, rootOffset: 3, hpMult: 1.85
         },
         {
           id: 9,
           name: 'Призрачный Сектор Эфира',
-          icon: '👻',
-          accent: '#9d4edd',
-          desc: 'Древние мраморные колонны в невесомости, руны и огоньки эктоплазмы.',
           bossName: 'Призрачный Адмирал',
-          theme: 'phantom',
-          musicStyle: 'mystic',
-          sky: ['#160c29', '#2b174d', '#452475'],
-          nebulaA: 'rgba(114, 239, 221, 0.10)',
-          nebulaB: 'rgba(157, 78, 221, 0.13)',
-          enemyColors: { ufo: '#72efdd', meteor: '#6c757d', wasp: '#c77dff', crab: '#56cfe1' },
-          bossColors: { dome: '#5e60ce', rage: '#64dfdf', tentacle: '#80ffdb', crown: '#e0aaff', style: 'phantom' },
-          bossHp: 375
+          theme: 'ghost',
+          skyTop: '#161329', skyMid: '#2a234d', skyBot: '#433878',
+          nebula1: 'rgba(189, 178, 255, 0.18)', nebula2: 'rgba(114, 239, 221, 0.14)',
+          accent: '#bdb2ff', bossColor: '#7209b7', enemyTint: '#a0c4ff',
+          bpm: 136, rootOffset: -3, hpMult: 2.0
         },
         {
           id: 10,
           name: 'Цитадель Императора Кракена',
-          icon: '👑',
-          accent: '#ff006e',
-          desc: 'Финальный штурм! Гигантские золотые шестерни и энергетические дуги.',
           bossName: 'Император Омега-Кракен',
           theme: 'citadel',
-          musicStyle: 'epic',
-          sky: ['#1c0512', '#3d0924', '#6b1038'],
-          nebulaA: 'rgba(255, 0, 110, 0.14)',
-          nebulaB: 'rgba(255, 190, 11, 0.12)',
-          enemyColors: { ufo: '#ffbe0b', meteor: '#8338ec', wasp: '#ff006e', crab: '#fb5607' },
-          bossColors: { dome: '#9b0036', rage: '#ff0054', tentacle: '#ffbe0b', crown: '#ffd166', style: 'emperor' },
-          bossHp: 420
+          skyTop: '#1b0718', skyMid: '#3d0c2e', skyBot: '#6e1447',
+          nebula1: 'rgba(255, 0, 110, 0.20)', nebula2: 'rgba(255, 190, 11, 0.16)',
+          accent: '#ff006e', bossColor: '#d90429', enemyTint: '#ff4d6d',
+          bpm: 144, rootOffset: 0, hpMult: 2.25
         }
       ];
+
+      const DIFFICULTIES = {
+        easy:   { label: 'Курсант', playerHp: 7, enemyHp: 0.8, bulletSpeed: 0.82, spawnRate: 1.18, scoreMult: 0.85 },
+        normal: { label: 'Пилот',   playerHp: 5, enemyHp: 1.0, bulletSpeed: 1.0,  spawnRate: 1.0,  scoreMult: 1.0 },
+        hard:   { label: 'Ас',      playerHp: 3, enemyHp: 1.3, bulletSpeed: 1.22, spawnRate: 0.82, scoreMult: 1.35 }
+      };
 
       // =========================================================================
       // 2. ПОЛИФОНИЧЕСКИЙ СИНТЕЗАТОР И СЕКВЕНСОР (WEB AUDIO API)
@@ -840,205 +596,123 @@ html
       class PolySynth {
         constructor() {
           this.ctx = null;
-          this.musicGain = null;
-          this.sfxGain = null;
-          this.compressor = null;
           this.masterGain = null;
+          this.compressor = null;
           this.noiseBuffer = null;
 
-          // Настройки пользователя
-          this.musicVolume = 0.75;
-          this.sfxVolume = 0.85;
+          this.muted = false;
           this.musicEnabled = true;
           this.sfxEnabled = true;
-          this.quickMuted = false;
-          this.timbre = 'classic'; // 'classic' | 'retro' | 'space'
+          this.musicVolume = 0.75;
+          this.sfxVolume = 0.85;
+          this.timbre = 'classic'; // 'classic' | 'chiptune' | 'space'
 
-          // Секвенсор
           this.seqTimer = null;
           this.isPlayingMusic = false;
-          this.musicStyle = 'bright'; // 'bright' | 'mystic' | 'cyber' | 'epic' | 'boss'
+          this.musicMode = 'normal';
+          this.bpm = 126;
+          this.rootOffset = 0;
           this.stepIndex = 0;
           this.nextNoteTime = 0;
 
-          // Музыкальные паттерны под разные темы уровней
-          this.patterns = {
-            bright: {
-              bpm: 126,
-              lead: [
-                72, 0, 76, 79,  84, 0, 79, 76,
-                74, 0, 77, 81,  79, 0, 76, 0,
-                69, 0, 72, 76,  81, 0, 79, 76,
-                74, 76, 77, 79, 76, 0, 0,  0
-              ],
-              bass: [
-                48, 0, 48, 0,  48, 0, 55, 0,
-                45, 0, 45, 0,  45, 0, 52, 0,
-                41, 0, 41, 0,  41, 0, 48, 0,
-                43, 0, 43, 0,  47, 0, 55, 0
-              ],
-              chords: {
-                0:  [60, 64, 67, 71],
-                8:  [57, 60, 64, 67],
-                16: [53, 57, 60, 64],
-                24: [55, 59, 62, 65]
-              }
-            },
-            mystic: {
-              bpm: 118,
-              lead: [
-                74, 0, 77, 81,  79, 0, 77, 74,
-                72, 0, 76, 79,  77, 0, 74, 0,
-                70, 0, 74, 77,  81, 0, 79, 77,
-                76, 0, 79, 81,  86, 0, 0,  0
-              ],
-              bass: [
-                50, 0, 50, 0,  50, 0, 57, 0,
-                48, 0, 48, 0,  48, 0, 55, 0,
-                46, 0, 46, 0,  46, 0, 53, 0,
-                45, 0, 52, 0,  57, 0, 52, 0
-              ],
-              chords: {
-                0:  [62, 65, 69, 72],
-                8:  [60, 64, 67, 70],
-                16: [58, 62, 65, 69],
-                24: [57, 61, 64, 69]
-              }
-            },
-            cyber: {
-              bpm: 134,
-              lead: [
-                76, 76, 79, 76,  83, 0, 81, 79,
-                77, 0,  76, 74,  76, 0, 71, 0,
-                72, 72, 76, 72,  79, 0, 77, 76,
-                74, 76, 77, 79,  83, 0, 88, 0
-              ],
-              bass: [
-                40, 52, 40, 52,  40, 52, 40, 52,
-                41, 53, 41, 53,  41, 53, 41, 53,
-                45, 57, 45, 57,  45, 57, 45, 57,
-                47, 59, 47, 59,  47, 0,  59, 0
-              ],
-              chords: {
-                0:  [64, 67, 71],
-                8:  [65, 69, 72],
-                16: [69, 72, 76],
-                24: [71, 75, 78]
-              }
-            },
-            epic: {
-              bpm: 138,
-              lead: [
-                69, 0, 72, 76,  81, 0, 79, 76,
-                77, 0, 81, 84,  83, 0, 79, 0,
-                74, 0, 77, 81,  86, 0, 84, 81,
-                83, 81, 79, 77, 76, 0, 88, 0
-              ],
-              bass: [
-                45, 45, 57, 45,  45, 45, 57, 45,
-                41, 41, 53, 41,  43, 43, 55, 43,
-                38, 38, 50, 38,  38, 38, 50, 38,
-                40, 40, 52, 40,  40, 0,  52, 0
-              ],
-              chords: {
-                0:  [57, 60, 64, 69],
-                8:  [53, 57, 60, 67],
-                16: [50, 53, 57, 62],
-                24: [52, 56, 59, 64]
-              }
-            },
-            boss: {
-              bpm: 146,
-              lead: [
-                69, 69, 72, 69,  76, 0, 75, 0,
-                69, 69, 72, 69,  77, 0, 76, 0,
-                74, 72, 71, 69,  68, 0, 71, 0,
-                76, 0,  75, 0,   76, 0, 81, 0
-              ],
-              bass: [
-                45, 45, 57, 45,  45, 45, 57, 45,
-                41, 41, 53, 41,  41, 41, 53, 41,
-                38, 38, 50, 38,  40, 40, 52, 40,
-                40, 52, 40, 52,  40, 0,  52, 0
-              ],
-              chords: {
-                0:  [57, 60, 64],
-                8:  [53, 57, 60],
-                16: [50, 53, 57],
-                24: [52, 56, 59]
-              }
-            }
+          this.normalLead = [
+            72, 0, 76, 79,  84, 0, 79, 76,
+            74, 0, 77, 81,  79, 0, 76, 0,
+            69, 0, 72, 76,  81, 0, 79, 76,
+            74, 76, 77, 79, 76, 0, 0,  0
+          ];
+          this.normalBass = [
+            48, 0, 48, 0,  48, 0, 55, 0,
+            45, 0, 45, 0,  45, 0, 52, 0,
+            41, 0, 41, 0,  41, 0, 48, 0,
+            43, 0, 43, 0,  47, 0, 55, 0
+          ];
+          this.normalChords = {
+            0:  [60, 64, 67, 71],
+            8:  [57, 60, 64, 67],
+            16: [53, 57, 60, 64],
+            24: [55, 59, 62, 65]
+          };
+
+          this.bossLead = [
+            69, 69, 72, 69,  76, 0, 75, 0,
+            69, 69, 72, 69,  77, 0, 76, 0,
+            74, 72, 71, 69,  68, 0, 71, 0,
+            76, 0,  75, 0,   76, 0, 81, 0
+          ];
+          this.bossBass = [
+            45, 45, 57, 45,  45, 45, 57, 45,
+            41, 41, 53, 41,  41, 41, 53, 41,
+            38, 38, 50, 38,  40, 40, 52, 40,
+            40, 52, 40, 52,  40, 0,  52, 0
+          ];
+          this.bossChords = {
+            0:  [57, 60, 64],
+            8:  [53, 57, 60],
+            16: [50, 53, 57],
+            24: [52, 56, 59]
           };
         }
 
         init() {
-          try {
-            if (!this.ctx) {
-              const AudioCtx = window.AudioContext || window.webkitAudioContext;
-              if (!AudioCtx) return;
-              this.ctx = new AudioCtx();
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            this.ctx = new AudioCtx();
 
-              this.compressor = this.ctx.createDynamicsCompressor();
-              this.compressor.threshold.setValueAtTime(-14, this.ctx.currentTime);
-              this.compressor.knee.setValueAtTime(18, this.ctx.currentTime);
-              this.compressor.ratio.setValueAtTime(6, this.ctx.currentTime);
-              this.compressor.attack.setValueAtTime(0.005, this.ctx.currentTime);
-              this.compressor.release.setValueAtTime(0.16, this.ctx.currentTime);
+            this.compressor = this.ctx.createDynamicsCompressor();
+            this.compressor.threshold.setValueAtTime(-14, this.ctx.currentTime);
+            this.compressor.knee.setValueAtTime(18, this.ctx.currentTime);
+            this.compressor.ratio.setValueAtTime(6, this.ctx.currentTime);
+            this.compressor.attack.setValueAtTime(0.005, this.ctx.currentTime);
+            this.compressor.release.setValueAtTime(0.16, this.ctx.currentTime);
 
-              this.musicGain = this.ctx.createGain();
-              this.sfxGain = this.ctx.createGain();
-              this.masterGain = this.ctx.createGain();
+            this.masterGain = this.ctx.createGain();
+            this.masterGain.gain.setValueAtTime(this.muted ? 0.0001 : 0.85, this.ctx.currentTime);
 
-              this.musicGain.connect(this.compressor);
-              this.sfxGain.connect(this.compressor);
-              this.compressor.connect(this.masterGain);
-              this.masterGain.connect(this.ctx.destination);
+            this.compressor.connect(this.masterGain);
+            this.masterGain.connect(this.ctx.destination);
 
-              this.applyGains();
-
-              const sampleRate = this.ctx.sampleRate;
-              const length = sampleRate * 1.0;
-              this.noiseBuffer = this.ctx.createBuffer(1, length, sampleRate);
-              const data = this.noiseBuffer.getChannelData(0);
-              for (let i = 0; i < length; i++) {
-                data[i] = Math.random() * 2 - 1;
-              }
-            }
-
-            if (this.ctx && this.ctx.state === 'suspended') {
-              this.ctx.resume();
-            }
-          } catch (e) {}
+            const sampleRate = this.ctx.sampleRate;
+            this.noiseBuffer = this.ctx.createBuffer(1, sampleRate, sampleRate);
+            const data = this.noiseBuffer.getChannelData(0);
+            for (let i = 0; i < sampleRate; i++) data[i] = Math.random() * 2 - 1;
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
         }
 
-        applyGains() {
-          if (!this.ctx || !this.musicGain || !this.sfxGain || !this.masterGain) return;
-          const now = this.ctx.currentTime;
-          const mVol = this.musicEnabled ? Math.max(0.0001, this.musicVolume) : 0.0001;
-          const sVol = this.sfxEnabled ? Math.max(0.0001, this.sfxVolume) : 0.0001;
-          const masterVol = this.quickMuted ? 0.0001 : 0.9;
-
-          this.musicGain.gain.setTargetAtTime(mVol, now, 0.02);
-          this.sfxGain.gain.setTargetAtTime(sVol, now, 0.02);
-          this.masterGain.gain.setTargetAtTime(masterVol, now, 0.02);
-        }
-
-        toggleQuickMute() {
+        toggleMute() {
           this.init();
-          this.quickMuted = !this.quickMuted;
-          this.applyGains();
-          return this.quickMuted;
+          this.muted = !this.muted;
+          if (this.masterGain && this.ctx) {
+            const now = this.ctx.currentTime;
+            this.masterGain.gain.cancelScheduledValues(now);
+            this.masterGain.gain.setTargetAtTime(this.muted ? 0.0001 : 0.85, now, 0.02);
+          }
+          return this.muted;
         }
 
         midiToFreq(midi) {
           return 440 * Math.pow(2, (midi - 69) / 12);
         }
 
+        resolveWave(requestedType, channel) {
+          if (this.timbre === 'chiptune') {
+            return channel === 'bass' ? 'triangle' : 'square';
+          }
+          if (this.timbre === 'space') {
+            return channel === 'bass' ? 'sine' : 'triangle';
+          }
+          return requestedType;
+        }
+
         playVoice({
-          bus = 'sfx',
           freq = 440,
           slideTo = null,
           type = 'triangle',
+          channel = 'sfx',
           detune = 0,
           time = null,
           duration = 0.2,
@@ -1048,19 +722,19 @@ html
           release = 0.08,
           gain = 0.14,
           filterFreq = 2600,
-          filterEnd = null,
           pan = 0
         }) {
-          if (!this.ctx || this.quickMuted) return;
-          if (bus === 'music' && (!this.musicEnabled || this.musicVolume <= 0.005)) return;
-          if (bus === 'sfx' && (!this.sfxEnabled || this.sfxVolume <= 0.005)) return;
+          if (!this.ctx || this.muted) return;
+          if (channel === 'music' && (!this.musicEnabled || this.musicVolume <= 0.01)) return;
+          if (channel === 'sfx' && (!this.sfxEnabled || this.sfxVolume <= 0.01)) return;
 
+          const volScale = channel === 'music' ? this.musicVolume : this.sfxVolume;
           const t0 = time !== null ? time : this.ctx.currentTime;
           const tStop = t0 + duration + release;
 
           const osc = this.ctx.createOscillator();
-          osc.type = type;
-          osc.frequency.setValueAtTime(Math.max(20, freq), t0);
+          osc.type = this.resolveWave(type, channel === 'music' ? 'lead' : 'sfx');
+          osc.frequency.setValueAtTime(freq, t0);
           if (detune) osc.detune.setValueAtTime(detune, t0);
           if (slideTo) {
             osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), t0 + duration);
@@ -1068,15 +742,13 @@ html
 
           const filter = this.ctx.createBiquadFilter();
           filter.type = 'lowpass';
-          filter.Q.setValueAtTime(1.4, t0);
-          filter.frequency.setValueAtTime(Math.max(40, filterFreq), t0);
-          if (filterEnd) {
-            filter.frequency.exponentialRampToValueAtTime(Math.max(40, filterEnd), tStop);
-          }
+          filter.Q.setValueAtTime(1.3, t0);
+          const fCutoff = this.timbre === 'space' ? Math.min(filterFreq, 1800) : filterFreq;
+          filter.frequency.setValueAtTime(fCutoff, t0);
 
           const env = this.ctx.createGain();
-          const peak = Math.max(0.0005, gain);
-          const sustLevel = Math.max(0.0002, peak * sustain);
+          const peak = Math.max(0.001, gain * volScale);
+          const sustLevel = Math.max(0.0005, peak * sustain);
 
           env.gain.setValueAtTime(0.0001, t0);
           env.gain.linearRampToValueAtTime(peak, t0 + attack);
@@ -1084,19 +756,17 @@ html
           env.gain.setValueAtTime(sustLevel, t0 + duration);
           env.gain.exponentialRampToValueAtTime(0.0001, tStop);
 
-          let panner = null;
           let lastNode = env;
           if (this.ctx.createStereoPanner) {
-            panner = this.ctx.createStereoPanner();
+            const panner = this.ctx.createStereoPanner();
             panner.pan.setValueAtTime(Math.max(-0.9, Math.min(0.9, pan)), t0);
             env.connect(panner);
             lastNode = panner;
           }
 
-          const destBus = bus === 'music' ? this.musicGain : this.sfxGain;
           osc.connect(filter);
           filter.connect(env);
-          lastNode.connect(destBus);
+          lastNode.connect(this.compressor);
 
           osc.start(t0);
           osc.stop(tStop + 0.01);
@@ -1104,7 +774,6 @@ html
             osc.disconnect();
             filter.disconnect();
             env.disconnect();
-            if (panner) panner.disconnect();
           };
         }
 
@@ -1119,35 +788,36 @@ html
         }
 
         playNoise({
-          bus = 'sfx',
           time = null,
+          channel = 'sfx',
           duration = 0.15,
           gain = 0.15,
           filterType = 'bandpass',
           filterFreq = 1200,
           filterEnd = 300
         }) {
-          if (!this.ctx || !this.noiseBuffer || this.quickMuted) return;
-          if (bus === 'music' && (!this.musicEnabled || this.musicVolume <= 0.005)) return;
-          if (bus === 'sfx' && (!this.sfxEnabled || this.sfxVolume <= 0.005)) return;
+          if (!this.ctx || !this.noiseBuffer || this.muted) return;
+          if (channel === 'music' && (!this.musicEnabled || this.musicVolume <= 0.01)) return;
+          if (channel === 'sfx' && (!this.sfxEnabled || this.sfxVolume <= 0.01)) return;
 
+          const volScale = channel === 'music' ? this.musicVolume : this.sfxVolume;
           const t0 = time !== null ? time : this.ctx.currentTime;
+
           const src = this.ctx.createBufferSource();
           src.buffer = this.noiseBuffer;
 
           const filter = this.ctx.createBiquadFilter();
           filter.type = filterType;
-          filter.frequency.setValueAtTime(Math.max(40, filterFreq), t0);
+          filter.frequency.setValueAtTime(filterFreq, t0);
           filter.frequency.exponentialRampToValueAtTime(Math.max(40, filterEnd), t0 + duration);
 
           const env = this.ctx.createGain();
-          env.gain.setValueAtTime(Math.max(0.0005, gain), t0);
+          env.gain.setValueAtTime(Math.max(0.001, gain * volScale), t0);
           env.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
 
-          const destBus = bus === 'music' ? this.musicGain : this.sfxGain;
           src.connect(filter);
           filter.connect(env);
-          env.connect(destBus);
+          env.connect(this.compressor);
 
           src.start(t0);
           src.stop(t0 + duration + 0.01);
@@ -1158,74 +828,33 @@ html
           };
         }
 
-        // --- ЗВУКОВЫЕ ЭФФЕКТЫ (SFX) ---
-        sfxUiClick() {
-          this.init();
-          this.playVoice({
-            bus: 'sfx',
-            freq: 620,
-            slideTo: 880,
-            type: 'triangle',
-            duration: 0.055,
-            attack: 0.003,
-            decay: 0.025,
-            sustain: 0.2,
-            release: 0.025,
-            gain: 0.11,
-            filterFreq: 3500
-          });
-        }
-
-        sfxTestChord() {
-          this.init();
-          if (!this.ctx) return;
-          const now = this.ctx.currentTime;
-          // Полифонический аккорд + космический свип
-          [60, 64, 67, 71, 74].forEach((m, idx) => {
-            this.playVoice({
-              bus: 'sfx',
-              freq: this.midiToFreq(m),
-              type: this.timbre === 'retro' ? 'square' : 'triangle',
-              time: now + idx * 0.05,
-              duration: 0.34,
-              attack: 0.01,
-              decay: 0.1,
-              sustain: 0.45,
-              release: 0.14,
-              gain: 0.11,
-              filterFreq: this.timbre === 'space' ? 1800 : 3200,
-              pan: (idx - 2) * 0.25
-            });
-          });
-        }
-
         sfxShoot(pan = 0, upgraded = false) {
           this.playVoice({
-            bus: 'sfx',
+            channel: 'sfx',
             freq: upgraded ? 920 : 780,
             slideTo: upgraded ? 260 : 210,
-            type: this.timbre === 'retro' ? 'square' : 'triangle',
-            duration: 0.085,
+            type: 'triangle',
+            duration: 0.08,
             attack: 0.004,
             decay: 0.04,
             sustain: 0.2,
             release: 0.03,
-            gain: upgraded ? 0.09 : 0.11,
+            gain: 0.10,
             filterFreq: 3400,
             pan
           });
           if (upgraded) {
             this.playVoice({
-              bus: 'sfx',
+              channel: 'sfx',
               freq: 1380,
               slideTo: 420,
               type: 'sine',
-              duration: 0.07,
+              duration: 0.065,
               attack: 0.003,
               decay: 0.03,
               sustain: 0.1,
               release: 0.02,
-              gain: 0.07,
+              gain: 0.065,
               pan
             });
           }
@@ -1233,16 +862,16 @@ html
 
         sfxHit(pan = 0) {
           this.playVoice({
-            bus: 'sfx',
+            channel: 'sfx',
             freq: 220,
             slideTo: 85,
             type: 'square',
-            duration: 0.06,
+            duration: 0.055,
             attack: 0.003,
             decay: 0.03,
             sustain: 0.1,
             release: 0.02,
-            gain: 0.09,
+            gain: 0.085,
             filterFreq: 900,
             pan
           });
@@ -1251,7 +880,7 @@ html
         sfxExplosion(pan = 0, big = false) {
           const dur = big ? 0.45 : 0.22;
           this.playNoise({
-            bus: 'sfx',
+            channel: 'sfx',
             duration: dur,
             gain: big ? 0.24 : 0.15,
             filterType: 'lowpass',
@@ -1259,7 +888,7 @@ html
             filterEnd: 90
           });
           this.playVoice({
-            bus: 'sfx',
+            channel: 'sfx',
             freq: big ? 130 : 180,
             slideTo: 36,
             type: 'triangle',
@@ -1279,16 +908,16 @@ html
           const now = this.ctx.currentTime;
           [60, 64, 67, 72, 76].forEach((m, i) => {
             this.playVoice({
-              bus: 'sfx',
+              channel: 'sfx',
               freq: this.midiToFreq(m),
               type: 'triangle',
-              time: now + i * 0.045,
-              duration: 0.14,
+              time: now + i * 0.042,
+              duration: 0.13,
               attack: 0.005,
               decay: 0.05,
               sustain: 0.4,
               release: 0.08,
-              gain: 0.13,
+              gain: 0.12,
               filterFreq: 4200
             });
           });
@@ -1297,8 +926,7 @@ html
         sfxShieldBlock() {
           if (!this.ctx) return;
           this.playChord([72, 79, 84], {
-            bus: 'sfx',
-            time: this.ctx.currentTime,
+            channel: 'sfx',
             type: 'sine',
             duration: 0.16,
             attack: 0.005,
@@ -1311,13 +939,11 @@ html
 
         sfxHurt() {
           if (!this.ctx) return;
-          const now = this.ctx.currentTime;
           this.playVoice({
-            bus: 'sfx',
+            channel: 'sfx',
             freq: 320,
             slideTo: 95,
             type: 'sawtooth',
-            time: now,
             duration: 0.28,
             attack: 0.01,
             decay: 0.12,
@@ -1326,14 +952,7 @@ html
             gain: 0.16,
             filterFreq: 1100
           });
-          this.playNoise({
-            bus: 'sfx',
-            duration: 0.2,
-            gain: 0.14,
-            filterType: 'lowpass',
-            filterFreq: 700,
-            filterEnd: 120
-          });
+          this.playNoise({ channel: 'sfx', duration: 0.2, gain: 0.14, filterType: 'lowpass', filterFreq: 700, filterEnd: 120 });
         }
 
         sfxBossAlarm() {
@@ -1341,17 +960,17 @@ html
           const now = this.ctx.currentTime;
           for (let i = 0; i < 2; i++) {
             this.playVoice({
-              bus: 'sfx',
+              channel: 'sfx',
               freq: 330,
               slideTo: 494,
               type: 'sawtooth',
-              time: now + i * 0.34,
-              duration: 0.26,
+              time: now + i * 0.32,
+              duration: 0.24,
               attack: 0.02,
               decay: 0.08,
               sustain: 0.6,
               release: 0.06,
-              gain: 0.13,
+              gain: 0.12,
               filterFreq: 1500
             });
           }
@@ -1360,17 +979,15 @@ html
         sfxVictory() {
           if (!this.ctx) return;
           const now = this.ctx.currentTime;
-          const fanfare = [
+          [
             { notes: [60, 64, 67], t: 0.00, d: 0.14 },
             { notes: [60, 64, 67], t: 0.16, d: 0.14 },
-            { notes: [60, 64, 67], t: 0.32, d: 0.14 },
-            { notes: [65, 69, 72], t: 0.48, d: 0.26 },
-            { notes: [67, 71, 74], t: 0.78, d: 0.24 },
-            { notes: [72, 76, 79, 84], t: 1.06, d: 0.55 }
-          ];
-          fanfare.forEach(step => {
+            { notes: [65, 69, 72], t: 0.34, d: 0.24 },
+            { notes: [67, 71, 74], t: 0.62, d: 0.22 },
+            { notes: [72, 76, 79, 84], t: 0.88, d: 0.50 }
+          ].forEach(step => {
             this.playChord(step.notes, {
-              bus: 'sfx',
+              channel: 'sfx',
               time: now + step.t,
               type: 'triangle',
               duration: step.d,
@@ -1387,15 +1004,14 @@ html
         sfxGameOver() {
           if (!this.ctx) return;
           const now = this.ctx.currentTime;
-          const seq = [
-            { m: 64, t: 0.00, d: 0.22 },
-            { m: 62, t: 0.24, d: 0.22 },
-            { m: 60, t: 0.48, d: 0.24 },
-            { m: 55, t: 0.74, d: 0.50 }
-          ];
-          seq.forEach(s => {
+          [
+            { m: 64, t: 0.00, d: 0.20 },
+            { m: 62, t: 0.22, d: 0.20 },
+            { m: 60, t: 0.44, d: 0.22 },
+            { m: 55, t: 0.68, d: 0.46 }
+          ].forEach(s => {
             this.playVoice({
-              bus: 'sfx',
+              channel: 'sfx',
               freq: this.midiToFreq(s.m),
               slideTo: s.m === 55 ? this.midiToFreq(52) : null,
               type: 'triangle',
@@ -1411,11 +1027,12 @@ html
           });
         }
 
-        // --- МУЗЫКАЛЬНЫЙ СЕКВЕНСОР ---
-        startMusic(style = 'bright') {
+        startMusic(mode = 'normal', bpm = 126, rootOffset = 0) {
           this.init();
           if (!this.ctx) return;
-          this.musicStyle = style;
+          this.musicMode = mode;
+          this.bpm = bpm;
+          this.rootOffset = rootOffset;
           if (this.isPlayingMusic) return;
 
           this.isPlayingMusic = true;
@@ -1424,8 +1041,8 @@ html
           this.seqTimer = setInterval(() => this.scheduler(), 25);
         }
 
-        setMusicStyle(style) {
-          this.musicStyle = style;
+        setMusicMode(mode) {
+          this.musicMode = mode;
         }
 
         stopMusic() {
@@ -1438,122 +1055,94 @@ html
 
         scheduler() {
           if (!this.isPlayingMusic || !this.ctx) return;
-          const pat = this.patterns[this.musicStyle] || this.patterns.bright;
           const lookahead = 0.12;
           while (this.nextNoteTime < this.ctx.currentTime + lookahead) {
-            this.scheduleStep(this.stepIndex, this.nextNoteTime, pat);
-            const eighth = 60 / pat.bpm / 2;
+            this.scheduleStep(this.stepIndex, this.nextNoteTime);
+            const curBpm = this.musicMode === 'boss' ? Math.max(142, this.bpm + 12) : this.bpm;
+            const eighth = 60 / curBpm / 2;
             this.nextNoteTime += eighth;
             this.stepIndex = (this.stepIndex + 1) % 32;
           }
         }
 
-        scheduleStep(step, time, pat) {
-          const isBoss = this.musicStyle === 'boss';
+        scheduleStep(step, time) {
+          const isBoss = this.musicMode === 'boss';
+          const leadArr = isBoss ? this.bossLead : this.normalLead;
+          const bassArr = isBoss ? this.bossBass : this.normalBass;
+          const chordMap = isBoss ? this.bossChords : this.normalChords;
+          const shift = this.rootOffset;
 
-          // Настройка волн и фильтров в зависимости от выбранного тембра синтезатора
-          let leadWave = isBoss ? 'square' : 'triangle';
-          let subWave = 'sine';
-          let bassWave = isBoss ? 'sawtooth' : 'triangle';
-          let padWave = 'sine';
-          let leadCutoff = isBoss ? 2200 : 3000;
-          let padAttack = 0.04;
-          let padRelease = 0.22;
-
-          if (this.timbre === 'retro') {
-            leadWave = 'square';
-            subWave = 'square';
-            bassWave = 'sawtooth';
-            padWave = 'triangle';
-            leadCutoff = 2300;
-            padAttack = 0.01;
-            padRelease = 0.09;
-          } else if (this.timbre === 'space') {
-            leadWave = 'sine';
-            subWave = 'triangle';
-            bassWave = 'sine';
-            padWave = 'sine';
-            leadCutoff = 1450;
-            padAttack = 0.09;
-            padRelease = 0.35;
-          }
-
-          // 1. Полифонические аккорды
-          if (pat.chords[step]) {
-            this.playChord(pat.chords[step], {
-              bus: 'music',
+          if (chordMap[step]) {
+            this.playChord(chordMap[step].map(n => n + shift), {
+              channel: 'music',
               time,
-              type: padWave,
-              duration: 0.65,
-              attack: padAttack,
+              type: 'sine',
+              duration: 0.62,
+              attack: 0.04,
               decay: 0.2,
               sustain: 0.45,
-              release: padRelease,
-              gain: this.timbre === 'retro' ? 0.042 : 0.058,
-              filterFreq: this.timbre === 'space' ? 1200 : 1700
+              release: 0.2,
+              gain: 0.05,
+              filterFreq: 1600
             });
           }
 
-          // 2. Бас-дорожка
-          const bassMidi = pat.bass[step];
+          const bassMidi = bassArr[step];
           if (bassMidi > 0) {
             this.playVoice({
-              bus: 'music',
-              freq: this.midiToFreq(bassMidi),
-              type: bassWave,
+              channel: 'music',
+              freq: this.midiToFreq(bassMidi + shift),
+              type: isBoss ? 'sawtooth' : 'triangle',
               time,
               duration: 0.16,
               attack: 0.008,
               decay: 0.06,
               sustain: 0.4,
               release: 0.05,
-              gain: bassWave === 'sawtooth' ? 0.075 : 0.10,
-              filterFreq: bassWave === 'sawtooth' ? 760 : 950
+              gain: isBoss ? 0.075 : 0.095,
+              filterFreq: isBoss ? 720 : 900
             });
           }
 
-          // 3. Стерео-лид (2 голоса с детюном)
-          const leadMidi = pat.lead[step];
+          const leadMidi = leadArr[step];
           if (leadMidi > 0) {
-            const f = this.midiToFreq(leadMidi);
+            const f = this.midiToFreq(leadMidi + shift);
             this.playVoice({
-              bus: 'music',
+              channel: 'music',
               freq: f,
-              type: leadWave,
+              type: isBoss ? 'square' : 'triangle',
               time,
               duration: 0.17,
-              attack: this.timbre === 'space' ? 0.025 : 0.01,
+              attack: 0.01,
               decay: 0.06,
               sustain: 0.5,
-              release: 0.08,
-              gain: leadWave === 'square' ? 0.058 : 0.085,
-              filterFreq: leadCutoff,
-              pan: -0.18
+              release: 0.07,
+              gain: isBoss ? 0.06 : 0.08,
+              filterFreq: isBoss ? 2200 : 3000,
+              pan: -0.15
             });
             this.playVoice({
-              bus: 'music',
+              channel: 'music',
               freq: f,
-              detune: 8,
-              type: subWave,
+              detune: 7,
+              type: 'sine',
               time,
               duration: 0.17,
-              attack: this.timbre === 'space' ? 0.025 : 0.01,
+              attack: 0.01,
               decay: 0.06,
               sustain: 0.45,
-              release: 0.08,
-              gain: 0.055,
-              filterFreq: leadCutoff,
-              pan: 0.18
+              release: 0.07,
+              gain: 0.05,
+              pan: 0.15
             });
           }
 
-          // 4. Синтезированный хай-хэт на слабые доли
           if (step % 2 === 1) {
             this.playNoise({
-              bus: 'music',
+              channel: 'music',
               time,
-              duration: 0.035,
-              gain: 0.03,
+              duration: 0.032,
+              gain: 0.028,
               filterType: 'highpass',
               filterFreq: 6500,
               filterEnd: 5000
@@ -1563,57 +1152,28 @@ html
       }
 
       // =========================================================================
-      // 3. СОХРАНЕНИЕ ПРОГРЕССА И НАСТРОЕК В LOCALSTORAGE
+      // 3. СОХРАНЕНИЕ ПРОГРЕССА И УТИЛИТЫ РИСОВАНИЯ
       // =========================================================================
-      const STORAGE_KEY = 'astro_cat_save_v2';
+      const INK = '#1e1633';
+      const STORAGE_KEY = 'astro_cat_10_sectors_v1';
 
-      function loadSaveData() {
+      function loadProgress() {
         try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (!raw) return null;
-          return JSON.parse(raw);
+          const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+          return {
+            bestScore: raw.bestScore || 0,
+            completed: Array.isArray(raw.completed) ? raw.completed : []
+          };
         } catch (e) {
-          return null;
+          return { bestScore: 0, completed: [] };
         }
       }
 
-      function writeSaveData(data) {
+      function saveProgress(prog) {
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(prog));
         } catch (e) {}
       }
-
-      const saved = loadSaveData() || {};
-      let bestScore = Number(saved.bestScore) || 0;
-      let completedLevels = Array.isArray(saved.completedLevels) ? saved.completedLevels : [];
-      let selectedLevelId = Number(saved.selectedLevelId) || 1;
-      let selectedDiffId = DIFFICULTIES[saved.selectedDiffId] ? saved.selectedDiffId : 'normal';
-
-      const synth = new PolySynth();
-      if (typeof saved.musicVolume === 'number') synth.musicVolume = saved.musicVolume;
-      if (typeof saved.sfxVolume === 'number') synth.sfxVolume = saved.sfxVolume;
-      if (typeof saved.musicEnabled === 'boolean') synth.musicEnabled = saved.musicEnabled;
-      if (typeof saved.sfxEnabled === 'boolean') synth.sfxEnabled = saved.sfxEnabled;
-      if (['classic', 'retro', 'space'].includes(saved.timbre)) synth.timbre = saved.timbre;
-
-      function persistAll() {
-        writeSaveData({
-          bestScore,
-          completedLevels,
-          selectedLevelId,
-          selectedDiffId,
-          musicVolume: synth.musicVolume,
-          sfxVolume: synth.sfxVolume,
-          musicEnabled: synth.musicEnabled,
-          sfxEnabled: synth.sfxEnabled,
-          timbre: synth.timbre
-        });
-      }
-
-      // =========================================================================
-      // 4. УТИЛИТЫ CANVAS И ИНТЕРФЕЙС МЕНЮ
-      // =========================================================================
-      const INK = '#1e1633';
 
       function roundRectPath(ctx, x, y, w, h, r) {
         const rad = Math.min(r, w / 2, h / 2);
@@ -1626,16 +1186,23 @@ html
         ctx.closePath();
       }
 
+      // =========================================================================
+      // 4. ИНИЦИАЛИЗАЦИЯ UI И СОСТОЯНИЯ ИГРЫ
+      // =========================================================================
       const canvas = document.getElementById('game');
       const ctx = canvas.getContext('2d');
+      const synth = new PolySynth();
 
       const startOverlay = document.getElementById('start-overlay');
-      const soundOverlay = document.getElementById('sound-overlay');
+      const settingsOverlay = document.getElementById('settings-overlay');
       const pauseOverlay = document.getElementById('pause-overlay');
       const endOverlay = document.getElementById('end-overlay');
-
-      const muteBtn = document.getElementById('mute-btn');
       const pauseBtn = document.getElementById('pause-btn');
+      const muteBtn = document.getElementById('mute-btn');
+
+      let progress = loadProgress();
+      let selectedLevelIdx = 0; // 0..9
+      let selectedDiffKey = 'normal';
 
       let W = 480;
       let H = 800;
@@ -1653,174 +1220,111 @@ html
       window.addEventListener('resize', resize);
       resize();
 
-      // Построение сетки 10 уровней и обновление превью
-      const levelsGridEl = document.getElementById('levels-grid');
-      const diffRowEl = document.getElementById('diff-row');
+      // Построение сетки уровней в меню
+      const levelsGrid = document.getElementById('levels-grid');
+      const selectedLevelInfo = document.getElementById('selected-level-info');
 
-      function renderMenuUI() {
-        // Сложность
-        diffRowEl.querySelectorAll('.diff-btn').forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.diff === selectedDiffId);
-        });
-        document.getElementById('diff-desc').textContent = DIFFICULTIES[selectedDiffId].desc;
-
-        // Сетка 10 уровней
-        levelsGridEl.innerHTML = '';
-        LEVELS.forEach(lvl => {
+      function renderLevelGrid() {
+        levelsGrid.innerHTML = '';
+        LEVELS.forEach((lvl, idx) => {
           const btn = document.createElement('button');
-          btn.className = 'lvl-btn' + (lvl.id === selectedLevelId ? ' active' : '');
-          btn.style.background = lvl.id === selectedLevelId ? lvl.accent : '#ffffff';
-          btn.style.color = lvl.id === selectedLevelId ? '#ffffff' : '#1e1633';
-          if (lvl.id === selectedLevelId) {
-            btn.style.textShadow = '1px 1px 0 #1e1633';
-          }
-
-          const isDone = completedLevels.includes(lvl.id);
-          btn.innerHTML = `
-            ${isDone ? '<span class="lvl-star">★</span>' : ''}
-            <span class="lvl-icon">${lvl.icon}</span>
-            <span class="lvl-num">${lvl.id}</span>
-          `;
+          btn.className = 'lvl-btn' + (idx === selectedLevelIdx ? ' active' : '');
+          const done = progress.completed.includes(lvl.id);
+          btn.innerHTML = `<span>${lvl.id}</span><span class="star">${done ? '★' : '☆'}</span>`;
           btn.addEventListener('click', () => {
-            synth.sfxUiClick();
-            selectedLevelId = lvl.id;
-            persistAll();
-            renderMenuUI();
+            synth.init();
+            synth.sfxHit(0);
+            selectedLevelIdx = idx;
+            renderLevelGrid();
           });
-          levelsGridEl.appendChild(btn);
+          levelsGrid.appendChild(btn);
         });
 
-        // Карточка выбранного уровня
-        const curLvl = LEVELS[selectedLevelId - 1];
-        document.getElementById('biome-swatch').style.background = curLvl.accent;
-        document.getElementById('biome-swatch').textContent = curLvl.icon;
-        document.getElementById('biome-title').textContent = `Уровень ${curLvl.id}: ${curLvl.name}`;
-        document.getElementById('biome-desc').textContent = curLvl.desc;
-        document.getElementById('biome-boss').textContent = `Босс: ${curLvl.bossName}`;
-        document.getElementById('start-best').textContent = `Рекорд: ${bestScore} • Пройдено уровней: ${completedLevels.length}/10`;
+        const cur = LEVELS[selectedLevelIdx];
+        selectedLevelInfo.textContent = `Уровень ${cur.id}: ${cur.name} — Босс: ${cur.bossName}`;
+        document.getElementById('start-best').textContent =
+          `Общий рекорд: ${progress.bestScore} • Пройдено: ${progress.completed.length}/10`;
       }
+      renderLevelGrid();
 
-      diffRowEl.querySelectorAll('.diff-btn').forEach(btn => {
+      // Выбор сложности
+      document.querySelectorAll('#diff-row .pill-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          synth.sfxUiClick();
-          selectedDiffId = btn.dataset.diff;
-          persistAll();
-          renderMenuUI();
+          synth.init();
+          synth.sfxHit(0);
+          selectedDiffKey = btn.dataset.diff;
+          document.querySelectorAll('#diff-row .pill-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
         });
       });
 
-      // Настройки звука UI
-      const musicVolSlider = document.getElementById('music-vol-slider');
-      const sfxVolSlider = document.getElementById('sfx-vol-slider');
-      const musicVolLabel = document.getElementById('music-vol-label');
-      const sfxVolLabel = document.getElementById('sfx-vol-label');
-      const musicToggleBtn = document.getElementById('music-toggle-btn');
-      const sfxToggleBtn = document.getElementById('sfx-toggle-btn');
-      const timbreRowEl = document.getElementById('timbre-row');
+      // Настройки звука
+      let prevStateBeforeSettings = 'START';
 
-      function syncSoundUI() {
-        const mPct = Math.round(synth.musicVolume * 100);
-        const sPct = Math.round(synth.sfxVolume * 100);
-        musicVolSlider.value = mPct;
-        sfxVolSlider.value = sPct;
-        musicVolLabel.textContent = `${mPct}%`;
-        sfxVolLabel.textContent = `${sPct}%`;
-
-        musicToggleBtn.textContent = synth.musicEnabled ? 'ВКЛ' : 'ВЫКЛ';
-        musicToggleBtn.classList.toggle('off', !synth.musicEnabled);
-
-        sfxToggleBtn.textContent = synth.sfxEnabled ? 'ВКЛ' : 'ВЫКЛ';
-        sfxToggleBtn.classList.toggle('off', !synth.sfxEnabled);
-
-        timbreRowEl.querySelectorAll('.timbre-btn').forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.timbre === synth.timbre);
-        });
+      function openSettings() {
+        synth.init();
+        prevStateBeforeSettings = state;
+        if (state === 'PLAYING') state = 'PAUSED';
+        settingsOverlay.classList.remove('hidden');
       }
 
-      musicVolSlider.addEventListener('input', () => {
-        synth.init();
-        synth.musicVolume = Number(musicVolSlider.value) / 100;
-        if (synth.musicVolume > 0 && !synth.musicEnabled) synth.musicEnabled = true;
-        synth.applyGains();
-        syncSoundUI();
-        persistAll();
-      });
+      function closeSettings() {
+        settingsOverlay.classList.add('hidden');
+        if (prevStateBeforeSettings === 'PLAYING') {
+          state = 'PLAYING';
+        }
+      }
 
-      sfxVolSlider.addEventListener('input', () => {
-        synth.init();
-        synth.sfxVolume = Number(sfxVolSlider.value) / 100;
-        if (synth.sfxVolume > 0 && !synth.sfxEnabled) synth.sfxEnabled = true;
-        synth.applyGains();
-        syncSoundUI();
-        persistAll();
-      });
+      document.getElementById('settings-open-btn').addEventListener('click', openSettings);
+      document.getElementById('menu-sound-btn').addEventListener('click', openSettings);
+      document.getElementById('settings-close-btn').addEventListener('click', closeSettings);
 
-      musicToggleBtn.addEventListener('click', () => {
+      const toggleMusicBtn = document.getElementById('toggle-music');
+      toggleMusicBtn.addEventListener('click', () => {
         synth.init();
         synth.musicEnabled = !synth.musicEnabled;
-        synth.applyGains();
-        syncSoundUI();
-        persistAll();
-        synth.sfxUiClick();
+        toggleMusicBtn.textContent = synth.musicEnabled ? 'ВКЛ' : 'ВЫКЛ';
+        toggleMusicBtn.classList.toggle('off', !synth.musicEnabled);
       });
 
-      sfxToggleBtn.addEventListener('click', () => {
+      const toggleSfxBtn = document.getElementById('toggle-sfx');
+      toggleSfxBtn.addEventListener('click', () => {
         synth.init();
         synth.sfxEnabled = !synth.sfxEnabled;
-        synth.applyGains();
-        syncSoundUI();
-        persistAll();
-        if (synth.sfxEnabled) synth.sfxUiClick();
+        toggleSfxBtn.textContent = synth.sfxEnabled ? 'ВКЛ' : 'ВЫКЛ';
+        toggleSfxBtn.classList.toggle('off', !synth.sfxEnabled);
       });
 
-      timbreRowEl.querySelectorAll('.timbre-btn').forEach(btn => {
+      document.getElementById('music-vol').addEventListener('input', (e) => {
+        synth.musicVolume = Number(e.target.value) / 100;
+      });
+
+      document.getElementById('sfx-vol').addEventListener('input', (e) => {
+        synth.sfxVolume = Number(e.target.value) / 100;
+      });
+
+      document.querySelectorAll('#timbre-row .pill-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           synth.init();
           synth.timbre = btn.dataset.timbre;
-          syncSoundUI();
-          persistAll();
-          synth.sfxTestChord();
+          document.querySelectorAll('#timbre-row .pill-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          synth.sfxPowerup();
         });
       });
 
-      let soundReturnOverlay = startOverlay;
-
-      function openSoundSettings(fromOverlay) {
-        synth.sfxUiClick();
-        soundReturnOverlay = fromOverlay;
-        syncSoundUI();
-        fromOverlay.classList.add('hidden');
-        soundOverlay.classList.remove('hidden');
-      }
-
-      document.getElementById('open-sound-btn').addEventListener('click', () => {
-        openSoundSettings(startOverlay);
+      document.getElementById('test-chord-btn').addEventListener('click', () => {
+        synth.init();
+        synth.sfxPowerup();
       });
 
-      document.getElementById('pause-sound-btn').addEventListener('click', () => {
-        openSoundSettings(pauseOverlay);
+      muteBtn.addEventListener('click', () => {
+        const muted = synth.toggleMute();
+        muteBtn.textContent = muted ? '🔇' : '🔊';
       });
 
-      document.getElementById('test-sound-btn').addEventListener('click', () => {
-        synth.sfxTestChord();
-      });
-
-      document.getElementById('close-sound-btn').addEventListener('click', () => {
-        synth.sfxUiClick();
-        soundOverlay.classList.add('hidden');
-        soundReturnOverlay.classList.remove('hidden');
-      });
-
-      syncSoundUI();
-      renderMenuUI();
-
-      // =========================================================================
-      // 5. ИГРОВОЕ СОСТОЯНИЕ И ПРОЦЕДУРНЫЕ БИОМЫ
-      // =========================================================================
+      // Игровые переменные
       let state = 'START'; // 'START' | 'PLAYING' | 'PAUSED' | 'VICTORY' | 'GAMEOVER'
-      let currentLevel = LEVELS[selectedLevelId - 1];
-      let currentDiff = DIFFICULTIES[selectedDiffId];
-
       let score = 0;
       let kills = 0;
       let combo = 1;
@@ -1830,48 +1334,26 @@ html
       let spawnTimer = 0;
       let screenShake = 0;
       let warningBannerTimer = 0;
-      let levelBannerTimer = 0;
       let globalTime = 0;
 
-      // Элементы окружения, перестраиваемые под каждый уровень
-      let stars = [];
-      let planets = [];
-      let biomeProps = [];
+      // Параллакс-элементы фона
+      const stars = Array.from({ length: 55 }, (_, i) => ({
+        x: Math.random() * 1200,
+        y: Math.random() * 1200,
+        r: i % 3 === 0 ? 2.7 : 1.5,
+        speed: 35 + (i % 3) * 45,
+        phase: Math.random() * Math.PI * 2
+      }));
 
-      function buildBiomeEnvironment(lvl) {
-        stars = Array.from({ length: 58 }, (_, i) => ({
-          x: Math.random() * 1400,
-          y: Math.random() * 1400,
-          r: i % 3 === 0 ? 2.6 : 1.5,
-          speed: 35 + (i % 3) * 45,
-          color: lvl.theme === 'ice' ? '#caf0f8'
-            : lvl.theme === 'lava' ? '#ffba08'
-            : lvl.theme === 'cyber' ? (i % 2 === 0 ? '#00f5d4' : '#f15bb5')
-            : lvl.theme === 'jungle' ? '#9ef01a'
-            : (i % 4 === 0 ? '#ffd166' : '#ffffff'),
-          phase: Math.random() * Math.PI * 2
-        }));
-
-        planets = [
-          { xRatio: 0.18, y: 140, r: 34, color: lvl.accent, ring: '#ffd166', speed: 14 },
-          { xRatio: 0.82, y: 420, r: 24, color: lvl.enemyColors.crab, ring: null, speed: 20 },
-          { xRatio: 0.28, y: 710, r: 40, color: lvl.enemyColors.wasp, ring: '#72efdd', speed: 11 }
-        ];
-
-        // Тематические пропсы для биома (пончики, кристаллы, медузы, айсберги, пирамиды, шестерни и т.д.)
-        biomeProps = Array.from({ length: 12 }, (_, i) => ({
-          xRatio: (i * 0.17 + 0.08) % 0.92 + 0.04,
-          y: (i * 95) % 900,
-          size: 14 + (i % 4) * 7,
-          speed: 24 + (i % 3) * 16,
-          rot: Math.random() * Math.PI * 2,
-          vrot: (i % 2 === 0 ? 1 : -1) * (0.4 + (i % 3) * 0.25),
-          phase: Math.random() * Math.PI * 2,
-          variant: i % 3
-        }));
-      }
-
-      buildBiomeEnvironment(currentLevel);
+      const props = Array.from({ length: 5 }, (_, i) => ({
+        xRatio: 0.14 + (i * 0.19) % 0.76,
+        y: i * 175 + 60,
+        r: 24 + (i % 3) * 11,
+        speed: 14 + (i % 3) * 6,
+        rot: Math.random() * Math.PI * 2,
+        vrot: (i % 2 === 0 ? 1 : -1) * 0.35,
+        variant: i
+      }));
 
       let player = null;
       let bullets = [];
@@ -1890,26 +1372,38 @@ html
         if (state === 'PLAYING') {
           state = 'PAUSED';
           pointer.active = false;
-          document.getElementById('pause-badge').textContent = `Уровень ${currentLevel.id} • ${currentDiff.name}`;
           pauseOverlay.classList.remove('hidden');
-          synth.sfxUiClick();
-        } else if (state === 'PAUSED' && soundOverlay.classList.contains('hidden')) {
+        } else if (state === 'PAUSED' && settingsOverlay.classList.contains('hidden')) {
           state = 'PLAYING';
           pauseOverlay.classList.add('hidden');
-          synth.sfxUiClick();
         }
       }
+
+      pauseBtn.addEventListener('click', togglePause);
+      document.getElementById('resume-btn').addEventListener('click', togglePause);
+
+      function returnToMenu() {
+        state = 'START';
+        pointer.active = false;
+        synth.stopMusic();
+        pauseOverlay.classList.add('hidden');
+        endOverlay.classList.add('hidden');
+        pauseBtn.classList.add('hidden');
+        renderLevelGrid();
+        startOverlay.classList.remove('hidden');
+      }
+
+      document.getElementById('pause-menu-btn').addEventListener('click', returnToMenu);
+      document.getElementById('end-menu-btn').addEventListener('click', returnToMenu);
 
       window.addEventListener('keydown', (e) => {
         keys[e.code] = true;
         if (e.code === 'KeyM') {
-          const muted = synth.toggleQuickMute();
+          const muted = synth.toggleMute();
           muteBtn.textContent = muted ? '🔇' : '🔊';
         }
         if (e.code === 'KeyP' || e.code === 'Escape') {
-          if (state === 'PLAYING' || state === 'PAUSED') {
-            togglePause();
-          }
+          if (state === 'PLAYING' || state === 'PAUSED') togglePause();
         }
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
           e.preventDefault();
@@ -1937,73 +1431,17 @@ html
         pointer.y = e.clientY - rect.top - (pointer.isTouch ? 48 : 0);
       });
 
-      window.addEventListener('pointerup', () => { pointer.active = false; });
-      window.addEventListener('pointercancel', () => { pointer.active = false; });
-
-      muteBtn.addEventListener('click', () => {
-        const muted = synth.toggleQuickMute();
-        muteBtn.textContent = muted ? '🔇' : '🔊';
-      });
-
-      pauseBtn.addEventListener('click', togglePause);
-
-      document.getElementById('resume-btn').addEventListener('click', togglePause);
-      document.getElementById('pause-restart-btn').addEventListener('click', () => {
-        synth.sfxUiClick();
-        pauseOverlay.classList.add('hidden');
-        startLevel(selectedLevelId);
-      });
-      document.getElementById('pause-menu-btn').addEventListener('click', () => {
-        synth.sfxUiClick();
-        returnToMainMenu();
-      });
-
-      function returnToMainMenu() {
-        state = 'START';
+      window.addEventListener('pointerup', () => {
         pointer.active = false;
-        boss = null;
-        synth.stopMusic();
-        pauseBtn.classList.add('hidden');
-        pauseOverlay.classList.add('hidden');
-        endOverlay.classList.add('hidden');
-        soundOverlay.classList.add('hidden');
-        startOverlay.classList.remove('hidden');
-        currentLevel = LEVELS[selectedLevelId - 1];
-        buildBiomeEnvironment(currentLevel);
-        renderMenuUI();
-      }
+      });
 
-      function createPlayer() {
-        const maxHp = currentDiff.playerHp;
-        return {
-          x: W / 2,
-          y: H - 110,
-          vx: 0,
-          vy: 0,
-          r: 24,
-          hp: maxHp,
-          maxHp: maxHp,
-          invuln: 0,
-          fireCooldown: 0,
-          weaponLevel: 1,
-          weaponTimer: 0,
-          shield: false,
-          turboTimer: 0,
-          squashX: 1,
-          squashY: 1,
-          blinkTimer: 2.5
-        };
-      }
+      function startLevel(idx) {
+        selectedLevelIdx = idx;
+        const lvl = LEVELS[selectedLevelIdx];
+        const diff = DIFFICULTIES[selectedDiffKey];
 
-      function startLevel(lvlId) {
-        selectedLevelId = lvlId;
-        currentLevel = LEVELS[lvlId - 1];
-        currentDiff = DIFFICULTIES[selectedDiffId];
-        persistAll();
-
-        buildBiomeEnvironment(currentLevel);
         synth.init();
-        synth.startMusic(currentLevel.musicStyle);
+        synth.startMusic('normal', lvl.bpm, lvl.rootOffset);
 
         score = 0;
         kills = 0;
@@ -2014,9 +1452,26 @@ html
         spawnTimer = 0.5;
         screenShake = 0;
         warningBannerTimer = 0;
-        levelBannerTimer = 2.4;
 
-        player = createPlayer();
+        player = {
+          x: W / 2,
+          y: H - 105,
+          vx: 0,
+          vy: 0,
+          r: 23,
+          hp: diff.playerHp,
+          maxHp: diff.playerHp,
+          invuln: 0,
+          fireCooldown: 0,
+          weaponLevel: 1,
+          weaponTimer: 0,
+          shield: false,
+          turboTimer: 0,
+          squashX: 1,
+          squashY: 1,
+          blinkTimer: 2.5
+        };
+
         bullets = [];
         enemyBullets = [];
         enemies = [];
@@ -2030,132 +1485,111 @@ html
         endOverlay.classList.add('hidden');
         pauseOverlay.classList.add('hidden');
         pauseBtn.classList.remove('hidden');
+
+        addPopup(W / 2, H * 0.36, `СЕКТОР ${lvl.id}: ${lvl.name.toUpperCase()}`, lvl.accent);
       }
 
-      document.getElementById('start-btn').addEventListener('click', () => {
-        synth.sfxUiClick();
-        startLevel(selectedLevelId);
-      });
-
-      document.getElementById('restart-btn').addEventListener('click', () => {
-        synth.sfxUiClick();
-        startLevel(selectedLevelId);
-      });
-
+      document.getElementById('start-btn').addEventListener('click', () => startLevel(selectedLevelIdx));
       document.getElementById('next-level-btn').addEventListener('click', () => {
-        synth.sfxUiClick();
-        const nextId = Math.min(10, selectedLevelId + 1);
-        startLevel(nextId);
-      });
-
-      document.getElementById('end-menu-btn').addEventListener('click', () => {
-        synth.sfxUiClick();
-        returnToMainMenu();
+        if (state === 'VICTORY') {
+          const nextIdx = (selectedLevelIdx + 1) % LEVELS.length;
+          startLevel(nextIdx);
+        } else {
+          startLevel(selectedLevelIdx);
+        }
       });
 
       // =========================================================================
-      // 6. СПАВН ВРАГОВ, БОНУСОВ И БОССОВ УРОВНЕЙ
+      // 5. СПАВН ВРАГОВ, БОНУСОВ И БОССОВ УРОВНЕЙ
       // =========================================================================
       function spawnEnemy() {
-        const margin = 46;
+        const lvl = LEVELS[selectedLevelIdx];
+        const diff = DIFFICULTIES[selectedDiffKey];
+        const hpScale = lvl.hpMult * diff.enemyHp;
+        const margin = 44;
         const x = margin + Math.random() * (W - margin * 2);
         const roll = Math.random();
-        const hpScale = currentDiff.enemyHpMult * (1 + (currentLevel.id - 1) * 0.06);
-        const spdScale = currentDiff.speedMult * (1 + (currentLevel.id - 1) * 0.025);
 
-        if (wave === 1) {
-          if (roll < 0.65) {
-            const hp = Math.max(1, Math.round(2 * hpScale));
-            enemies.push({
-              kind: 'ufo',
-              x, y: -36, r: 22, hp, maxHp: hp,
-              vy: (115 + Math.random() * 35) * spdScale,
-              phase: Math.random() * Math.PI * 2,
-              amp: 55 + Math.random() * 40,
-              shootTimer: (1.6 + Math.random() * 1.4) / spdScale,
-              hitFlash: 0,
-              points: 100
-            });
-          } else {
-            const hp = Math.max(2, Math.round(3 * hpScale));
-            enemies.push({
-              kind: 'meteor',
-              x, y: -40, r: 26, hp, maxHp: hp,
-              vy: (135 + Math.random() * 40) * spdScale,
-              vx: (Math.random() - 0.5) * 65 * spdScale,
-              rot: 0,
-              vrot: (Math.random() - 0.5) * 3.5,
-              shootTimer: 99,
-              hitFlash: 0,
-              points: 120
-            });
-          }
+        if (wave === 1 && roll < 0.65) {
+          const hp = Math.max(1, Math.round(2 * hpScale));
+          enemies.push({
+            kind: 'ufo',
+            x, y: -36, r: 22, hp, maxHp: hp,
+            vy: (118 + Math.random() * 32) * diff.bulletSpeed,
+            phase: Math.random() * Math.PI * 2,
+            amp: 58 + Math.random() * 35,
+            shootTimer: 1.5 + Math.random() * 1.2,
+            hitFlash: 0,
+            points: 100
+          });
+        } else if (roll < 0.36) {
+          const hp = Math.max(2, Math.round(3 * hpScale));
+          enemies.push({
+            kind: 'wasp',
+            x, y: -36, r: 21, hp, maxHp: hp,
+            vy: (152 + Math.random() * 35) * diff.bulletSpeed,
+            phase: Math.random() * Math.PI * 2,
+            amp: 82,
+            shootTimer: 1.1 + Math.random() * 0.85,
+            hitFlash: 0,
+            points: 160
+          });
+        } else if (roll < 0.72) {
+          const hp = Math.max(3, Math.round(5 * hpScale));
+          enemies.push({
+            kind: 'crab',
+            x, y: -42, r: 27, hp, maxHp: hp,
+            vy: (92 + Math.random() * 24) * diff.bulletSpeed,
+            phase: Math.random() * Math.PI * 2,
+            amp: 48,
+            shootTimer: 1.4 + Math.random() * 0.9,
+            hitFlash: 0,
+            points: 230
+          });
         } else {
-          if (roll < 0.36) {
-            const hp = Math.max(2, Math.round(3 * hpScale));
-            enemies.push({
-              kind: 'wasp',
-              x, y: -36, r: 21, hp, maxHp: hp,
-              vy: (155 + Math.random() * 35) * spdScale,
-              phase: Math.random() * Math.PI * 2,
-              amp: 85,
-              shootTimer: (1.1 + Math.random() * 0.9) / spdScale,
-              hitFlash: 0,
-              points: 160
-            });
-          } else if (roll < 0.72) {
-            const hp = Math.max(4, Math.round(6 * hpScale));
-            enemies.push({
-              kind: 'crab',
-              x, y: -42, r: 28, hp, maxHp: hp,
-              vy: (88 + Math.random() * 25) * spdScale,
-              phase: Math.random() * Math.PI * 2,
-              amp: 45,
-              shootTimer: (1.5 + Math.random() * 1.0) / spdScale,
-              hitFlash: 0,
-              points: 240
-            });
-          } else {
-            const hp = Math.max(2, Math.round(3 * hpScale));
-            enemies.push({
-              kind: 'ufo',
-              x, y: -36, r: 22, hp, maxHp: hp,
-              vy: 130 * spdScale,
-              phase: Math.random() * Math.PI * 2,
-              amp: 70,
-              shootTimer: (1.3 + Math.random()) / spdScale,
-              hitFlash: 0,
-              points: 130
-            });
-          }
+          const hp = Math.max(2, Math.round(3 * hpScale));
+          enemies.push({
+            kind: 'meteor',
+            x, y: -40, r: 25, hp, maxHp: hp,
+            vy: (132 + Math.random() * 36) * diff.bulletSpeed,
+            vx: (Math.random() - 0.5) * 65,
+            rot: 0,
+            vrot: (Math.random() - 0.5) * 3.5,
+            shootTimer: 99,
+            hitFlash: 0,
+            points: 120
+          });
         }
       }
 
       function spawnBoss() {
-        const scaledHp = Math.round(currentLevel.bossHp * currentDiff.enemyHpMult);
+        const lvl = LEVELS[selectedLevelIdx];
+        const diff = DIFFICULTIES[selectedDiffKey];
+        const totalHp = Math.round(170 * lvl.hpMult * diff.enemyHp);
+
         boss = {
           x: W / 2,
-          y: -115,
-          targetY: Math.min(155, H * 0.22),
-          r: currentLevel.id === 10 ? 70 : 64,
-          hp: scaledHp,
-          maxHp: scaledHp,
+          y: -110,
+          targetY: Math.min(150, H * 0.22),
+          r: 62,
+          hp: totalHp,
+          maxHp: totalHp,
           phase: 1,
           time: 0,
           hitFlash: 0,
-          shootTimer: 1.15,
+          shootTimer: 1.1,
           specialTimer: 4.5,
           laserState: 'idle',
           laserTimer: 0,
           laserX: W / 2
         };
-        warningBannerTimer = 2.6;
+        warningBannerTimer = 2.4;
         synth.sfxBossAlarm();
-        synth.setMusicStyle('boss');
+        synth.setMusicMode('boss');
       }
 
       function maybeDropBonus(x, y, guaranteed = false) {
-        if (!guaranteed && Math.random() > currentDiff.bonusChance) return;
+        if (!guaranteed && Math.random() > 0.28) return;
         const types = ['weapon', 'shield', 'turbo', 'heart'];
         let chosen = types[Math.floor(Math.random() * types.length)];
         if (chosen === 'heart' && player && player.hp >= player.maxHp) {
@@ -2163,10 +1597,7 @@ html
         }
         bonuses.push({
           type: chosen,
-          x,
-          y,
-          r: 18,
-          vy: 115,
+          x, y, r: 18, vy: 115,
           phase: Math.random() * Math.PI * 2
         });
       }
@@ -2176,14 +1607,13 @@ html
           const ang = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
           const spd = speed * (0.4 + Math.random() * 0.75);
           particles.push({
-            x,
-            y,
+            x, y,
             vx: Math.cos(ang) * spd,
             vy: Math.sin(ang) * spd,
-            r: 4 + Math.random() * 5,
+            r: 4 + Math.random() * 4.5,
             color: colors[i % colors.length],
-            life: 0.35 + Math.random() * 0.28,
-            maxLife: 0.63
+            life: 0.34 + Math.random() * 0.25,
+            maxLife: 0.6
           });
         }
       }
@@ -2193,12 +1623,13 @@ html
       }
 
       // =========================================================================
-      // 7. ОБНОВЛЕНИЕ ИГРОВОГО МИРА
+      // 6. ОБНОВЛЕНИЕ ФИЗИКИ
       // =========================================================================
       function update(dt) {
         globalTime += dt;
+        const lvl = LEVELS[selectedLevelIdx];
+        const diff = DIFFICULTIES[selectedDiffKey];
 
-        // Фоновые звёзды, планеты и тематические пропсы биома
         for (const s of stars) {
           s.y += s.speed * dt;
           if (s.y > H + 10) {
@@ -2206,39 +1637,28 @@ html
             s.x = Math.random() * W;
           }
         }
-        for (const p of planets) {
-          p.y += p.speed * dt;
-          if (p.y > H + p.r + 30) {
-            p.y = -p.r - 30;
-          }
-        }
-        for (const pr of biomeProps) {
+        for (const pr of props) {
           pr.y += pr.speed * dt;
           pr.rot += pr.vrot * dt;
-          pr.phase += dt * 2.2;
-          if (pr.y > H + 60) {
-            pr.y = -60;
-          }
+          if (pr.y > H + pr.r + 40) pr.y = -pr.r - 40;
         }
 
         if (state !== 'PLAYING') return;
 
         if (screenShake > 0) screenShake = Math.max(0, screenShake - dt * 28);
         if (warningBannerTimer > 0) warningBannerTimer = Math.max(0, warningBannerTimer - dt);
-        if (levelBannerTimer > 0) levelBannerTimer = Math.max(0, levelBannerTimer - dt);
 
         if (comboTimer > 0) {
           comboTimer -= dt;
           if (comboTimer <= 0) combo = 1;
         }
 
-        // Волны уровня
         waveTimer += dt;
         if (!boss) {
-          if (wave === 1 && waveTimer > 14) {
+          if (wave === 1 && waveTimer > 13) {
             wave = 2;
-            addPopup(W / 2, H * 0.35, 'ВОЛНА 2!', '#48dbfb');
-          } else if (wave === 2 && waveTimer > 30) {
+            addPopup(W / 2, H * 0.35, 'ВОЛНА 2!', lvl.accent);
+          } else if (wave === 2 && waveTimer > 27) {
             wave = 3;
             spawnBoss();
           }
@@ -2247,13 +1667,13 @@ html
             spawnTimer -= dt;
             if (spawnTimer <= 0) {
               spawnEnemy();
-              const baseSpawn = wave === 1 ? 1.02 : 0.78;
-              spawnTimer = baseSpawn / currentDiff.speedMult;
+              const baseRate = wave === 1 ? 0.98 : 0.76;
+              spawnTimer = baseRate * diff.spawnRate;
             }
           }
         }
 
-        // --- ИГРОК ---
+        // Игрок
         const p = player;
         if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
         if (p.weaponTimer > 0) {
@@ -2268,9 +1688,8 @@ html
         p.squashX += (1 - p.squashX) * Math.min(1, dt * 14);
         p.squashY += (1 - p.squashY) * Math.min(1, dt * 14);
 
-        const moveSpeed = p.turboTimer > 0 ? 450 : 355;
-        let ix = 0;
-        let iy = 0;
+        const moveSpeed = p.turboTimer > 0 ? 450 : 350;
+        let ix = 0, iy = 0;
         if (keys['ArrowLeft'] || keys['KeyA']) ix -= 1;
         if (keys['ArrowRight'] || keys['KeyD']) ix += 1;
         if (keys['ArrowUp'] || keys['KeyW']) iy -= 1;
@@ -2298,6 +1717,7 @@ html
         p.x = Math.max(pad, Math.min(W - pad, p.x));
         p.y = Math.max(pad + 30, Math.min(H - pad, p.y));
 
+        // Выстрелы игрока
         p.fireCooldown -= dt;
         const wantsFire = keys['Space'] || keys['KeyZ'] || pointer.active;
         const fireInterval = p.turboTimer > 0 ? 0.12 : 0.17;
@@ -2310,19 +1730,18 @@ html
           synth.sfxShoot(pan, p.weaponLevel > 1);
 
           if (p.weaponLevel === 1) {
-            bullets.push({ x: p.x, y: p.y - 24, vx: 0, vy: -690, r: 6, dmg: 1, color: '#48dbfb' });
+            bullets.push({ x: p.x, y: p.y - 24, vx: 0, vy: -680, r: 6, dmg: 1, color: lvl.accent });
           } else if (p.weaponLevel === 2) {
-            bullets.push({ x: p.x - 10, y: p.y - 20, vx: -55, vy: -680, r: 6, dmg: 1, color: '#ffd166' });
-            bullets.push({ x: p.x,      y: p.y - 26, vx: 0,   vy: -710, r: 7, dmg: 1, color: '#ff6b6b' });
-            bullets.push({ x: p.x + 10, y: p.y - 20, vx: 55,  vy: -680, r: 6, dmg: 1, color: '#ffd166' });
+            bullets.push({ x: p.x - 10, y: p.y - 20, vx: -55, vy: -670, r: 6, dmg: 1, color: '#ffd166' });
+            bullets.push({ x: p.x,      y: p.y - 26, vx: 0,   vy: -700, r: 7, dmg: 1, color: '#ff6b6b' });
+            bullets.push({ x: p.x + 10, y: p.y - 20, vx: 55,  vy: -670, r: 6, dmg: 1, color: '#ffd166' });
           } else {
-            const angles = [-0.26, -0.13, 0, 0.13, 0.26];
-            angles.forEach((a, idx) => {
+            [-0.26, -0.13, 0, 0.13, 0.26].forEach((a, idx) => {
               bullets.push({
                 x: p.x + (idx - 2) * 6,
                 y: p.y - 22,
-                vx: Math.sin(a) * 700,
-                vy: -Math.cos(a) * 700,
+                vx: Math.sin(a) * 690,
+                vy: -Math.cos(a) * 690,
                 r: idx === 2 ? 7.5 : 5.5,
                 dmg: 1,
                 color: idx === 2 ? '#ff5964' : '#ffd166'
@@ -2331,17 +1750,14 @@ html
           }
         }
 
-        // --- ПУЛИ ИГРОКА ---
         for (let i = bullets.length - 1; i >= 0; i--) {
           const b = bullets[i];
           b.x += b.vx * dt;
           b.y += b.vy * dt;
-          if (b.y < -20 || b.x < -20 || b.x > W + 20) {
-            bullets.splice(i, 1);
-          }
+          if (b.y < -20 || b.x < -20 || b.x > W + 20) bullets.splice(i, 1);
         }
 
-        // --- ВРАГИ ---
+        // Враги
         for (let i = enemies.length - 1; i >= 0; i--) {
           const e = enemies[i];
           e.phase += dt * 2.6;
@@ -2359,12 +1775,11 @@ html
 
           e.shootTimer -= dt;
           if (e.shootTimer <= 0 && e.y > 40 && e.y < H * 0.68) {
-            e.shootTimer = (e.kind === 'wasp' ? 1.5 : 2.1) / currentDiff.speedMult;
+            e.shootTimer = (e.kind === 'wasp' ? 1.45 : 2.05) / diff.bulletSpeed;
             const ang = Math.atan2(p.y - e.y, p.x - e.x);
-            const spd = (e.kind === 'wasp' ? 270 : 215) * currentDiff.speedMult;
+            const spd = (e.kind === 'wasp' ? 265 : 210) * diff.bulletSpeed;
             enemyBullets.push({
-              x: e.x,
-              y: e.y + e.r * 0.7,
+              x: e.x, y: e.y + e.r * 0.7,
               vx: Math.cos(ang) * spd,
               vy: Math.sin(ang) * spd,
               r: 7,
@@ -2380,11 +1795,11 @@ html
               e.hitFlash = 1;
               addBurst(b.x, b.y, ['#ffd166', '#ffffff'], 5, 110);
 
-              const pan = ((e.x / W) * 2 - 1) * 0.8;
               if (e.hp <= 0) {
+                const pan = ((e.x / W) * 2 - 1) * 0.8;
                 synth.sfxExplosion(pan, false);
-                addBurst(e.x, e.y, ['#ff5964', '#ffd166', '#06d6a0', '#ffffff'], 16, 210);
-                const pts = Math.round(e.points * combo * currentDiff.scoreMult);
+                addBurst(e.x, e.y, ['#ff5964', '#ffd166', lvl.accent, '#ffffff'], 15, 205);
+                const pts = Math.round(e.points * combo * diff.scoreMult);
                 score += pts;
                 kills++;
                 combo = Math.min(5, combo + 1);
@@ -2394,6 +1809,7 @@ html
                 enemies.splice(i, 1);
                 screenShake = Math.max(screenShake, 4);
               } else {
+                const pan = ((e.x / W) * 2 - 1) * 0.8;
                 synth.sfxHit(pan);
               }
               break;
@@ -2409,16 +1825,12 @@ html
             continue;
           }
 
-          if (e.y > H + 50) {
-            enemies.splice(i, 1);
-          }
+          if (e.y > H + 50) enemies.splice(i, 1);
         }
 
-        if (boss) {
-          updateBoss(dt);
-        }
+        if (boss) updateBoss(dt);
 
-        // --- ВРАЖЕСКИЕ СНАРЯДЫ ---
+        // Вражеские пули
         for (let i = enemyBullets.length - 1; i >= 0; i--) {
           const eb = enemyBullets[i];
           eb.x += eb.vx * dt;
@@ -2429,13 +1841,12 @@ html
             damagePlayer();
             continue;
           }
-
           if (eb.y > H + 25 || eb.y < -40 || eb.x < -25 || eb.x > W + 25) {
             enemyBullets.splice(i, 1);
           }
         }
 
-        // --- БОНУСЫ ---
+        // Бонусы
         for (let i = bonuses.length - 1; i >= 0; i--) {
           const bn = bonuses[i];
           bn.phase += dt * 5;
@@ -2456,13 +1867,9 @@ html
             bonuses.splice(i, 1);
             continue;
           }
-
-          if (bn.y > H + 30) {
-            bonuses.splice(i, 1);
-          }
+          if (bn.y > H + 30) bonuses.splice(i, 1);
         }
 
-        // --- ЧАСТИЦЫ И ВСПЛЫВАЮЩИЕ НАДПИСИ ---
         for (let i = particles.length - 1; i >= 0; i--) {
           const pt = particles[i];
           pt.x += pt.vx * dt;
@@ -2483,6 +1890,9 @@ html
 
       function updateBoss(dt) {
         const b = boss;
+        const lvl = LEVELS[selectedLevelIdx];
+        const diff = DIFFICULTIES[selectedDiffKey];
+
         b.time += dt;
         if (b.hitFlash > 0) b.hitFlash = Math.max(0, b.hitFlash - dt * 7);
 
@@ -2494,8 +1904,7 @@ html
         const hpRatio = b.hp / b.maxHp;
         b.phase = hpRatio > 0.65 ? 1 : (hpRatio > 0.30 ? 2 : 3);
 
-        const spdMult = currentDiff.speedMult;
-        const sweepSpeed = (b.phase === 3 ? 2.1 : (b.phase === 2 ? 1.55 : 1.15)) * spdMult;
+        const sweepSpeed = (b.phase === 3 ? 2.1 : (b.phase === 2 ? 1.55 : 1.15)) + selectedLevelIdx * 0.05;
         const span = Math.max(60, W / 2 - b.r - 24);
         b.x = W / 2 + Math.sin(b.time * sweepSpeed) * span;
 
@@ -2503,47 +1912,39 @@ html
         if (b.shootTimer <= 0) {
           const pan = ((b.x / W) * 2 - 1) * 0.7;
           synth.sfxHit(pan);
+          const spd = 235 * diff.bulletSpeed;
 
           if (b.phase === 1) {
-            b.shootTimer = 1.15 / spdMult;
-            const spread = currentLevel.id >= 7 ? 3 : 2;
+            b.shootTimer = 1.12;
+            const spread = selectedLevelIdx >= 5 ? 3 : 2;
             for (let k = -spread; k <= spread; k++) {
-              const ang = Math.PI / 2 + k * 0.2;
+              const ang = Math.PI / 2 + k * 0.21;
               enemyBullets.push({
-                x: b.x + k * 12,
-                y: b.y + 42,
-                vx: Math.cos(ang) * 235 * spdMult,
-                vy: Math.sin(ang) * 235 * spdMult,
-                r: 8,
-                color: '#ff5964'
+                x: b.x + k * 12, y: b.y + 40,
+                vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+                r: 8, color: '#ff5964'
               });
             }
           } else if (b.phase === 2) {
-            b.shootTimer = 0.85 / spdMult;
+            b.shootTimer = 0.82;
             const baseAng = Math.sin(b.time * 3.5) * 0.5 + Math.PI / 2;
             for (let k = -2; k <= 2; k++) {
-              const ang = baseAng + k * 0.28;
+              const ang = baseAng + k * 0.27;
               enemyBullets.push({
-                x: b.x,
-                y: b.y + 40,
-                vx: Math.cos(ang) * 260 * spdMult,
-                vy: Math.sin(ang) * 260 * spdMult,
-                r: 8,
-                color: '#ffbe0b'
+                x: b.x, y: b.y + 40,
+                vx: Math.cos(ang) * (spd + 25), vy: Math.sin(ang) * (spd + 25),
+                r: 8, color: '#ffbe0b'
               });
             }
           } else {
-            b.shootTimer = 0.72 / spdMult;
-            const count = currentLevel.id === 10 ? 10 : 8;
+            b.shootTimer = 0.70;
+            const count = 8 + Math.floor(selectedLevelIdx / 3);
             for (let k = 0; k < count; k++) {
               const ang = b.time * 2.2 + (Math.PI * 2 * k) / count;
               enemyBullets.push({
-                x: b.x,
-                y: b.y + 20,
-                vx: Math.cos(ang) * 240 * spdMult,
-                vy: Math.sin(ang) * 240 * spdMult,
-                r: 7.5,
-                color: '#ff006e'
+                x: b.x, y: b.y + 20,
+                vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+                r: 7.5, color: lvl.accent
               });
             }
           }
@@ -2557,7 +1958,7 @@ html
             maybeDropBonus(b.x, b.y + 45, true);
           } else if (b.phase === 3 && b.laserState === 'idle') {
             b.laserState = 'charge';
-            b.laserTimer = 1.15;
+            b.laserTimer = 1.1;
             b.laserX = player.x;
             synth.sfxBossAlarm();
           }
@@ -2568,7 +1969,7 @@ html
           b.laserX += (player.x - b.laserX) * Math.min(1, dt * 3.5);
           if (b.laserTimer <= 0) {
             b.laserState = 'fire';
-            b.laserTimer = 0.75;
+            b.laserTimer = 0.72;
             synth.sfxExplosion(0, true);
             screenShake = 8;
           }
@@ -2589,14 +1990,14 @@ html
             bullets.splice(j, 1);
             b.hp -= bul.dmg;
             b.hitFlash = 1;
-            score += Math.round(25 * currentDiff.scoreMult);
-            addBurst(bul.x, bul.y, ['#ffd166', '#48dbfb', '#ffffff'], 5, 130);
+            score += 25;
+            addBurst(bul.x, bul.y, ['#ffd166', lvl.accent, '#ffffff'], 5, 130);
 
             if (b.hp <= 0) {
-              score += Math.round((2000 + currentLevel.id * 300) * currentDiff.scoreMult);
+              score += Math.round((2000 + lvl.id * 350) * diff.scoreMult);
               kills++;
               synth.sfxExplosion(0, true);
-              addBurst(b.x, b.y, ['#ff5964', '#ffd166', '#06d6a0', '#48dbfb', '#ffffff'], 42, 320);
+              addBurst(b.x, b.y, ['#ff5964', '#ffd166', '#06d6a0', lvl.accent, '#ffffff'], 42, 320);
               screenShake = 16;
               boss = null;
               enemyBullets = [];
@@ -2617,22 +2018,22 @@ html
         if (bn.type === 'weapon') {
           player.weaponLevel = Math.min(3, player.weaponLevel + 1);
           player.weaponTimer = 14;
-          score += Math.round(200 * currentDiff.scoreMult);
+          score += 200;
           addPopup(bn.x, bn.y, player.weaponLevel === 3 ? 'СУПЕР-ВЕЕР!' : 'ТРОЙНОЙ ЗАЛП!', '#ffb703');
         } else if (bn.type === 'shield') {
           player.shield = true;
-          score += Math.round(200 * currentDiff.scoreMult);
+          score += 200;
           addPopup(bn.x, bn.y, 'ПЛАЗМО-ЩИТ!', '#48dbfb');
         } else if (bn.type === 'turbo') {
           player.turboTimer = 11;
-          score += Math.round(200 * currentDiff.scoreMult);
+          score += 200;
           addPopup(bn.x, bn.y, 'ТУРБО + МАГНИТ!', '#06d6a0');
         } else if (bn.type === 'heart') {
           if (player.hp < player.maxHp) {
             player.hp++;
             addPopup(bn.x, bn.y, '+1 ЖИЗНЬ!', '#ff758f');
           } else {
-            score += Math.round(500 * currentDiff.scoreMult);
+            score += 500;
             addPopup(bn.x, bn.y, '+500 ОЧКОВ!', '#ffd166');
           }
         }
@@ -2662,9 +2063,7 @@ html
         synth.sfxHurt();
         addBurst(player.x, player.y, ['#ff5964', '#ffd166', '#ffffff'], 20, 220);
 
-        if (player.hp <= 0) {
-          finishGame(false);
-        }
+        if (player.hp <= 0) finishGame(false);
       }
 
       function finishGame(victory) {
@@ -2673,298 +2072,259 @@ html
         pauseBtn.classList.add('hidden');
         synth.stopMusic();
 
+        const lvl = LEVELS[selectedLevelIdx];
+
         if (victory) {
           synth.sfxVictory();
-          if (!completedLevels.includes(currentLevel.id)) {
-            completedLevels.push(currentLevel.id);
-            completedLevels.sort((a, b) => a - b);
+          if (!progress.completed.includes(lvl.id)) {
+            progress.completed.push(lvl.id);
           }
         } else {
           synth.sfxGameOver();
         }
 
-        if (score > bestScore) {
-          bestScore = score;
+        if (score > progress.bestScore) {
+          progress.bestScore = score;
         }
-        persistAll();
-
-        const nextBtn = document.getElementById('next-level-btn');
-        if (victory && currentLevel.id < 10) {
-          nextBtn.style.display = 'block';
-          nextBtn.textContent = `УРОВЕНЬ ${currentLevel.id + 1}: ${LEVELS[currentLevel.id].name.toUpperCase()} ➔`;
-        } else {
-          nextBtn.style.display = 'none';
-        }
+        saveProgress(progress);
 
         document.getElementById('end-badge').textContent = victory
-          ? `Уровень ${currentLevel.id} пройден! (${currentDiff.name})`
-          : `Уровень ${currentLevel.id} • ${currentDiff.name}`;
+          ? `Уровень ${lvl.id} пройден!`
+          : `Уровень ${lvl.id}: Корабль подбит`;
         document.getElementById('end-badge').style.background = victory ? '#06d6a0' : '#ffd166';
         document.getElementById('end-title').textContent = victory
-          ? (currentLevel.id === 10 ? 'ГАЛАКТИКА СПАСЕНА! 👑' : 'ПОБЕДА! 🏆')
+          ? (lvl.id === 10 ? 'ГАЛАКТИКА СПАСЕНА! 👑' : 'ПОБЕДА! 🏆')
           : 'ИГРА ОКОНЧЕНА';
         document.getElementById('end-subtitle').textContent = victory
-          ? `${currentLevel.bossName} повержен! Звёздный патруль гордится вами!`
-          : 'Космические слизни оказались хитрее, но реванш уже близко!';
+          ? `${lvl.bossName} повержен! Готов к следующему сектору?`
+          : 'Попробуй ещё раз — улучшай пушку и береги щит!';
         document.getElementById('final-score').textContent = score;
-        document.getElementById('final-best').textContent = bestScore;
+        document.getElementById('final-best').textContent = progress.bestScore;
         document.getElementById('final-kills').textContent = kills;
+
+        const nextBtn = document.getElementById('next-level-btn');
+        if (victory) {
+          nextBtn.textContent = lvl.id < 10 ? `УРОВЕНЬ ${lvl.id + 1} ➔` : 'ЗАНОВО С 1-ГО ➔';
+        } else {
+          nextBtn.textContent = 'ЕЩЁ РАЗ 🔄';
+        }
 
         setTimeout(() => {
           endOverlay.classList.remove('hidden');
-        }, victory ? 550 : 350);
+        }, victory ? 520 : 340);
       }
 
       // =========================================================================
-      // 8. УНИКАЛЬНАЯ ПРОЦЕДУРНАЯ ГРАФИКА ДЛЯ ВСЕХ 10 БИОМОВ И БОССОВ
+      // 7. ПРОЦЕДУРНАЯ МУЛЬТЯШНАЯ ОТРИСОВКА ДЛЯ КАЖДОГО ИЗ 10 УРОВНЕЙ
       // =========================================================================
-      function drawBiomeEnvironment(lvl) {
-        const theme = lvl.theme;
+      function drawThemeProp(lvl, pr) {
+        const px = pr.xRatio * W;
+        ctx.save();
+        ctx.translate(px, pr.y);
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
 
-        // Спецэффекты неба на отдельных уровнях
-        if (theme === 'ice') {
-          // Северное сияние
-          ctx.save();
-          for (let band = 0; band < 2; band++) {
-            const yBase = H * (0.18 + band * 0.14);
-            const grad = ctx.createLinearGradient(0, yBase - 45, 0, yBase + 45);
-            grad.addColorStop(0, 'rgba(6, 214, 160, 0)');
-            grad.addColorStop(0.5, band === 0 ? 'rgba(6, 214, 160, 0.22)' : 'rgba(72, 219, 251, 0.20)');
-            grad.addColorStop(1, 'rgba(6, 214, 160, 0)');
-            ctx.fillStyle = grad;
+        if (lvl.theme === 'candy') {
+          // Леденец-спираль
+          ctx.rotate(pr.rot);
+          ctx.fillStyle = '#ffccd5';
+          ctx.strokeStyle = INK;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, pr.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ff4d6d';
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.arc(0, 0, pr.r * 0.55, 0, Math.PI * 1.4);
+          ctx.stroke();
+        } else if (lvl.theme === 'donuts') {
+          // Космический пончик в глазури
+          ctx.rotate(pr.rot);
+          ctx.fillStyle = '#f4a261';
+          ctx.strokeStyle = INK;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, pr.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#ff70a6';
+          ctx.beginPath();
+          ctx.arc(0, 0, pr.r * 0.86, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = lvl.skyMid;
+          ctx.beginPath();
+          ctx.arc(0, 0, pr.r * 0.34, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } else if (lvl.theme === 'jungle') {
+          // Космо-медуза
+          const pulse = Math.sin(globalTime * 3 + pr.variant) * 3;
+          ctx.fillStyle = '#80ed99';
+          ctx.strokeStyle = INK;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, pr.r + pulse, Math.PI, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.strokeStyle = '#c7f9cc';
+          ctx.lineWidth = 3;
+          [-10, 0, 10].forEach(ox => {
             ctx.beginPath();
-            ctx.moveTo(0, yBase);
-            for (let x = 0; x <= W; x += 30) {
-              ctx.lineTo(x, yBase + Math.sin(x * 0.012 + globalTime * 1.4 + band) * 26);
-            }
-            ctx.lineTo(W, yBase + 65);
-            ctx.lineTo(0, yBase + 65);
-            ctx.closePath();
-            ctx.fill();
+            ctx.moveTo(ox, 0);
+            ctx.lineTo(ox + Math.sin(globalTime * 4 + ox) * 4, pr.r * 0.9);
+            ctx.stroke();
+          });
+        } else if (lvl.theme === 'ice') {
+          // Кристалл льда
+          ctx.rotate(pr.rot);
+          ctx.fillStyle = '#caf0f8';
+          ctx.strokeStyle = INK;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(0, -pr.r);
+          ctx.lineTo(pr.r * 0.72, 0);
+          ctx.lineTo(0, pr.r);
+          ctx.lineTo(-pr.r * 0.72, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else if (lvl.theme === 'lava') {
+          // Лавовая планета с трещинами
+          ctx.fillStyle = '#370617';
+          ctx.strokeStyle = INK;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, pr.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ffba08';
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.moveTo(-pr.r * 0.6, -4);
+          ctx.lineTo(0, 5);
+          ctx.lineTo(pr.r * 0.65, -6);
+          ctx.stroke();
+        } else if (lvl.theme === 'cyber') {
+          // Неоновый голографический куб/ромб
+          ctx.rotate(pr.rot);
+          ctx.strokeStyle = '#00f5d4';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(-pr.r * 0.65, -pr.r * 0.65, pr.r * 1.3, pr.r * 1.3);
+          ctx.strokeStyle = '#f15bb5';
+          ctx.strokeRect(-pr.r * 0.4, -pr.r * 0.4, pr.r * 0.8, pr.r * 0.8);
+        } else if (lvl.theme === 'desert') {
+          // Парящая золотая пирамида
+          ctx.fillStyle = '#ffd166';
+          ctx.strokeStyle = INK;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(0, -pr.r);
+          ctx.lineTo(pr.r, pr.r * 0.7);
+          ctx.lineTo(-pr.r, pr.r * 0.7);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else if (lvl.theme === 'ghost') {
+          // Руническое кольцо
+          ctx.rotate(pr.rot);
+          ctx.strokeStyle = '#bdb2ff';
+          ctx.lineWidth = 3.5;
+          ctx.setLineDash([8, 6]);
+          ctx.beginPath();
+          ctx.arc(0, 0, pr.r, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (lvl.theme === 'citadel') {
+          // Вращающаяся шестерня Цитадели
+          ctx.rotate(pr.rot);
+          ctx.fillStyle = '#590d22';
+          ctx.strokeStyle = INK;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, pr.r * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#ff006e';
+          ctx.beginPath();
+          ctx.arc(0, 0, pr.r * 0.32, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          // Классическая планета с кольцом
+          ctx.fillStyle = pr.variant % 2 === 0 ? '#ff8fab' : '#4cc9f0';
+          ctx.strokeStyle = INK;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, pr.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          if (pr.variant % 2 === 0) {
+            ctx.strokeStyle = '#ffd166';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.ellipse(0, 2, pr.r * 1.6, pr.r * 0.36, -0.25, 0, Math.PI * 2);
+            ctx.stroke();
           }
-          ctx.restore();
-        } else if (theme === 'cyber') {
-          // Неоновая сетка гиперпространства
-          ctx.save();
-          ctx.strokeStyle = 'rgba(0, 245, 212, 0.14)';
+        }
+        ctx.restore();
+      }
+
+      function drawBackground() {
+        const lvl = LEVELS[selectedLevelIdx];
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, lvl.skyTop);
+        grad.addColorStop(0.55, lvl.skyMid);
+        grad.addColorStop(1, lvl.skyBot);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        // Тематическая сетка для Кибер-Сити
+        if (lvl.theme === 'cyber') {
+          ctx.strokeStyle = 'rgba(0, 245, 212, 0.12)';
           ctx.lineWidth = 1.5;
           const step = 48;
-          const offset = (globalTime * 70) % step;
+          const offset = (globalTime * 45) % step;
+          for (let x = 0; x < W; x += step) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, H);
+            ctx.stroke();
+          }
           for (let y = offset; y < H; y += step) {
             ctx.beginPath();
             ctx.moveTo(0, y);
             ctx.lineTo(W, y);
             ctx.stroke();
           }
-          for (let x = step / 2; x < W; x += step) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, H);
-            ctx.stroke();
-          }
-          ctx.restore();
-        } else if (theme === 'desert') {
-          // Двойное солнце на горизонте
-          ctx.save();
-          ctx.fillStyle = 'rgba(255, 209, 102, 0.22)';
-          ctx.beginPath();
-          ctx.arc(W * 0.72, H * 0.24, 58, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = 'rgba(244, 162, 97, 0.25)';
-          ctx.beginPath();
-          ctx.arc(W * 0.58, H * 0.31, 34, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
         }
 
-        // Планеты-ориентиры
-        for (const pl of planets) {
-          const px = pl.xRatio * W;
-          ctx.save();
-          ctx.translate(px, pl.y);
-          ctx.lineJoin = 'round';
-          ctx.lineCap = 'round';
-
-          ctx.fillStyle = pl.color;
-          ctx.strokeStyle = INK;
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.arc(0, 0, pl.r, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-
-          if (theme === 'lava') {
-            // Трещины лавы на планете
-            ctx.strokeStyle = '#ffba08';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.moveTo(-pl.r * 0.5, -pl.r * 0.2);
-            ctx.lineTo(0, pl.r * 0.1);
-            ctx.lineTo(pl.r * 0.45, -pl.r * 0.35);
-            ctx.stroke();
-          } else {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
-            ctx.beginPath();
-            ctx.arc(-pl.r * 0.32, -pl.r * 0.32, pl.r * 0.28, 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          if (pl.ring) {
-            ctx.strokeStyle = pl.ring;
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.ellipse(0, 2, pl.r * 1.65, pl.r * 0.38, -0.25, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-          ctx.restore();
-        }
-
-        // Уникальные декорации для каждого из 10 биомов
-        for (const pr of biomeProps) {
-          const px = pr.xRatio * W;
-          ctx.save();
-          ctx.translate(px, pr.y);
-          ctx.lineJoin = 'round';
-          ctx.lineCap = 'round';
-
-          if (theme === 'candy') {
-            // Зефирные облачка и радужные пузыри
-            if (pr.variant === 0) {
-              ctx.fillStyle = 'rgba(255, 214, 232, 0.22)';
-              ctx.beginPath();
-              ctx.arc(-10, 0, pr.size * 0.7, 0, Math.PI * 2);
-              ctx.arc(8, -3, pr.size * 0.85, 0, Math.PI * 2);
-              ctx.arc(22, 2, pr.size * 0.65, 0, Math.PI * 2);
-              ctx.fill();
-            } else {
-              ctx.strokeStyle = 'rgba(255, 182, 217, 0.45)';
-              ctx.lineWidth = 2;
-              ctx.beginPath();
-              ctx.arc(0, 0, pr.size * 0.55, 0, Math.PI * 2);
-              ctx.stroke();
-            }
-          } else if (theme === 'donut') {
-            // Парящие космические пончики в глазури
-            ctx.rotate(pr.rot);
-            ctx.fillStyle = '#e09f3e';
-            ctx.strokeStyle = INK;
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.arc(0, 0, pr.size * 0.75, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.fillStyle = pr.variant === 0 ? '#ff70a6' : (pr.variant === 1 ? '#70d6ff' : '#ffd166');
-            ctx.beginPath();
-            ctx.arc(0, 0, pr.size * 0.62, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = lvl.sky[1];
-            ctx.beginPath();
-            ctx.arc(0, 0, pr.size * 0.24, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-          } else if (theme === 'jungle') {
-            // Биолюминесцентные космо-медузы и листья
-            ctx.fillStyle = 'rgba(6, 214, 160, 0.22)';
-            ctx.strokeStyle = 'rgba(158, 240, 26, 0.45)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, pr.size * 0.65, Math.PI, 0);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-          } else if (theme === 'ice') {
-            // Кристальные айсберги
-            ctx.rotate(pr.rot * 0.3);
-            ctx.fillStyle = 'rgba(202, 240, 248, 0.22)';
-            ctx.strokeStyle = 'rgba(144, 224, 239, 0.55)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, -pr.size * 0.8);
-            ctx.lineTo(pr.size * 0.7, 0);
-            ctx.lineTo(0, pr.size * 0.8);
-            ctx.lineTo(-pr.size * 0.7, 0);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-          } else if (theme === 'lava') {
-            // Поднимающиеся огненные угли
-            ctx.fillStyle = pr.variant === 0 ? 'rgba(255, 186, 8, 0.45)' : 'rgba(249, 65, 68, 0.45)';
-            ctx.beginPath();
-            ctx.arc(Math.sin(pr.phase) * 8, 0, pr.size * 0.25, 0, Math.PI * 2);
-            ctx.fill();
-          } else if (theme === 'cyber') {
-            // Неоновые голографические ромбы
-            ctx.strokeStyle = pr.variant === 0 ? 'rgba(0, 245, 212, 0.32)' : 'rgba(241, 91, 181, 0.32)';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(-pr.size * 0.5, -pr.size * 0.35, pr.size, pr.size * 0.7);
-          } else if (theme === 'desert') {
-            // Парящие пирамидки
-            ctx.fillStyle = 'rgba(233, 196, 106, 0.25)';
-            ctx.strokeStyle = INK;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, -pr.size * 0.7);
-            ctx.lineTo(pr.size * 0.75, pr.size * 0.55);
-            ctx.lineTo(-pr.size * 0.75, pr.size * 0.55);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-          } else if (theme === 'phantom') {
-            // Рунические кольца и огоньки эктоплазмы
-            ctx.strokeStyle = 'rgba(114, 239, 221, 0.28)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, pr.size * 0.65, 0, Math.PI * 2);
-            ctx.stroke();
-          } else if (theme === 'citadel') {
-            // Вращающиеся золотые шестерни Цитадели
-            ctx.rotate(pr.rot);
-            ctx.strokeStyle = 'rgba(255, 190, 11, 0.26)';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.arc(0, 0, pr.size * 0.7, 0, Math.PI * 2);
-            ctx.stroke();
-            for (let g = 0; g < 6; g++) {
-              const a = (Math.PI * 2 * g) / 6;
-              ctx.beginPath();
-              ctx.moveTo(Math.cos(a) * pr.size * 0.65, Math.sin(a) * pr.size * 0.65);
-              ctx.lineTo(Math.cos(a) * pr.size * 0.95, Math.sin(a) * pr.size * 0.95);
-              ctx.stroke();
-            }
-          }
-
-          ctx.restore();
-        }
-      }
-
-      function drawBackground() {
-        const lvl = currentLevel;
-        const grad = ctx.createLinearGradient(0, 0, 0, H);
-        grad.addColorStop(0, lvl.sky[0]);
-        grad.addColorStop(0.55, lvl.sky[1]);
-        grad.addColorStop(1, lvl.sky[2]);
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, W, H);
-
-        ctx.fillStyle = lvl.nebulaA;
+        // Туманности сектора
+        ctx.fillStyle = lvl.nebula1;
         ctx.beginPath();
-        ctx.arc(W * 0.25, H * 0.3, 175, 0, Math.PI * 2);
+        ctx.arc(W * 0.25, H * 0.28, 175, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = lvl.nebulaB;
+        ctx.fillStyle = lvl.nebula2;
         ctx.beginPath();
-        ctx.arc(W * 0.78, H * 0.65, 205, 0, Math.PI * 2);
+        ctx.arc(W * 0.78, H * 0.66, 200, 0, Math.PI * 2);
         ctx.fill();
 
-        drawBiomeEnvironment(lvl);
+        // Уникальные декорации уровня
+        for (const pr of props) drawThemeProp(lvl, pr);
 
-        // Мерцающие звёзды
+        // Звёзды
         for (const s of stars) {
-          const twinkle = 0.65 + 0.35 * Math.sin(globalTime * 4 + s.phase);
+          const twinkle = 0.6 + 0.4 * Math.sin(globalTime * 4 + s.phase);
           ctx.globalAlpha = twinkle;
-          ctx.fillStyle = s.color;
+          ctx.fillStyle = s.r > 2 ? lvl.accent : '#ffffff';
           ctx.beginPath();
           ctx.arc(s.x % W, s.y, s.r, 0, Math.PI * 2);
           ctx.fill();
@@ -2980,7 +2340,6 @@ html
         const tilt = Math.max(-0.22, Math.min(0.22, p.vx * 0.0005));
         ctx.rotate(tilt);
         ctx.scale(p.squashX, p.squashY);
-
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
 
@@ -3045,7 +2404,7 @@ html
         ctx.fill();
         ctx.stroke();
 
-        // Пилот Астро-Кот
+        // Мордочка Астро-Кота
         ctx.fillStyle = '#ffb703';
         ctx.beginPath();
         ctx.moveTo(-8, -4);
@@ -3096,16 +2455,15 @@ html
       }
 
       function drawEnemy(e) {
+        const lvl = LEVELS[selectedLevelIdx];
         ctx.save();
         ctx.translate(e.x, e.y);
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
-
         const flash = e.hitFlash > 0;
-        const ec = currentLevel.enemyColors;
 
         if (e.kind === 'ufo') {
-          ctx.fillStyle = flash ? '#ffffff' : ec.ufo;
+          ctx.fillStyle = flash ? '#ffffff' : lvl.enemyTint;
           ctx.strokeStyle = INK;
           ctx.lineWidth = 3;
           ctx.beginPath();
@@ -3130,7 +2488,7 @@ html
           ctx.fill();
         } else if (e.kind === 'meteor') {
           ctx.rotate(e.rot);
-          ctx.fillStyle = flash ? '#ffffff' : ec.meteor;
+          ctx.fillStyle = flash ? '#ffffff' : '#e07a5f';
           ctx.strokeStyle = INK;
           ctx.lineWidth = 3;
           ctx.beginPath();
@@ -3157,7 +2515,7 @@ html
           ctx.arc(7, -3, 2, 0, Math.PI * 2);
           ctx.fill();
         } else if (e.kind === 'wasp') {
-          ctx.fillStyle = flash ? '#ffffff' : ec.wasp;
+          ctx.fillStyle = flash ? '#ffffff' : lvl.bossColor;
           ctx.strokeStyle = INK;
           ctx.lineWidth = 3;
           ctx.beginPath();
@@ -3175,7 +2533,7 @@ html
           ctx.fill();
           ctx.stroke();
         } else {
-          ctx.fillStyle = flash ? '#ffffff' : ec.crab;
+          ctx.fillStyle = flash ? '#ffffff' : lvl.accent;
           ctx.strokeStyle = INK;
           ctx.lineWidth = 3;
           roundRectPath(ctx, -26, -18, 52, 34, 14);
@@ -3214,10 +2572,12 @@ html
       }
 
       function drawBoss(b) {
+        const lvl = LEVELS[selectedLevelIdx];
+
         if (b.laserState === 'charge') {
           ctx.save();
-          ctx.strokeStyle = 'rgba(255, 0, 110, 0.72)';
-          ctx.lineWidth = 3.5;
+          ctx.strokeStyle = 'rgba(255, 0, 110, 0.7)';
+          ctx.lineWidth = 3;
           ctx.setLineDash([10, 8]);
           ctx.beginPath();
           ctx.moveTo(b.laserX, b.y + 40);
@@ -3240,16 +2600,14 @@ html
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
 
-        const bc = currentLevel.bossColors;
         const flash = b.hitFlash > 0;
-        const bodyColor = flash ? '#ffffff' : (b.phase === 3 ? bc.rage : bc.dome);
+        const bodyColor = flash ? '#ffffff' : (b.phase === 3 ? '#ff4d6d' : lvl.bossColor);
+        const tentacleCount = lvl.id === 10 ? 6 : 4;
 
-        // Щупальца / опоры (6 у финального Императора, 4 у остальных)
-        const tentCount = currentLevel.id === 10 ? 6 : 4;
-        for (let idx = 0; idx < tentCount; idx++) {
-          const t = idx - (tentCount - 1) / 2;
+        for (let i = 0; i < tentacleCount; i++) {
+          const t = i - (tentacleCount - 1) / 2;
           const waveX = Math.sin(b.time * 5 + t * 1.4) * 14;
-          const baseX = t * 23;
+          const baseX = t * (lvl.id === 10 ? 20 : 28);
           ctx.strokeStyle = INK;
           ctx.lineWidth = 14;
           ctx.beginPath();
@@ -3257,12 +2615,11 @@ html
           ctx.quadraticCurveTo(baseX + waveX, 52, baseX * 1.2 - waveX * 0.6, 74);
           ctx.stroke();
 
-          ctx.strokeStyle = b.phase === 2 ? '#ffd166' : bc.tentacle;
+          ctx.strokeStyle = lvl.accent;
           ctx.lineWidth = 8;
           ctx.stroke();
         }
 
-        // Купол корпуса босса
         ctx.fillStyle = bodyColor;
         ctx.strokeStyle = INK;
         ctx.lineWidth = 4;
@@ -3274,101 +2631,52 @@ html
         ctx.fill();
         ctx.stroke();
 
-        // Уникальный головной убор / корона под биом босса
-        ctx.fillStyle = bc.crown;
-        if (bc.style === 'burger') {
-          // Кунжутные семечки и зелёный лист салата
-          ctx.fillStyle = '#8ac926';
-          roundRectPath(ctx, -56, 4, 112, 10, 5);
-          ctx.fill();
-          ctx.stroke();
-          ctx.fillStyle = '#fff8eb';
-          [-26, -8, 12, 28].forEach(sx => {
-            ctx.beginPath();
-            ctx.ellipse(sx, -34, 4, 2, 0.3, 0, Math.PI * 2);
-            ctx.fill();
-          });
-        } else if (bc.style === 'ice') {
-          // Ледяные кристаллы
-          ctx.beginPath();
-          ctx.moveTo(-22, -48);
-          ctx.lineTo(-14, -76);
-          ctx.lineTo(-4, -54);
-          ctx.lineTo(0, -82);
-          ctx.lineTo(4, -54);
-          ctx.lineTo(14, -76);
-          ctx.lineTo(22, -48);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
-        } else if (bc.style === 'pharaoh') {
-          // Солнечный диск фараона
-          ctx.beginPath();
-          ctx.arc(0, -58, 15, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-        } else {
-          // Корона-антенна
-          ctx.beginPath();
-          ctx.moveTo(-20, -50);
-          ctx.lineTo(-12, -74);
-          ctx.lineTo(0, -56);
-          ctx.lineTo(12, -74);
-          ctx.lineTo(20, -50);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
-        }
+        // Корона/рожки босса
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath();
+        ctx.moveTo(-20, -48);
+        ctx.lineTo(-11, -72);
+        ctx.lineTo(0, -54);
+        ctx.lineTo(11, -72);
+        ctx.lineTo(20, -48);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
 
-        // Глаза босса (кибер-визор у Кибер-Сфинкса, двойные глаза у остальных)
-        if (bc.style === 'cyber') {
-          ctx.fillStyle = '#00f5d4';
-          roundRectPath(ctx, -36, -18, 72, 22, 10);
+        [-20, 20].forEach(ex => {
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(ex, -4, 15, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
-          const lookX = player ? Math.max(-18, Math.min(18, (player.x - b.x) * 0.08)) : 0;
-          ctx.fillStyle = '#ff006e';
+
+          const lookX = player ? Math.max(-4, Math.min(4, (player.x - b.x) * 0.02)) : 0;
+          ctx.fillStyle = b.phase === 3 ? '#d90429' : INK;
           ctx.beginPath();
-          ctx.arc(lookX, -7, 7, 0, Math.PI * 2);
+          ctx.arc(ex + lookX, -2, flash ? 4 : 6.5, 0, Math.PI * 2);
           ctx.fill();
-        } else {
-          [-20, 20].forEach(ex => {
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(ex, -4, 15, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
 
-            const lookX = player ? Math.max(-4, Math.min(4, (player.x - b.x) * 0.02)) : 0;
-            ctx.fillStyle = b.phase === 3 ? '#d90429' : INK;
-            ctx.beginPath();
-            ctx.arc(ex + lookX, -2, flash ? 4 : 6.5, 0, Math.PI * 2);
-            ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(ex + lookX - 2, -4, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        });
 
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(ex + lookX - 2, -4, 2.2, 0, Math.PI * 2);
-            ctx.fill();
-          });
-        }
-
-        // Брови
         ctx.strokeStyle = INK;
         ctx.lineWidth = 4.5;
         ctx.beginPath();
-        ctx.moveTo(-34, -22);
-        ctx.lineTo(-8, -15);
-        ctx.moveTo(34, -22);
-        ctx.lineTo(8, -15);
+        ctx.moveTo(-34, -20);
+        ctx.lineTo(-8, -13);
+        ctx.moveTo(34, -20);
+        ctx.lineTo(8, -13);
         ctx.stroke();
 
-        // Зубастая улыбка
         ctx.fillStyle = INK;
-        roundRectPath(ctx, -22, 15, 44, 12, 6);
+        roundRectPath(ctx, -22, 14, 44, 12, 6);
         ctx.fill();
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-14, 15, 7, 5);
-        ctx.fillRect(7, 15, 7, 5);
+        ctx.fillRect(-14, 14, 7, 5);
+        ctx.fillRect(7, 14, 7, 5);
 
         ctx.restore();
       }
@@ -3411,110 +2719,62 @@ html
 
       function drawHUD() {
         if ((state !== 'PLAYING' && state !== 'PAUSED') || !player) return;
+        const lvl = LEVELS[selectedLevelIdx];
 
         ctx.save();
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-
-        // Сердечки жизней
         for (let i = 0; i < player.maxHp; i++) {
           const hx = 22 + i * 24;
-          const hy = 27;
-          ctx.fillStyle = i < player.hp ? '#ff5964' : 'rgba(255,255,255,0.22)';
+          const hy = 26;
+          ctx.fillStyle = i < player.hp ? '#ff5964' : 'rgba(255,255,255,0.2)';
           ctx.strokeStyle = INK;
-          ctx.lineWidth = 2.4;
+          ctx.lineWidth = 2.5;
           ctx.beginPath();
-          ctx.arc(hx - 3.8, hy, 5.6, 0, Math.PI * 2);
-          ctx.arc(hx + 3.8, hy, 5.6, 0, Math.PI * 2);
+          ctx.arc(hx - 4, hy, 5.5, 0, Math.PI * 2);
+          ctx.arc(hx + 4, hy, 5.5, 0, Math.PI * 2);
           ctx.moveTo(hx - 9, hy + 2);
-          ctx.lineTo(hx, hy + 11.5);
+          ctx.lineTo(hx, hy + 11);
           ctx.lineTo(hx + 9, hy + 2);
           ctx.fill();
           ctx.stroke();
         }
 
-        // Счёт
         ctx.fillStyle = '#fff8eb';
         ctx.strokeStyle = INK;
         ctx.lineWidth = 4;
-        ctx.font = '900 22px sans-serif';
+        ctx.font = '900 21px sans-serif';
         ctx.textAlign = 'left';
-        ctx.strokeText(`${score}`, 18, 64);
-        ctx.fillText(`${score}`, 18, 64);
+        ctx.strokeText(`${score}`, 18, 62);
+        ctx.fillText(`${score}`, 18, 62);
 
-        // Текущий уровень (под счётом)
-        ctx.fillStyle = '#bde0fe';
+        ctx.fillStyle = lvl.accent;
         ctx.font = '800 12px sans-serif';
-        const lvlLabel = `Ур. ${currentLevel.id}: ${currentLevel.name}`;
-        ctx.strokeText(lvlLabel, 18, 83);
-        ctx.fillText(lvlLabel, 18, 83);
+        const subHud = combo > 1 ? `УР.${lvl.id} • x${combo} КОМБО` : `УР.${lvl.id}: ${lvl.name}`;
+        ctx.strokeText(subHud, 18, 80);
+        ctx.fillText(subHud, 18, 80);
 
-        let badgeY = 103;
-        if (combo > 1) {
-          ctx.fillStyle = '#ffd166';
-          ctx.font = '900 14px sans-serif';
-          ctx.strokeText(`x${combo} КОМБО!`, 18, badgeY);
-          ctx.fillText(`x${combo} КОМБО!`, 18, badgeY);
-          badgeY += 19;
-        }
-
-        if (player.weaponLevel > 1) {
-          ctx.fillStyle = '#ffb703';
-          ctx.font = '800 13px sans-serif';
-          const wText = `W ×${player.weaponLevel === 3 ? 5 : 3} (${Math.ceil(player.weaponTimer)}с)`;
-          ctx.strokeText(wText, 18, badgeY);
-          ctx.fillText(wText, 18, badgeY);
-          badgeY += 19;
-        }
-
-        if (player.turboTimer > 0) {
-          ctx.fillStyle = '#06d6a0';
-          ctx.font = '800 13px sans-serif';
-          const tText = `⚡ ТУРБО (${Math.ceil(player.turboTimer)}с)`;
-          ctx.strokeText(tText, 18, badgeY);
-          ctx.fillText(tText, 18, badgeY);
-        }
-
-        // Шкала HP Босса
         if (boss) {
-          const bw = Math.min(320, W - 135);
+          const bw = Math.min(320, W - 160);
           const bx = (W - bw) / 2;
           const by = 18;
 
           ctx.fillStyle = '#ffd166';
-          ctx.font = '900 12px sans-serif';
+          ctx.font = '900 11px sans-serif';
           ctx.textAlign = 'center';
-          const bossTitle = currentLevel.bossName.toUpperCase();
-          ctx.strokeText(bossTitle, W / 2, by + 34);
-          ctx.fillText(bossTitle, W / 2, by + 34);
+          ctx.strokeText(lvl.bossName.toUpperCase(), W / 2, by + 32);
+          ctx.fillText(lvl.bossName.toUpperCase(), W / 2, by + 32);
 
-          roundRectPath(ctx, bx, by, bw, 16, 8);
+          roundRectPath(ctx, bx, by, bw, 15, 8);
           ctx.fillStyle = INK;
           ctx.fill();
 
           const fillW = Math.max(0, (bw - 6) * (boss.hp / boss.maxHp));
           if (fillW > 0) {
-            roundRectPath(ctx, bx + 3, by + 3, fillW, 10, 5);
+            roundRectPath(ctx, bx + 3, by + 3, fillW, 9, 5);
             ctx.fillStyle = boss.phase === 3 ? '#ff006e' : '#ff5964';
             ctx.fill();
           }
         }
 
-        // Баннер старта уровня
-        if (levelBannerTimer > 0 && !boss) {
-          ctx.globalAlpha = Math.min(1, levelBannerTimer * 1.4);
-          ctx.fillStyle = '#fff8eb';
-          ctx.strokeStyle = INK;
-          ctx.lineWidth = 4.5;
-          ctx.font = '900 22px sans-serif';
-          ctx.textAlign = 'center';
-          const titleStr = `${currentLevel.icon} УРОВЕНЬ ${currentLevel.id}: ${currentLevel.name.toUpperCase()}`;
-          ctx.strokeText(titleStr, W / 2, H * 0.34);
-          ctx.fillText(titleStr, W / 2, H * 0.34);
-          ctx.globalAlpha = 1;
-        }
-
-        // Баннер тревоги босса
         if (warningBannerTimer > 0 && Math.floor(warningBannerTimer * 6) % 2 === 0) {
           ctx.fillStyle = '#ff5964';
           ctx.strokeStyle = INK;
@@ -3531,9 +2791,7 @@ html
       function render() {
         ctx.save();
         if (screenShake > 0) {
-          const sx = (Math.random() - 0.5) * screenShake;
-          const sy = (Math.random() - 0.5) * screenShake;
-          ctx.translate(sx, sy);
+          ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
         }
 
         drawBackground();
@@ -3568,7 +2826,7 @@ html
           ctx.fill();
         }
 
-        if (player && state !== 'GAMEOVER') {
+        if (player && state !== 'GAMEOVER' && state !== 'START') {
           drawPlayer(player);
         }
 
@@ -3589,7 +2847,7 @@ html
           ctx.fillStyle = pp.color;
           ctx.strokeStyle = INK;
           ctx.lineWidth = 3.5;
-          ctx.font = '900 16px sans-serif';
+          ctx.font = '900 15px sans-serif';
           ctx.textAlign = 'center';
           ctx.strokeText(pp.text, pp.x, pp.y);
           ctx.fillText(pp.text, pp.x, pp.y);
@@ -3601,32 +2859,24 @@ html
       }
 
       // =========================================================================
-      // 9. ГЛАВНЫЙ ЦИКЛ И ЗАПУСК ПОсле ЗАГРУЗКИ ОКНА
+      // 8. ГЛАВНЫЙ ЦИКЛ
       // =========================================================================
       let lastTime = performance.now();
 
       function loop(now) {
         const dt = Math.min((now - lastTime) / 1000, 0.05);
         lastTime = now;
-
         update(dt);
         render();
         requestAnimationFrame(loop);
       }
 
       document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-          pointer.active = false;
-        } else {
-          lastTime = performance.now();
-        }
+        if (document.hidden) pointer.active = false;
+        else lastTime = performance.now();
       });
 
-      window.onload = () => {
-        resize();
-        lastTime = performance.now();
-        requestAnimationFrame(loop);
-      };
+      requestAnimationFrame(loop);
     })();
   </script>
 </body>
