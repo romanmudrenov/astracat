@@ -11,10 +11,15 @@ class PolySynth {
     this.muted = false;
     this.musicEnabled = true;
     this.sfxEnabled = true;
-    // Базовая громкость: 50% для музыки, 60% для спецэффектов
     this.musicVolume = 0.50;
-    this.sfxVolume = 0.60;
+    // Базовая громкость SFX выше на 20% (0.60 * 1.2 = 0.72)
+    this.sfxVolume = 0.72;
     this.timbre = 'space';
+
+    // Пул треков в папке music/ и история последних 4 уровней (чтобы не повторялись)
+    this.availableTracks = ['level1.mp3', 'level2.mp3', 'level3.mp3', 'level4.mp3'];
+    this.selectedTrack = 'auto'; // 'auto' или конкретное имя файла
+    this.recentTracks = [];
 
     this.bgmAudio = null;
     this.currentTrackPath = '';
@@ -34,12 +39,12 @@ class PolySynth {
       this.compressor.release.setValueAtTime(0.2, this.ctx.currentTime);
 
       this.delayNode = this.ctx.createDelay(1.0);
-      this.delayNode.delayTime.setValueAtTime(0.22, this.ctx.currentTime);
+      this.delayNode.delayTime.setValueAtTime(0.21, this.ctx.currentTime);
       const delayFilter = this.ctx.createBiquadFilter();
       delayFilter.type = 'lowpass';
-      delayFilter.frequency.setValueAtTime(1150, this.ctx.currentTime);
+      delayFilter.frequency.setValueAtTime(1250, this.ctx.currentTime);
       const delayFeedback = this.ctx.createGain();
-      delayFeedback.gain.setValueAtTime(0.25, this.ctx.currentTime);
+      delayFeedback.gain.setValueAtTime(0.24, this.ctx.currentTime);
 
       this.delayNode.connect(delayFilter);
       delayFilter.connect(delayFeedback);
@@ -47,7 +52,7 @@ class PolySynth {
       delayFilter.connect(this.compressor);
 
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(this.muted ? 0.0001 : 0.92, this.ctx.currentTime);
+      this.masterGain.gain.setValueAtTime(this.muted ? 0.0001 : 0.94, this.ctx.currentTime);
 
       this.compressor.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
@@ -61,13 +66,29 @@ class PolySynth {
         b0 = 0.997 * b0 + white * 0.029;
         b1 = 0.985 * b1 + white * 0.032;
         b2 = 0.950 * b2 + white * 0.048;
-        data[i] = (b0 + b1 + b2 + white * 0.22) * 0.52;
+        data[i] = (b0 + b1 + b2 + white * 0.24) * 0.55;
       }
     }
 
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+  }
+
+  // Выбор трека: либо выбранный вручную в настройках, либо рандом без повторов 4 уровня подряд
+  pickNextTrack() {
+    if (this.selectedTrack && this.selectedTrack !== 'auto') {
+      return this.selectedTrack;
+    }
+    const candidates = this.availableTracks.filter(t => !this.recentTracks.includes(t));
+    const pool = candidates.length > 0 ? candidates : this.availableTracks;
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+
+    this.recentTracks.push(chosen);
+    if (this.recentTracks.length >= 4) {
+      this.recentTracks.shift();
+    }
+    return chosen;
   }
 
   getEffectiveMusicVol() {
@@ -96,13 +117,21 @@ class PolySynth {
     } catch (e) {}
   }
 
-  startMusic(mode = 'normal', levelId = 1) {
-    const file = mode === 'boss' ? 'boss.mp3' : `level${levelId}.mp3`;
-    this.playTrack(file);
+  startMusic(mode = 'normal') {
+    if (mode === 'boss') {
+      // Для босса запускаем отдельный трек или продолжаем текущий, если boss.mp3 не загружен
+      const track = this.selectedTrack !== 'auto' ? this.selectedTrack : (this.recentTracks[this.recentTracks.length - 1] || 'level1.mp3');
+      this.playTrack(track);
+      return;
+    }
+    const chosen = this.pickNextTrack();
+    this.playTrack(chosen);
   }
 
-  setMusicMode(mode, levelId = 1) {
-    this.startMusic(mode, levelId);
+  setMusicMode(mode) {
+    if (mode === 'boss' && (!this.bgmAudio || this.bgmAudio.paused)) {
+      this.startMusic('boss');
+    }
   }
 
   stopMusic() {
@@ -128,7 +157,7 @@ class PolySynth {
     if (this.masterGain && this.ctx) {
       const now = this.ctx.currentTime;
       this.masterGain.gain.cancelScheduledValues(now);
-      this.masterGain.gain.setTargetAtTime(this.muted ? 0.0001 : 0.92, now, 0.02);
+      this.masterGain.gain.setTargetAtTime(this.muted ? 0.0001 : 0.94, now, 0.02);
     }
     this.updateMusicVolume();
     return this.muted;
@@ -150,11 +179,11 @@ class PolySynth {
     type = 'sine',
     detune = 0,
     time = null,
-    duration = 0.18,
-    attack = 0.012,
-    decay = 0.07,
-    sustain = 0.4,
-    release = 0.10,
+    duration = 0.16,
+    attack = 0.010,
+    decay = 0.06,
+    sustain = 0.35,
+    release = 0.09,
     gain = 0.12,
     filterFreq = 1650,
     sendDelay = false,
@@ -177,7 +206,7 @@ class PolySynth {
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.Q.setValueAtTime(0.95, t0);
-    const maxCut = this.timbre === 'space' ? 1350 : (this.timbre === 'classic' ? 1750 : 2100);
+    const maxCut = this.timbre === 'space' ? 1450 : (this.timbre === 'classic' ? 1850 : 2200);
     filter.frequency.setValueAtTime(Math.min(filterFreq, maxCut), t0);
 
     const env = this.ctx.createGain();
@@ -204,7 +233,7 @@ class PolySynth {
 
     if (sendDelay && this.delayNode) {
       const sendGain = this.ctx.createGain();
-      sendGain.gain.setValueAtTime(0.28, t0);
+      sendGain.gain.setValueAtTime(0.26, t0);
       lastNode.connect(sendGain);
       sendGain.connect(this.delayNode);
     }
@@ -231,7 +260,7 @@ class PolySynth {
 
   playNoise({
     time = null,
-    duration = 0.18,
+    duration = 0.16,
     gain = 0.14,
     filterType = 'lowpass',
     filterFreq = 950,
@@ -267,70 +296,99 @@ class PolySynth {
     };
   }
 
-  sfxShoot(pan = 0, upgraded = false) {
-    this.playVoice({
-      freq: upgraded ? 580 : 510,
-      slideTo: upgraded ? 190 : 160,
-      type: 'sine',
-      duration: 0.085,
-      attack: 0.007,
-      decay: 0.04,
-      sustain: 0.2,
-      release: 0.05,
-      gain: 0.09,
-      filterFreq: 1450,
-      pan
-    });
-    if (upgraded) {
+  // --- УНИКАЛЬНЫЕ ASMR-ЗВУКИ ДЛЯ КАЖДОГО ОРУЖИЯ И КАЖДОЙ КОМБИНАЦИИ ---
+  sfxShootWeapon(pan = 0, secondary = 'none', level = 1) {
+    if (!this.ctx || this.muted) return;
+    const now = this.ctx.currentTime;
+
+    if (secondary === 'none') {
+      // 1. Чистая базовая плазма — мягкий пузырьковый «пиу»
       this.playVoice({
-        freq: 820,
-        slideTo: 320,
-        type: 'triangle',
-        duration: 0.075,
-        attack: 0.006,
-        decay: 0.035,
-        sustain: 0.15,
-        release: 0.04,
-        gain: 0.055,
-        filterFreq: 1650,
-        pan
+        time: now, freq: 520, slideTo: 165, type: 'sine',
+        duration: 0.08, attack: 0.007, decay: 0.04, sustain: 0.2, release: 0.04,
+        gain: 0.095, filterFreq: 1400, pan
+      });
+    } else if (secondary === 'pizza') {
+      // 2. Плазма + Пицца (Огненный веер) — тёплый хрустящий шорох + аккордовый щелчок
+      this.playNoise({
+        time: now, duration: 0.09, gain: 0.075,
+        filterType: 'bandpass', filterFreq: 1350, filterEnd: 520
+      });
+      this.playVoice({
+        time: now, freq: level >= 2 ? 640 : 560, slideTo: 220, type: 'triangle',
+        duration: 0.09, attack: 0.008, decay: 0.04, sustain: 0.2, release: 0.05,
+        gain: 0.095, filterFreq: 1600, pan
+      });
+    } else if (secondary === 'sushi') {
+      // 3. Плазма + Суши (Авто-Сюрикены) — стеклянный ASMR-перезвон калимбы / колокольчика
+      this.playVoice({
+        time: now, freq: 987.77, slideTo: 880, type: 'sine',
+        duration: 0.10, attack: 0.005, decay: 0.05, sustain: 0.25, release: 0.07,
+        gain: 0.085, filterFreq: 2100, sendDelay: true, pan: pan - 0.15
+      });
+      this.playVoice({
+        time: now + 0.025, freq: level >= 2 ? 1318.5 : 1174.6, slideTo: 1046.5, type: 'sine',
+        duration: 0.09, attack: 0.005, decay: 0.04, sustain: 0.2, release: 0.06,
+        gain: 0.075, filterFreq: 2100, pan: pan + 0.15
+      });
+    } else if (secondary === 'donut') {
+      // 4. Плазма + Пончик (Гипер-Лазеры) — шелковистый высокочастотный свип
+      this.playVoice({
+        time: now, freq: 1120, slideTo: 340, type: 'sine',
+        duration: 0.075, attack: 0.004, decay: 0.035, sustain: 0.15, release: 0.04,
+        gain: 0.09, filterFreq: 1950, pan
+      });
+      this.playVoice({
+        time: now, freq: 560, slideTo: 170, type: 'triangle',
+        duration: 0.075, attack: 0.004, decay: 0.035, sustain: 0.15, release: 0.04,
+        gain: 0.065, filterFreq: 1400, pan
+      });
+    } else if (secondary === 'burger') {
+      // 5. Плазма + Бургер (Тяжёлые ракеты) — глубокий пневмо-выстрел с саб-басом
+      this.playVoice({
+        time: now, freq: 240, slideTo: 62, type: 'sine',
+        duration: 0.15, attack: 0.008, decay: 0.07, sustain: 0.25, release: 0.07,
+        gain: 0.135, filterFreq: 750, pan
+      });
+      this.playNoise({
+        time: now, duration: 0.13, gain: 0.095,
+        filterType: 'lowpass', filterFreq: 950, filterEnd: 240
       });
     }
   }
 
   sfxHit(pan = 0) {
+    // Мягкий деревянный ASMR-стук (маримба / капля)
+    const pitch = 230 + Math.random() * 55;
     this.playVoice({
-      freq: 250,
-      slideTo: 105,
+      freq: pitch,
+      slideTo: pitch * 0.48,
       type: 'sine',
-      duration: 0.065,
-      attack: 0.006,
-      decay: 0.035,
+      duration: 0.06,
+      attack: 0.005,
+      decay: 0.03,
       sustain: 0.1,
       release: 0.03,
-      gain: 0.085,
-      filterFreq: 900,
+      gain: 0.09,
+      filterFreq: 950,
       pan
     });
   }
 
-  // Сочный многослойный взрыв: саб-удар + шипящий хруст + осколки
   sfxExplosion(pan = 0, big = false) {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    const dur = big ? 0.65 : 0.32;
+    const dur = big ? 0.65 : 0.30;
 
-    // 1. Плотный шумовой хлопок
     this.playNoise({
       time: now,
       duration: dur,
       gain: big ? 0.28 : 0.18,
       filterType: 'lowpass',
-      filterFreq: big ? 820 : 1050,
+      filterFreq: big ? 840 : 1080,
       filterEnd: 85
     });
 
-    // 2. Глубокий саб-бас удар
     this.playVoice({
       time: now,
       freq: big ? 130 : 175,
@@ -346,14 +404,13 @@ class PolySynth {
       pan
     });
 
-    // 3. Вторичный хрустящий отзвук осколков (через 45 мс)
     this.playNoise({
       time: now + 0.045,
-      duration: dur * 0.65,
+      duration: dur * 0.6,
       gain: big ? 0.16 : 0.10,
       filterType: 'bandpass',
-      filterFreq: 950,
-      filterEnd: 280
+      filterFreq: 980,
+      filterEnd: 290
     });
   }
 
@@ -364,14 +421,14 @@ class PolySynth {
       this.playVoice({
         freq: this.midiToFreq(m),
         type: 'sine',
-        time: now + i * 0.048,
-        duration: 0.22,
-        attack: 0.014,
-        decay: 0.08,
+        time: now + i * 0.045,
+        duration: 0.20,
+        attack: 0.012,
+        decay: 0.07,
         sustain: 0.35,
-        release: 0.16,
-        gain: 0.11,
-        filterFreq: 1850,
+        release: 0.14,
+        gain: 0.115,
+        filterFreq: 1900,
         sendDelay: true
       });
     });
@@ -386,7 +443,7 @@ class PolySynth {
       decay: 0.1,
       sustain: 0.25,
       release: 0.14,
-      gain: 0.10,
+      gain: 0.11,
       sendDelay: true
     });
   }
@@ -397,15 +454,15 @@ class PolySynth {
       freq: 220,
       slideTo: 75,
       type: 'triangle',
-      duration: 0.30,
+      duration: 0.28,
       attack: 0.015,
       decay: 0.12,
       sustain: 0.3,
-      release: 0.10,
-      gain: 0.17,
-      filterFreq: 800
+      release: 0.09,
+      gain: 0.18,
+      filterFreq: 820
     });
-    this.playNoise({ duration: 0.24, gain: 0.15, filterType: 'lowpass', filterFreq: 560, filterEnd: 90 });
+    this.playNoise({ duration: 0.22, gain: 0.16, filterType: 'lowpass', filterFreq: 560, filterEnd: 90 });
   }
 
   sfxBossAlarm() {
@@ -422,8 +479,8 @@ class PolySynth {
         decay: 0.1,
         sustain: 0.5,
         release: 0.1,
-        gain: 0.13,
-        filterFreq: 1000,
+        gain: 0.14,
+        filterFreq: 1050,
         sendDelay: true
       });
     }
@@ -446,8 +503,8 @@ class PolySynth {
         decay: 0.1,
         sustain: 0.6,
         release: 0.22,
-        gain: 0.12,
-        filterFreq: 1950,
+        gain: 0.13,
+        filterFreq: 2000,
         sendDelay: true
       });
     });
@@ -472,8 +529,8 @@ class PolySynth {
         decay: 0.12,
         sustain: 0.5,
         release: 0.18,
-        gain: 0.14,
-        filterFreq: 1400,
+        gain: 0.15,
+        filterFreq: 1450,
         sendDelay: true
       });
     });
