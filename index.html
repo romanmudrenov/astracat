@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Астро-Кот</title>
-  <link rel="stylesheet" href="css/style.css?v=8" />
+  <link rel="stylesheet" href="css/style.css?v=9" />
 </head>
 <body>
   <div id="game-wrap">
@@ -34,7 +34,7 @@
         <div class="levels-grid" id="levels-grid"></div>
         
         <div class="selected-level-box" id="selected-level-info">
-          <strong>Сектор 1: Звёздная Бухта</strong><br>
+          <strong>Сектор 1: ЛСД-Туманность</strong><br>
           <span>Босс: Доктор Кракен-Бот</span>
         </div>
 
@@ -89,7 +89,7 @@
           <div class="intro-cat-badge">🐱🚀</div>
           <div class="intro-sector-tag" id="intro-sector-tag">СЕКТОР 1</div>
         </div>
-        <h2 id="intro-title">ЗВЁЗДНАЯ БУХТА</h2>
+        <h2 id="intro-title">ЛСД-ТУМАННОСТЬ</h2>
         <p class="intro-story" id="intro-story"></p>
         <div class="intro-intel" id="intro-intel"></div>
         <div class="btn-row">
@@ -113,22 +113,19 @@
           <div class="setting-head" style="margin-top:8px; margin-bottom:0;">
             <span style="font-size:12px;">Трек уровня:</span>
             <select id="track-select" class="neon-select">
-              <option value="auto">🎲 Авто (без повтора 4 ур.)</option>
-              <option value="level1.mp3">Трек 1 (level1.mp3)</option>
-              <option value="level2.mp3">Трек 2 (level2.mp3)</option>
-              <option value="level3.mp3">Трек 3 (level3.mp3)</option>
-              <option value="level4.mp3">Трек 4 (level4.mp3)</option>
+              <option value="auto">🎲 Авто (все треки из music/)</option>
             </select>
           </div>
+          <div class="setting-hint" id="tracks-found-hint">Поиск треков level1.mp3 ... level15.mp3 в music/</div>
         </div>
 
         <div class="setting-row">
           <div class="setting-head">
-            <span>✨ ASMR-эффекты и взрывы (SFX)</span>
+            <span>✨ ASMR-эффекты и взрывы (SFX +50%)</span>
             <button id="toggle-sfx" class="toggle-chip">ВКЛ</button>
           </div>
-          <input id="sfx-vol" type="range" min="0" max="100" value="72" />
-          <div class="setting-hint">Базовая громкость эффектов повышена до 72%</div>
+          <input id="sfx-vol" type="range" min="0" max="150" value="108" />
+          <div class="setting-hint">Базовая громкость усилена на +50% (108%)</div>
         </div>
 
         <div class="setting-row">
@@ -194,10 +191,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=8"></script>
-  <script src="js/vfx.js?v=8"></script>
-  <script src="js/world3d.js?v=8"></script>
-  <script src="js/entities.js?v=8"></script>
-  <script src="js/game.js?v=8"></script>
+  <script src="js/synth.js?v=9"></script>
+  <script src="js/vfx.js?v=9"></script>
+  <script src="js/world3d.js?v=9"></script>
+  <script src="js/entities.js?v=9"></script>
+  <script src="js/game.js?v=9"></script>
 </body>
 </html>
