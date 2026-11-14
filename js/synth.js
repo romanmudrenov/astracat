@@ -11,9 +11,9 @@ class PolySynth {
     this.muted = false;
     this.musicEnabled = true;
     this.sfxEnabled = true;
-    // Базовая громкость музыки в 2 раза тише (0.35 вместо 0.75)
-    this.musicVolume = 0.35;
-    this.sfxVolume = 0.85;
+    // Базовая громкость: 50% для музыки, 60% для спецэффектов
+    this.musicVolume = 0.50;
+    this.sfxVolume = 0.60;
     this.timbre = 'space';
 
     this.bgmAudio = null;
@@ -37,9 +37,9 @@ class PolySynth {
       this.delayNode.delayTime.setValueAtTime(0.22, this.ctx.currentTime);
       const delayFilter = this.ctx.createBiquadFilter();
       delayFilter.type = 'lowpass';
-      delayFilter.frequency.setValueAtTime(1100, this.ctx.currentTime);
+      delayFilter.frequency.setValueAtTime(1150, this.ctx.currentTime);
       const delayFeedback = this.ctx.createGain();
-      delayFeedback.gain.setValueAtTime(0.24, this.ctx.currentTime);
+      delayFeedback.gain.setValueAtTime(0.25, this.ctx.currentTime);
 
       this.delayNode.connect(delayFilter);
       delayFilter.connect(delayFeedback);
@@ -47,7 +47,7 @@ class PolySynth {
       delayFilter.connect(this.compressor);
 
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(this.muted ? 0.0001 : 0.9, this.ctx.currentTime);
+      this.masterGain.gain.setValueAtTime(this.muted ? 0.0001 : 0.92, this.ctx.currentTime);
 
       this.compressor.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
@@ -61,7 +61,7 @@ class PolySynth {
         b0 = 0.997 * b0 + white * 0.029;
         b1 = 0.985 * b1 + white * 0.032;
         b2 = 0.950 * b2 + white * 0.048;
-        data[i] = (b0 + b1 + b2 + white * 0.18) * 0.5;
+        data[i] = (b0 + b1 + b2 + white * 0.22) * 0.52;
       }
     }
 
@@ -70,10 +70,9 @@ class PolySynth {
     }
   }
 
-  // Делим громкость трека дополнительно на 2, чтобы музыка звучала мягко на фоне
   getEffectiveMusicVol() {
     if (this.muted || !this.musicEnabled) return 0;
-    return Math.max(0, Math.min(1, this.musicVolume * 0.5));
+    return Math.max(0, Math.min(1, this.musicVolume));
   }
 
   playTrack(filename) {
@@ -129,7 +128,7 @@ class PolySynth {
     if (this.masterGain && this.ctx) {
       const now = this.ctx.currentTime;
       this.masterGain.gain.cancelScheduledValues(now);
-      this.masterGain.gain.setTargetAtTime(this.muted ? 0.0001 : 0.9, now, 0.02);
+      this.masterGain.gain.setTargetAtTime(this.muted ? 0.0001 : 0.92, now, 0.02);
     }
     this.updateMusicVolume();
     return this.muted;
@@ -156,8 +155,8 @@ class PolySynth {
     decay = 0.07,
     sustain = 0.4,
     release = 0.10,
-    gain = 0.11,
-    filterFreq = 1600,
+    gain = 0.12,
+    filterFreq = 1650,
     sendDelay = false,
     pan = 0
   }) {
@@ -177,8 +176,8 @@ class PolySynth {
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.Q.setValueAtTime(0.9, t0);
-    const maxCut = this.timbre === 'space' ? 1250 : (this.timbre === 'classic' ? 1650 : 2000);
+    filter.Q.setValueAtTime(0.95, t0);
+    const maxCut = this.timbre === 'space' ? 1350 : (this.timbre === 'classic' ? 1750 : 2100);
     filter.frequency.setValueAtTime(Math.min(filterFreq, maxCut), t0);
 
     const env = this.ctx.createGain();
@@ -205,7 +204,7 @@ class PolySynth {
 
     if (sendDelay && this.delayNode) {
       const sendGain = this.ctx.createGain();
-      sendGain.gain.setValueAtTime(0.26, t0);
+      sendGain.gain.setValueAtTime(0.28, t0);
       lastNode.connect(sendGain);
       sendGain.connect(this.delayNode);
     }
@@ -231,16 +230,17 @@ class PolySynth {
   }
 
   playNoise({
+    time = null,
     duration = 0.18,
-    gain = 0.12,
+    gain = 0.14,
     filterType = 'lowpass',
-    filterFreq = 900,
+    filterFreq = 950,
     filterEnd = 160
   }) {
     if (!this.ctx || !this.noiseBuffer || this.muted) return;
     if (!this.sfxEnabled || this.sfxVolume <= 0.01) return;
 
-    const t0 = this.ctx.currentTime;
+    const t0 = time !== null ? time : this.ctx.currentTime;
     const src = this.ctx.createBufferSource();
     src.buffer = this.noiseBuffer;
 
@@ -251,7 +251,7 @@ class PolySynth {
 
     const env = this.ctx.createGain();
     env.gain.setValueAtTime(0.0001, t0);
-    env.gain.linearRampToValueAtTime(Math.max(0.001, gain * this.sfxVolume), t0 + 0.015);
+    env.gain.linearRampToValueAtTime(Math.max(0.001, gain * this.sfxVolume), t0 + 0.012);
     env.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
 
     src.connect(filter);
@@ -267,32 +267,32 @@ class PolySynth {
     };
   }
 
-  sfxShoot(pan = 0, weaponLevel = 1) {
+  sfxShoot(pan = 0, upgraded = false) {
     this.playVoice({
-      freq: 520 + weaponLevel * 45,
-      slideTo: 165,
+      freq: upgraded ? 580 : 510,
+      slideTo: upgraded ? 190 : 160,
       type: 'sine',
       duration: 0.085,
-      attack: 0.008,
+      attack: 0.007,
       decay: 0.04,
       sustain: 0.2,
       release: 0.05,
-      gain: 0.075,
-      filterFreq: 1350,
+      gain: 0.09,
+      filterFreq: 1450,
       pan
     });
-    if (weaponLevel >= 3) {
+    if (upgraded) {
       this.playVoice({
-        freq: 780,
-        slideTo: 310,
+        freq: 820,
+        slideTo: 320,
         type: 'triangle',
         duration: 0.075,
         attack: 0.006,
         decay: 0.035,
         sustain: 0.15,
         release: 0.04,
-        gain: 0.045,
-        filterFreq: 1500,
+        gain: 0.055,
+        filterFreq: 1650,
         pan
       });
     }
@@ -300,41 +300,60 @@ class PolySynth {
 
   sfxHit(pan = 0) {
     this.playVoice({
-      freq: 240,
-      slideTo: 110,
+      freq: 250,
+      slideTo: 105,
       type: 'sine',
       duration: 0.065,
       attack: 0.006,
       decay: 0.035,
       sustain: 0.1,
       release: 0.03,
-      gain: 0.07,
-      filterFreq: 850,
+      gain: 0.085,
+      filterFreq: 900,
       pan
     });
   }
 
+  // Сочный многослойный взрыв: саб-удар + шипящий хруст + осколки
   sfxExplosion(pan = 0, big = false) {
-    const dur = big ? 0.55 : 0.26;
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const dur = big ? 0.65 : 0.32;
+
+    // 1. Плотный шумовой хлопок
     this.playNoise({
+      time: now,
       duration: dur,
-      gain: big ? 0.22 : 0.13,
+      gain: big ? 0.28 : 0.18,
       filterType: 'lowpass',
-      filterFreq: big ? 680 : 880,
-      filterEnd: 95
+      filterFreq: big ? 820 : 1050,
+      filterEnd: 85
     });
+
+    // 2. Глубокий саб-бас удар
     this.playVoice({
-      freq: big ? 115 : 155,
-      slideTo: 36,
+      time: now,
+      freq: big ? 130 : 175,
+      slideTo: 34,
       type: 'sine',
       duration: dur,
-      attack: 0.01,
-      decay: dur * 0.6,
-      sustain: 0.1,
-      release: 0.09,
-      gain: big ? 0.22 : 0.14,
-      filterFreq: 380,
+      attack: 0.008,
+      decay: dur * 0.55,
+      sustain: 0.12,
+      release: 0.10,
+      gain: big ? 0.28 : 0.19,
+      filterFreq: 420,
       pan
+    });
+
+    // 3. Вторичный хрустящий отзвук осколков (через 45 мс)
+    this.playNoise({
+      time: now + 0.045,
+      duration: dur * 0.65,
+      gain: big ? 0.16 : 0.10,
+      filterType: 'bandpass',
+      filterFreq: 950,
+      filterEnd: 280
     });
   }
 
@@ -351,8 +370,8 @@ class PolySynth {
         decay: 0.08,
         sustain: 0.35,
         release: 0.16,
-        gain: 0.095,
-        filterFreq: 1800,
+        gain: 0.11,
+        filterFreq: 1850,
         sendDelay: true
       });
     });
@@ -367,7 +386,7 @@ class PolySynth {
       decay: 0.1,
       sustain: 0.25,
       release: 0.14,
-      gain: 0.09,
+      gain: 0.10,
       sendDelay: true
     });
   }
@@ -383,10 +402,10 @@ class PolySynth {
       decay: 0.12,
       sustain: 0.3,
       release: 0.10,
-      gain: 0.15,
-      filterFreq: 750
+      gain: 0.17,
+      filterFreq: 800
     });
-    this.playNoise({ duration: 0.22, gain: 0.12, filterType: 'lowpass', filterFreq: 520, filterEnd: 90 });
+    this.playNoise({ duration: 0.24, gain: 0.15, filterType: 'lowpass', filterFreq: 560, filterEnd: 90 });
   }
 
   sfxBossAlarm() {
@@ -403,8 +422,8 @@ class PolySynth {
         decay: 0.1,
         sustain: 0.5,
         release: 0.1,
-        gain: 0.11,
-        filterFreq: 950,
+        gain: 0.13,
+        filterFreq: 1000,
         sendDelay: true
       });
     }
@@ -427,8 +446,8 @@ class PolySynth {
         decay: 0.1,
         sustain: 0.6,
         release: 0.22,
-        gain: 0.10,
-        filterFreq: 1900,
+        gain: 0.12,
+        filterFreq: 1950,
         sendDelay: true
       });
     });
@@ -453,8 +472,8 @@ class PolySynth {
         decay: 0.12,
         sustain: 0.5,
         release: 0.18,
-        gain: 0.12,
-        filterFreq: 1350,
+        gain: 0.14,
+        filterFreq: 1400,
         sendDelay: true
       });
     });
