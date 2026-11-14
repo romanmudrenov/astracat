@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Астро-Кот</title>
-  <link rel="stylesheet" href="css/style.css?v=5" />
+  <link rel="stylesheet" href="css/style.css?v=6" />
 </head>
 <body>
   <div id="game-wrap">
@@ -38,10 +38,10 @@
         </div>
 
         <div class="bonus-legend">
-          <span>🍕 +Веер</span>
-          <span>🍣 +Сюрикен</span>
-          <span>🍩 +Лазер</span>
-          <span>🍔 +Ракеты</span>
+          <span>🍕 Веер</span>
+          <span>🍣 Сюрикен</span>
+          <span>🍩 Лазер</span>
+          <span>🍔 Ракеты</span>
           <span>🥛 Щит</span>
         </div>
 
@@ -89,7 +89,7 @@
         </div>
         <h2 id="intro-title">ЗВЁЗДНАЯ БУХТА</h2>
         <p class="intro-story" id="intro-story">
-          Редж выходит на орбиту! Собирай космическую еду, чтобы объединить её в Омега-Оружие!
+          Редж выходит на орбиту! Подбери блюдо, чтобы добавить второе орудие к своей плазме!
         </p>
         <div class="intro-intel" id="intro-intel"></div>
         <div class="btn-row">
@@ -109,16 +109,17 @@
             <span>🎵 Музыка (папка music/)</span>
             <button id="toggle-music" class="toggle-chip">ВКЛ</button>
           </div>
-          <input id="music-vol" type="range" min="0" max="100" value="35" />
-          <div class="setting-hint">Файлы: music/level1.mp3 ... level10.mp3, boss.mp3</div>
+          <input id="music-vol" type="range" min="0" max="100" value="50" />
+          <div class="setting-hint">Базовая громкость: 50% (music/level1.mp3 ... level10.mp3)</div>
         </div>
 
         <div class="setting-row">
           <div class="setting-head">
-            <span>✨ ASMR-эффекты синтезатора</span>
+            <span>✨ Спецэффекты и взрывы (SFX)</span>
             <button id="toggle-sfx" class="toggle-chip">ВКЛ</button>
           </div>
-          <input id="sfx-vol" type="range" min="0" max="100" value="85" />
+          <input id="sfx-vol" type="range" min="0" max="100" value="60" />
+          <div class="setting-hint">Базовая громкость: 60%</div>
         </div>
 
         <div class="setting-row">
@@ -133,7 +134,7 @@
         </div>
 
         <div class="btn-row" style="margin-top:14px;">
-          <button id="test-chord-btn" class="btn-secondary">🎶 Тест ASMR</button>
+          <button id="test-chord-btn" class="btn-secondary">🎶 Тест звука</button>
           <button id="settings-close-btn" class="btn-play">ГОТОВО ✔</button>
         </div>
       </div>
@@ -156,7 +157,6 @@
       <div class="card">
         <div class="badge" id="end-badge">Сектор зачищен</div>
 
-        <!-- Живая анимация довольного Реджа с едой при победе -->
         <div class="victory-cat-wrap" id="victory-cat-wrap">
           <canvas id="victory-cat-canvas" width="320" height="145"></canvas>
         </div>
@@ -188,10 +188,10 @@
   </div>
 
   <!-- Модули из папки js/ -->
-  <script src="js/synth.js?v=5"></script>
-  <script src="js/vfx.js?v=5"></script>
-  <script src="js/world3d.js?v=5"></script>
-  <script src="js/entities.js?v=5"></script>
-  <script src="js/game.js?v=5"></script>
+  <script src="js/synth.js?v=6"></script>
+  <script src="js/vfx.js?v=6"></script>
+  <script src="js/world3d.js?v=6"></script>
+  <script src="js/entities.js?v=6"></script>
+  <script src="js/game.js?v=6"></script>
 </body>
 </html>
