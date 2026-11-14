@@ -2,7 +2,6 @@
 
 const INK = '#1e1633';
 
-// 3 КОСМИЧЕСКИХ КОРАБЛЯ ИГРОКА ДЛЯ ПРОКАЧКИ В АНГАРЕ
 const SHIPS_CATALOG = [
   {
     id: 'shuttle',
@@ -45,7 +44,6 @@ const SHIPS_CATALOG = [
   }
 ];
 
-// 3 БАЗОВЫХ ВИДА ОРУЖИЯ ДЛЯ ПОКУПКИ В АНГАРЕ
 const WEAPONS_CATALOG = [
   {
     id: 'droplet',
@@ -73,17 +71,17 @@ const WEAPONS_CATALOG = [
   }
 ];
 
-// ОСТАВЛЕНЫ 5 КЛЮЧЕВЫХ УРОВНЕЙ ДЛЯ ДЕТАЛЬНОЙ ПРОРАБОТКИ: 1, 2, 3, 7, 10
+// УРОВНИ СТРОГО 1–5
 const LEVELS = [
   {
     id: 1,
     name: 'ЛСД-Туманность',
-    story: 'Кислотные вихри искажают пространство! Психоделические корабли пришельцев в ярких мозолях пытаются сбить Реджа с курса.',
-    enemiesDesc: 'ЛСД-Тарелки, Калейдоскоп-Боты и Фрактал-Шаттлы',
+    story: 'Кислотные вихри и психоделика! Галлюциногенные враги и волшебные звёздочки ждут Реджа.',
+    enemiesDesc: 'Психо-Глаза, Гриб-Крейсеры и Фрактал-Медузы',
     bossName: 'Доктор Кракен-Бот',
     bossWeapon: 'Психоделический веер и Мега-Луч',
     theme: 'lsd',
-    enemyTypes: ['lsd_saucer', 'lsd_prism', 'lsd_spinner'],
+    enemyTypes: ['psy_eye', 'shroom_cruiser', 'fractal_medusa'],
     obstacleKind: 'lsd_shroom',
     skyTop: '#1a0633', skyMid: '#3b0d5e', skyBot: '#6b1275',
     accent: '#ff70a6', bossColor: '#9b5de5', hpMult: 1.0, coinReward: 350
@@ -91,7 +89,7 @@ const LEVELS = [
   {
     id: 2,
     name: 'Сектор Кошмаров',
-    story: 'Кровавый туман окутал заброшенный флот. Из темноты атакуют костяные корабли-призраки и мрачные монолиты!',
+    story: 'Кровавый туман окутал заброшенный флот. Из темноты атакуют костяные корабли-призраки!',
     enemiesDesc: 'Костяные Истребители, Череп-Крейсеры и Тёмные Зонды',
     bossName: 'Кошмарный Жнец',
     bossWeapon: 'Кровавые сгустки и костяные иглы',
@@ -104,7 +102,7 @@ const LEVELS = [
   {
     id: 3,
     name: 'Радужный Поток',
-    story: 'Ослепительная радуга накрыла сектор! Облетай радужные призмы и уворачивайся от разноцветных эскадрилий.',
+    story: 'Ослепительная радуга накрыла сектор! Облетай радужные призмы и уворачивайся от эскадрилий.',
     enemiesDesc: 'Радужные Дельты, Спектр-Шаттлы и Призма-Дроны',
     bossName: 'Призматический Адмирал',
     bossWeapon: 'Семицветный лазерный веер',
@@ -115,9 +113,9 @@ const LEVELS = [
     accent: '#ffd166', bossColor: '#ff5964', hpMult: 1.38, coinReward: 700
   },
   {
-    id: 7,
+    id: 4,
     name: 'Подводный Океан',
-    story: 'Корабль Реджа погрузился в инопланетный океан! Облетай коралловые рифы и сражайся с вражескими батискафами.',
+    story: 'Корабль Реджа погрузился в инопланетный океан! Облетай коралловые рифы и сражайся с батискафами.',
     enemiesDesc: 'Батискафы Пришельцев, Субмарины-Скаты и Гидро-Дроны',
     bossName: 'Глубоководный Левиафан',
     bossWeapon: 'Торпедный залп и пузырьковые волны',
@@ -128,9 +126,9 @@ const LEVELS = [
     accent: '#00f5d4', bossColor: '#0096c7', hpMult: 1.65, coinReward: 950
   },
   {
-    id: 10,
+    id: 5,
     name: 'Органический Мир',
-    story: 'Финальный сектор! Живые био-корабли в мозолях и пульсирующие коконы защищают Императора Омега-Кракена!',
+    story: 'Финальный сектор первой пятерки! Живые био-корабли в мозолях и коконы защищают Пожирателя!',
     enemiesDesc: 'Био-Дредноуты, Споровые Корветы и Клеточные Зонды',
     bossName: 'Император Омега-Кракен',
     bossWeapon: 'Все виды атак + Гипер-Луч',
@@ -166,8 +164,7 @@ function drawWarts(ctx, spots, baseCol, hiCol) {
     ctx.lineWidth = 1.8;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
 
     ctx.fillStyle = hiCol;
     ctx.beginPath();
@@ -185,90 +182,79 @@ function drawRivets(ctx, points) {
   });
 }
 
+// ВОЛШЕБНЫЕ ЗВЁЗДОЧКИ (ЗЕЛЕНЫЕ И КРАСНЫЕ) И ЕДА
 function drawFoodBonus(ctx, bn) {
   ctx.save();
   ctx.translate(bn.x, bn.y);
-  const pulse = 1 + Math.sin(bn.phase) * 0.08;
+  const pulse = 1 + Math.sin(bn.phase) * 0.12;
   ctx.scale(pulse, pulse);
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
 
-  const auraColors = {
-    pizza: 'rgba(255, 183, 3, 0.32)',
-    sushi: 'rgba(6, 214, 160, 0.32)',
-    donut: 'rgba(255, 112, 166, 0.34)',
-    burger: 'rgba(247, 127, 0, 0.32)',
-    milk: 'rgba(72, 219, 251, 0.34)'
-  };
+  if (bn.type === 'green_star') {
+    // Зелёная волшебная звёздочка (увеличение корабля)
+    ctx.fillStyle = 'rgba(6, 214, 160, 0.35)';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, bn.r + 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-  ctx.fillStyle = auraColors[bn.type] || 'rgba(255,255,255,0.28)';
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(0, 0, bn.r + 5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
+    ctx.fillStyle = '#06d6a0';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+      const rOuter = 16;
+      const rInner = 7;
+      const x1 = Math.cos(a) * rOuter;
+      const y1 = Math.sin(a) * rOuter;
+      const x2 = Math.cos(a + Math.PI / 5) * rInner;
+      const y2 = Math.sin(a + Math.PI / 5) * rInner;
+      if (i === 0) ctx.moveTo(x1, y1);
+      else ctx.lineTo(x1, y1);
+      ctx.lineTo(x2, y2);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else if (bn.type === 'red_shield') {
+    // Красная волшебная звёздочка (энерго-щит)
+    ctx.fillStyle = 'rgba(255, 89, 100, 0.35)';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, bn.r + 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 2.5;
+    ctx.fillStyle = '#ff5964';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+      const rOuter = 16;
+      const rInner = 7;
+      const x1 = Math.cos(a) * rOuter;
+      const y1 = Math.sin(a) * rOuter;
+      const x2 = Math.cos(a + Math.PI / 5) * rInner;
+      const y2 = Math.sin(a + Math.PI / 5) * rInner;
+      if (i === 0) ctx.moveTo(x1, y1);
+      else ctx.lineTo(x1, y1);
+      ctx.lineTo(x2, y2);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else {
+    // Обычная еда
+    ctx.fillStyle = 'rgba(255, 183, 3, 0.32)';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, bn.r + 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-  if (bn.type === 'pizza') {
     ctx.fillStyle = '#ffd166';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(0, -14); ctx.lineTo(13, 10); ctx.lineTo(-13, 10);
     ctx.closePath();
     ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#e07a5f';
-    roundRectPath(ctx, -14, 8, 28, 5, 2.5);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#ff5964';
-    ctx.beginPath();
-    ctx.arc(-3, 2, 2.5, 0, Math.PI * 2);
-    ctx.arc(4, 4, 2.3, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (bn.type === 'sushi') {
-    ctx.fillStyle = '#1e1633';
-    roundRectPath(ctx, -13, -10, 26, 20, 8);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#fff8eb';
-    roundRectPath(ctx, -10, -7, 20, 14, 6);
-    ctx.fill();
-    ctx.fillStyle = '#ff5964';
-    ctx.beginPath();
-    ctx.arc(-2, 0, 4, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (bn.type === 'donut') {
-    ctx.fillStyle = '#f4a261';
-    ctx.beginPath();
-    ctx.arc(0, 0, 14, 0, Math.PI * 2);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#ff70a6';
-    ctx.beginPath();
-    ctx.arc(0, 0, 11.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#1e1633';
-    ctx.beginPath();
-    ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (bn.type === 'burger') {
-    ctx.fillStyle = '#f4a261';
-    roundRectPath(ctx, -13, 5, 26, 6, 3);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#6f1d1b';
-    roundRectPath(ctx, -14, 0, 28, 6, 3);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#ffb703';
-    ctx.beginPath();
-    ctx.arc(0, -1, 13, Math.PI, 0);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-  } else {
-    ctx.fillStyle = '#edf2f4';
-    roundRectPath(ctx, -9, -7, 18, 20, 4);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#48dbfb';
-    ctx.fillRect(-7, -1, 14, 8);
   }
+
   ctx.restore();
 }
 
@@ -283,9 +269,7 @@ function drawPlayerBullet(ctx, b) {
     ctx.fillStyle = '#ffd166';
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    ctx.moveTo(0, -11); ctx.lineTo(8, 8); ctx.lineTo(-8, 8);
-    ctx.closePath();
+    ctx.beginPath(); ctx.moveTo(0, -11); ctx.lineTo(8, 8); ctx.lineTo(-8, 8); ctx.closePath();
     ctx.fill(); ctx.stroke();
   } else if (b.kind === 'shuriken') {
     ctx.rotate(b.rot || 0);
@@ -299,8 +283,7 @@ function drawPlayerBullet(ctx, b) {
       if (i === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
       else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
     }
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
+    ctx.closePath(); ctx.fill(); ctx.stroke();
   } else if (b.kind === 'burger_rocket') {
     ctx.fillStyle = '#ff9f1c';
     ctx.strokeStyle = INK;
@@ -337,35 +320,26 @@ function drawObstacle(ctx, ob) {
     roundRectPath(ctx, -10, 0, 20, 24, 8);
     ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#ff006e';
-    ctx.beginPath();
-    ctx.arc(0, 2, 26, Math.PI, 0);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 2, 26, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
     drawWarts(ctx, [[-12, -10, 4], [10, -12, 4.5], [0, -18, 3.5]], '#ffd166', '#ffffff');
   } else if (ob.kind === 'horror_monolith') {
     ctx.fillStyle = '#2b2d42';
     roundRectPath(ctx, -20, -26, 40, 52, 8);
     ctx.fill(); ctx.stroke();
-  } else if (ob.kind === 'rainbow_prism') {
-    ctx.fillStyle = '#ffd166';
-    ctx.beginPath();
-    ctx.moveTo(0, -28); ctx.lineTo(24, 0); ctx.lineTo(0, 28); ctx.lineTo(-24, 0);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
   } else {
-    ctx.fillStyle = ob.kind === 'coral_reef' ? '#ff5964' : '#52b788';
-    ctx.beginPath();
-    ctx.arc(0, 0, 24, 0, Math.PI * 2);
-    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#52b788';
+    ctx.beginPath(); ctx.arc(0, 0, 24, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     drawWarts(ctx, [[-10, -8, 4.5], [10, -6, 4], [0, 10, 4.5]], '#ffd166', '#ffffff');
   }
   ctx.restore();
 }
 
 const SHIP_PALETTES = {
-  lsd_saucer:       ['#9b5de5', '#ff006e', '#00f5d4', true,  '#ffd166'],
-  lsd_prism:        ['#ff006e', '#ffd166', '#00f5d4', true,  '#9b5de5'],
-  lsd_spinner:      ['#00bbf9', '#f15bb5', '#fee440', true,  '#00f5d4'],
+  // Галлюциногенные враги 1-го уровня с мозолями
+  psy_eye:         ['#ff006e', '#9b5de5', '#00f5d4', true,  '#ffd166'],
+  shroom_cruiser:  ['#e0aaff', '#7209b7', '#f72585', true,  '#4cc9f0'],
+  fractal_medusa:  ['#4cc9f0', '#3a0ca3', '#48dbfb', true,  '#ffafcc'],
+
   horror_fang:      ['#2b2d42', '#8d99ae', '#ff002b', true,  '#590d22'],
   horror_skullship: ['#e2ece9', '#590d22', '#ff002b', true,  '#800f2f'],
   horror_reaper:    ['#1a1423', '#590d22', '#ff002b', false, '#ff002b'],
@@ -390,43 +364,24 @@ function drawUniqueEnemy(ctx, e) {
   const [bodyCol, wingCol, domeCol, hasWarts, wartCol] = pal;
 
   ctx.fillStyle = 'rgba(8, 5, 22, 0.34)';
-  ctx.beginPath();
-  ctx.ellipse(4, e.r + 6, e.r * 0.78, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.beginPath(); ctx.ellipse(4, e.r + 6, e.r * 0.78, 6, 0, 0, Math.PI * 2); ctx.fill();
 
   ctx.strokeStyle = INK;
   ctx.lineWidth = 3;
 
   ctx.fillStyle = flash ? '#ffffff' : wingCol;
   ctx.beginPath();
-  ctx.moveTo(0, 6);
-  ctx.lineTo(-26, -12);
-  ctx.lineTo(-18, 14);
-  ctx.lineTo(0, 22);
-  ctx.lineTo(18, 14);
-  ctx.lineTo(26, -12);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
+  ctx.moveTo(0, 6); ctx.lineTo(-26, -12); ctx.lineTo(-18, 14); ctx.lineTo(0, 22); ctx.lineTo(18, 14); ctx.lineTo(26, -12);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
 
   ctx.fillStyle = flash ? '#ffffff' : bodyCol;
-  ctx.beginPath();
-  ctx.ellipse(0, 2, 14, 22, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(0, 2, 14, 22, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
   ctx.fillStyle = '#ffbe0b';
-  ctx.beginPath();
-  ctx.moveTo(-5, 20); ctx.lineTo(0, 28); ctx.lineTo(5, 20);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-5, 20); ctx.lineTo(0, 28); ctx.lineTo(5, 20); ctx.closePath(); ctx.fill(); ctx.stroke();
 
   ctx.fillStyle = flash ? '#ffffff' : domeCol;
-  ctx.beginPath();
-  ctx.arc(0, 2, 7.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 2, 7.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
   if (hasWarts) {
     drawWarts(ctx, [[-16, -2, 3.2], [16, -2, 3.2], [-11, 10, 2.8], [11, 10, 2.8]], wartCol, '#ffffff');
@@ -451,9 +406,7 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.strokeStyle = 'rgba(255, 0, 110, 0.75)';
     ctx.lineWidth = 3.5;
     ctx.setLineDash([10, 8]);
-    ctx.beginPath();
-    ctx.moveTo(b.laserX, b.y + 40); ctx.lineTo(b.laserX, H);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(b.laserX, b.y + 40); ctx.lineTo(b.laserX, H); ctx.stroke();
     ctx.restore();
   } else if (b.laserState === 'fire') {
     ctx.save();
@@ -474,19 +427,16 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   const flash = b.hitFlash > 0;
   const lookX = player ? Math.max(-4, Math.min(4, (player.x - b.x) * 0.02)) : 0;
 
-  const tentacleCount = lvl.id === 10 ? 6 : 4;
+  const tentacleCount = lvl.id === 5 ? 6 : 4;
   for (let i = 0; i < tentacleCount; i++) {
     const t = i - (tentacleCount - 1) / 2;
     const waveX = Math.sin(b.time * 5 + t * 1.4) * 14;
-    const baseX = t * (lvl.id === 10 ? 20 : 28);
+    const baseX = t * (lvl.id === 5 ? 20 : 28);
     const tipX = baseX * 1.2 - waveX * 0.6;
 
     ctx.strokeStyle = INK;
     ctx.lineWidth = 14;
-    ctx.beginPath();
-    ctx.moveTo(baseX, 24);
-    ctx.quadraticCurveTo(baseX + waveX, 52, tipX, 74);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(baseX, 24); ctx.quadraticCurveTo(baseX + waveX, 52, tipX, 74); ctx.stroke();
 
     ctx.strokeStyle = lvl.accent;
     ctx.lineWidth = 8;
@@ -500,10 +450,7 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       [baseX + waveX * 0.65, 54, 2.8],
       [tipX, 68, 2.4]
     ].forEach(([sx, sy, sr]) => {
-      ctx.beginPath();
-      ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     });
   }
 
@@ -515,8 +462,7 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   ctx.quadraticCurveTo(60, 34, 0, 36);
   ctx.quadraticCurveTo(-60, 34, -56, 0);
   ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
+  ctx.fill(); ctx.stroke();
 
   drawWarts(
     ctx,
@@ -526,45 +472,31 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   );
 
   ctx.fillStyle = '#ffd166';
-  ctx.beginPath();
-  ctx.moveTo(-22, -48); ctx.lineTo(-12, -74); ctx.lineTo(0, -54); ctx.lineTo(12, -74); ctx.lineTo(22, -48);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-22, -48); ctx.lineTo(-12, -74); ctx.lineTo(0, -54); ctx.lineTo(12, -74); ctx.lineTo(22, -48);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
 
   [-20, 20].forEach(ex => {
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = INK;
     ctx.lineWidth = 3.5;
-    ctx.beginPath();
-    ctx.arc(ex, -4, 14, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(ex, -4, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
     ctx.fillStyle = b.phase === 3 ? '#d90429' : INK;
-    ctx.beginPath();
-    ctx.arc(ex + lookX, -2, flash ? 4 : 6, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(ex + lookX, -2, flash ? 4 : 6, 0, Math.PI * 2); ctx.fill();
 
     ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(ex + lookX - 2, -4, 2.2, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(ex + lookX - 2, -4, 2.2, 0, Math.PI * 2); ctx.fill();
   });
 
   ctx.strokeStyle = INK;
   ctx.lineWidth = 4.5;
-  ctx.beginPath();
-  ctx.moveTo(-34, -20); ctx.lineTo(-8, -13);
-  ctx.moveTo(34, -20); ctx.lineTo(8, -13);
-  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-34, -20); ctx.lineTo(-8, -13); ctx.moveTo(34, -20); ctx.lineTo(8, -13); ctx.stroke();
 
   ctx.fillStyle = INK;
   roundRectPath(ctx, -20, 14, 40, 11, 5);
   ctx.fill();
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(-13, 14, 6, 5);
-  ctx.fillRect(7, 14, 6, 5);
+  ctx.fillRect(-13, 14, 6, 5); ctx.fillRect(7, 14, 6, 5);
 
   ctx.restore();
 }
