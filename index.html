@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Астро-Кот: 10 Звёздных Секторов</title>
+  <title>Астро-Кот 2.5D: 10 Звёздных Секторов</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -20,9 +20,9 @@
     <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="start-overlay" class="overlay">
       <div class="card">
-        <div class="badge">Deluxe Edition • 10 Секторов</div>
+        <div class="badge">2.5D Edition • PolySynth</div>
         <h1>АСТРО-КОТ:<br>ЗВЁЗДНЫЙ ПАТРУЛЬ</h1>
-        <p class="subtitle">Выбери сложность и сектор. В каждом мире тебя ждут новые враги, своя музыка и уникальный босс!</p>
+        <p class="subtitle">Уникальные враги в каждом из 10 миров, 2.5D-графика и космическая еда с супероружием!</p>
 
         <div class="section-label">Уровень сложности</div>
         <div class="diff-row" id="diff-row">
@@ -36,19 +36,20 @@
         
         <div class="selected-level-box" id="selected-level-info">
           <strong>Сектор 1: Звёздная Бухта</strong><br>
-          <span>Босс: Доктор Кракен-Бот</span>
+          <span>Враги: Слизни-НЛО и Метеоры • Босс: Доктор Кракен-Бот</span>
         </div>
 
         <div class="bonus-legend">
-          <span><b>W</b> Залп</span>
-          <span><b>S</b> Щит</span>
-          <span><b>⚡</b> Турбо</span>
-          <span><b>♥</b> Ремонт</span>
+          <span>🍕 Веер</span>
+          <span>🍣 Сюрикен</span>
+          <span>🍩 Лазер</span>
+          <span>🍔 Ракеты</span>
+          <span>🥛 Щит</span>
         </div>
 
         <div class="btn-row">
           <button id="start-btn" class="btn-play">В ПОЛЁТ! 🚀</button>
-          <button id="menu-sound-btn" class="btn-secondary">🎛 Синтезатор</button>
+          <button id="menu-sound-btn" class="btn-secondary">🎛 Звук</button>
         </div>
 
         <div class="best-line" id="start-best">Общий рекорд: 0 • Пройдено: 0/10</div>
@@ -138,9 +139,11 @@
     </div>
   </div>
 
-  <!-- Подключаем модули из папки js/ -->
+  <!-- Подключаем 5 модулей из папки js/ -->
   <script src="js/synth.js"></script>
-  <script src="js/levels_and_art.js"></script>
+  <script src="js/vfx.js"></script>
+  <script src="js/world3d.js"></script>
+  <script src="js/entities.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>
