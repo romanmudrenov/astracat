@@ -2,10 +2,82 @@
 
 const INK = '#1e1633';
 
+// 3 КОСМИЧЕСКИХ КОРАБЛЯ ИГРОКА ДЛЯ ПРОКАЧКИ В АНГАРЕ
+const SHIPS_CATALOG = [
+  {
+    id: 'shuttle',
+    name: 'Кото-Шаттл МК-1',
+    desc: 'Базовый разведывательный шаттл Котовии-17. Надёжный баланс.',
+    price: 0,
+    hpBonus: 0,
+    speedMult: 1.0,
+    fireRateMult: 1.0,
+    dmgMult: 1.0,
+    coinMult: 1.0,
+    hullColor: '#fff8eb',
+    wingColor: '#ff5964'
+  },
+  {
+    id: 'interceptor',
+    name: 'Неоновый Перехватчик',
+    desc: '+25% скорость, +18% скорострельность, +20% монет с врагов.',
+    price: 850,
+    hpBonus: 1,
+    speedMult: 1.25,
+    fireRateMult: 0.82,
+    dmgMult: 1.15,
+    coinMult: 1.2,
+    hullColor: '#caf0f8',
+    wingColor: '#72efdd'
+  },
+  {
+    id: 'dreadnought',
+    name: 'Линкор Котовии-17',
+    desc: '+3 брони, +45% урон орудий, двойные двигатели и +40% монет.',
+    price: 1800,
+    hpBonus: 3,
+    speedMult: 1.08,
+    fireRateMult: 0.88,
+    dmgMult: 1.45,
+    coinMult: 1.4,
+    hullColor: '#ffd6a5',
+    wingColor: '#9b5de5'
+  }
+];
+
+// 3 БАЗОВЫХ ВИДА ОРУЖИЯ ДЛЯ ПОКУПКИ В АНГАРЕ
+const WEAPONS_CATALOG = [
+  {
+    id: 'droplet',
+    name: 'Капельная Плазма',
+    desc: 'Мягкие ASMR-капли плазмы. Точный одиночный выстрел.',
+    price: 0,
+    dmgBonus: 1.0,
+    bulletColor: '#48dbfb'
+  },
+  {
+    id: 'kalimba',
+    name: 'Калимба-Луч',
+    desc: 'Сдвоенные кристаллы с ASMR-перезвоном (+55% урона и скорости).',
+    price: 650,
+    dmgBonus: 1.55,
+    bulletColor: '#72efdd'
+  },
+  {
+    id: 'silk_spread',
+    name: 'Шёлковый Дробовик',
+    desc: 'Тройной веер импульсов с шёлковым шорохом (+110% общей мощи).',
+    price: 1400,
+    dmgBonus: 2.1,
+    bulletColor: '#ff8fab'
+  }
+];
+
+// ОСТАВЛЕНЫ 5 КЛЮЧЕВЫХ УРОВНЕЙ ДЛЯ ДЕТАЛЬНОЙ ПРОРАБОТКИ: 1, 2, 3, 7, 10
 const LEVELS = [
   {
     id: 1,
-    name: 'ЛСД-Туманность Галлюцинаций',
+    name: 'ЛСД-Туманность',
     story: 'Кислотные вихри искажают пространство! Психоделические корабли пришельцев в ярких мозолях пытаются сбить Реджа с курса.',
     enemiesDesc: 'ЛСД-Тарелки, Калейдоскоп-Боты и Фрактал-Шаттлы',
     bossName: 'Доктор Кракен-Бот',
@@ -14,11 +86,11 @@ const LEVELS = [
     enemyTypes: ['lsd_saucer', 'lsd_prism', 'lsd_spinner'],
     obstacleKind: 'lsd_shroom',
     skyTop: '#1a0633', skyMid: '#3b0d5e', skyBot: '#6b1275',
-    accent: '#ff70a6', bossColor: '#9b5de5', hpMult: 1.0
+    accent: '#ff70a6', bossColor: '#9b5de5', hpMult: 1.0, coinReward: 350
   },
   {
     id: 2,
-    name: 'Мрачный Сектор Кошмаров',
+    name: 'Сектор Кошмаров',
     story: 'Кровавый туман окутал заброшенный флот. Из темноты атакуют костяные корабли-призраки и мрачные монолиты!',
     enemiesDesc: 'Костяные Истребители, Череп-Крейсеры и Тёмные Зонды',
     bossName: 'Кошмарный Жнец',
@@ -27,11 +99,11 @@ const LEVELS = [
     enemyTypes: ['horror_fang', 'horror_skullship', 'horror_reaper'],
     obstacleKind: 'horror_monolith',
     skyTop: '#08030c', skyMid: '#17071c', skyBot: '#2b091e',
-    accent: '#ff002b', bossColor: '#590d22', hpMult: 1.12
+    accent: '#ff002b', bossColor: '#590d22', hpMult: 1.18, coinReward: 500
   },
   {
     id: 3,
-    name: 'Радужный Гиперпоток',
+    name: 'Радужный Поток',
     story: 'Ослепительная радуга накрыла сектор! Облетай радужные призмы и уворачивайся от разноцветных эскадрилий.',
     enemiesDesc: 'Радужные Дельты, Спектр-Шаттлы и Призма-Дроны',
     bossName: 'Призматический Адмирал',
@@ -40,50 +112,11 @@ const LEVELS = [
     enemyTypes: ['rainbow_delta', 'rainbow_shuttle', 'rainbow_orbiter'],
     obstacleKind: 'rainbow_prism',
     skyTop: '#1d1447', skyMid: '#2e226b', skyBot: '#463599',
-    accent: '#ffd166', bossColor: '#ff5964', hpMult: 1.24
-  },
-  {
-    id: 4,
-    name: 'Внутри Мега-Звездолёта',
-    story: 'Редж проник внутрь гигантского техно-корабля! Облетай энерго-переборки отсеков и сражайся с охранными ботами.',
-    enemiesDesc: 'Патрульные Перехватчики, Броне-Капсулы и Ремонт-Дроны',
-    bossName: 'Ядро Центрального ИИ',
-    bossWeapon: 'Перекрёстные лазерные резаки',
-    theme: 'ship_interior',
-    enemyTypes: ['tech_interceptor', 'tech_pod', 'tech_drone'],
-    obstacleKind: 'tech_bulkhead',
-    skyTop: '#0b132b', skyMid: '#1c2541', skyBot: '#3a506b',
-    accent: '#48dbfb', bossColor: '#00b4d8', hpMult: 1.36
-  },
-  {
-    id: 5,
-    name: 'Орбита Замёрзших Планет',
-    story: 'Ледяные глыбы дрейфуют в морозном вакууме. Облетай айсберги и остерегайся крио-кораблей Фрост-9!',
-    enemiesDesc: 'Крио-Корветы, Ледоколы и Морозные Зонды',
-    bossName: 'Ледяной Титан Фрост-9',
-    bossWeapon: 'Скоростные ледяные иглы',
-    theme: 'frozen',
-    enemyTypes: ['ice_corvette', 'ice_breaker', 'ice_probe'],
-    obstacleKind: 'ice_berg',
-    skyTop: '#08192b', skyMid: '#103454', skyBot: '#184e77',
-    accent: '#90e0ef', bossColor: '#48cae4', hpMult: 1.48
-  },
-  {
-    id: 6,
-    name: 'Империя Сахарной Ваты',
-    story: 'Липкие облака ваты и карамельные столбы преграждают путь! Остерегайся залипания и сладких бомбардировщиков.',
-    enemiesDesc: 'Зефирные Крейсеры, Леденцовые Истребители и Пончик-Боты',
-    bossName: 'Королева Зефира',
-    bossWeapon: 'Тройные липкие зефирные пузыри',
-    theme: 'candy',
-    enemyTypes: ['candy_cruiser', 'candy_dart', 'candy_donutship'],
-    obstacleKind: 'candy_pillar',
-    skyTop: '#2b0e26', skyMid: '#521b48', skyBot: '#7d296e',
-    accent: '#ffafcc', bossColor: '#ff70a6', hpMult: 1.60
+    accent: '#ffd166', bossColor: '#ff5964', hpMult: 1.38, coinReward: 700
   },
   {
     id: 7,
-    name: 'Бездна Подводного Океана',
+    name: 'Подводный Океан',
     story: 'Корабль Реджа погрузился в инопланетный океан! Облетай коралловые рифы и сражайся с вражескими батискафами.',
     enemiesDesc: 'Батискафы Пришельцев, Субмарины-Скаты и Гидро-Дроны',
     bossName: 'Глубоководный Левиафан',
@@ -92,37 +125,11 @@ const LEVELS = [
     enemyTypes: ['sub_bathyscaphe', 'sub_manta', 'sub_hydro'],
     obstacleKind: 'coral_reef',
     skyTop: '#041c2c', skyMid: '#08334a', skyBot: '#0e5273',
-    accent: '#00f5d4', bossColor: '#0096c7', hpMult: 1.72
-  },
-  {
-    id: 8,
-    name: 'Вулканический Каньон Магмы',
-    story: 'Раскалённые скалы и вспышки пламени! Облетай вулканические пики и уворачивайся от огненных бомбардировщиков.',
-    enemiesDesc: 'Магма-Бомбардировщики, Пепельные Шаттлы и Пиро-Дроны',
-    bossName: 'Инферно-Краб Вулкан',
-    bossWeapon: 'Магматический дождь и клешни',
-    theme: 'volcano',
-    enemyTypes: ['lava_bomber', 'lava_shuttle', 'lava_drone'],
-    obstacleKind: 'volcano_rock',
-    skyTop: '#1f0606', skyMid: '#3d0d0d', skyBot: '#631717',
-    accent: '#ff6b35', bossColor: '#e63946', hpMult: 1.85
-  },
-  {
-    id: 9,
-    name: 'Бриллиантовая Галактика',
-    story: 'Ослепительные грани алмазных астероидов! Облетай бриллиантовые глыбы и берегись расщепляющих лучей.',
-    enemiesDesc: 'Алмазные Перехватчики, Кристалл-Линкоры и Грани-Дроны',
-    bossName: 'Алмазный Император',
-    bossWeapon: 'Расщепляющие лучи и кристаллы',
-    theme: 'diamond',
-    enemyTypes: ['diamond_wing', 'diamond_cruiser', 'diamond_shard'],
-    obstacleKind: 'diamond_cluster',
-    skyTop: '#0d1b2a', skyMid: '#1b263b', skyBot: '#2c3e50',
-    accent: '#caf0f8', bossColor: '#4cc9f0', hpMult: 2.0
+    accent: '#00f5d4', bossColor: '#0096c7', hpMult: 1.65, coinReward: 950
   },
   {
     id: 10,
-    name: 'Живой Органический Мир',
+    name: 'Органический Мир',
     story: 'Финальный сектор! Живые био-корабли в мозолях и пульсирующие коконы защищают Императора Омега-Кракена!',
     enemiesDesc: 'Био-Дредноуты, Споровые Корветы и Клеточные Зонды',
     bossName: 'Император Омега-Кракен',
@@ -131,7 +138,7 @@ const LEVELS = [
     enemyTypes: ['bio_dreadnought', 'bio_corvette', 'bio_cell'],
     obstacleKind: 'bio_cocoon',
     skyTop: '#140512', skyMid: '#2e0923', skyBot: '#4f0f3b',
-    accent: '#ff006e', bossColor: '#d90429', hpMult: 2.25
+    accent: '#ff006e', bossColor: '#d90429', hpMult: 2.05, coinReward: 1400
   }
 ];
 
@@ -300,11 +307,11 @@ function drawPlayerBullet(ctx, b) {
     ctx.lineWidth = 2.5;
     roundRectPath(ctx, -7, -12, 14, 24, 7);
     ctx.fill(); ctx.stroke();
-  } else if (b.kind === 'laser_bolt') {
-    ctx.fillStyle = '#ff70a6';
+  } else if (b.kind === 'laser_bolt' || b.kind === 'kalimba_crystal') {
+    ctx.fillStyle = b.color || '#72efdd';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.8;
-    roundRectPath(ctx, -4, -18, 8, 36, 4);
+    roundRectPath(ctx, -4, -16, 8, 32, 4);
     ctx.fill(); ctx.stroke();
   } else {
     ctx.fillStyle = b.color;
@@ -339,23 +346,18 @@ function drawObstacle(ctx, ob) {
     ctx.fillStyle = '#2b2d42';
     roundRectPath(ctx, -20, -26, 40, 52, 8);
     ctx.fill(); ctx.stroke();
-  } else if (ob.kind === 'rainbow_prism' || ob.kind === 'diamond_cluster') {
-    ctx.fillStyle = ob.kind === 'diamond_cluster' ? '#4cc9f0' : '#ffd166';
+  } else if (ob.kind === 'rainbow_prism') {
+    ctx.fillStyle = '#ffd166';
     ctx.beginPath();
     ctx.moveTo(0, -28); ctx.lineTo(24, 0); ctx.lineTo(0, 28); ctx.lineTo(-24, 0);
     ctx.closePath();
     ctx.fill(); ctx.stroke();
-  } else if (ob.kind === 'coral_reef' || ob.kind === 'bio_cocoon') {
+  } else {
     ctx.fillStyle = ob.kind === 'coral_reef' ? '#ff5964' : '#52b788';
     ctx.beginPath();
     ctx.arc(0, 0, 24, 0, Math.PI * 2);
     ctx.fill(); ctx.stroke();
     drawWarts(ctx, [[-10, -8, 4.5], [10, -6, 4], [0, 10, 4.5]], '#ffd166', '#ffffff');
-  } else {
-    ctx.fillStyle = '#3a506b';
-    roundRectPath(ctx, -28, -15, 56, 30, 8);
-    ctx.fill(); ctx.stroke();
-    drawRivets(ctx, [[-20, -8], [20, -8], [-20, 8], [20, 8]]);
   }
   ctx.restore();
 }
@@ -370,24 +372,9 @@ const SHIP_PALETTES = {
   rainbow_delta:    ['#ff5964', '#ffd166', '#48dbfb', false, '#ffffff'],
   rainbow_shuttle:  ['#06d6a0', '#bdb2ff', '#ff9f1c', false, '#ffffff'],
   rainbow_orbiter:  ['#48dbfb', '#ff8fab', '#ffd166', false, '#ffffff'],
-  tech_interceptor: ['#3a506b', '#5bc0be', '#ffd166', false, '#ffffff'],
-  tech_pod:         ['#1c2541', '#48dbfb', '#ff5964', false, '#ffffff'],
-  tech_drone:       ['#6fffe9', '#3a506b', '#ffffff', false, '#ffffff'],
-  ice_corvette:     ['#90e0ef', '#0077b6', '#ffffff', false, '#ffffff'],
-  ice_breaker:      ['#caf0f8', '#48cae4', '#023e8a', false, '#ffffff'],
-  ice_probe:        ['#48cae4', '#ade8f4', '#ff9f1c', false, '#ffffff'],
-  candy_cruiser:    ['#ffccd5', '#ff70a6', '#ffd166', true,  '#ff4d6d'],
-  candy_dart:       ['#ff8fab', '#bde0fe', '#ffffff', false, '#ffffff'],
-  candy_donutship:  ['#f4a261', '#ff70a6', '#48dbfb', true,  '#ffd166'],
   sub_bathyscaphe:  ['#ffbe0b', '#0096c7', '#48dbfb', true,  '#ff5964'],
   sub_manta:        ['#0096c7', '#00f5d4', '#ffd166', true,  '#023e8a'],
   sub_hydro:        ['#48cae4', '#ff5964', '#ffffff', false, '#ffffff'],
-  lava_bomber:      ['#e63946', '#ffba08', '#370617', true,  '#ff9f1c'],
-  lava_shuttle:     ['#9b2226', '#f77f00', '#ffd166', false, '#ffffff'],
-  lava_drone:       ['#ff6b35', '#590d22', '#ffbe0b', false, '#ffffff'],
-  diamond_wing:     ['#caf0f8', '#4cc9f0', '#ffffff', false, '#ffffff'],
-  diamond_cruiser:  ['#90e0ef', '#4361ee', '#ffffff', false, '#ffffff'],
-  diamond_shard:    ['#ffffff', '#48dbfb', '#ff70a6', false, '#ffffff'],
   bio_dreadnought:  ['#d90429', '#7209b7', '#ffbe0b', true,  '#ff758f'],
   bio_corvette:     ['#38b000', '#80ed99', '#ffd166', true,  '#007f5f'],
   bio_cell:         ['#9b5de5', '#ff006e', '#00f5d4', true,  '#ffd166']
@@ -410,7 +397,6 @@ function drawUniqueEnemy(ctx, e) {
   ctx.strokeStyle = INK;
   ctx.lineWidth = 3;
 
-  // Крылья корабля пришельцев
   ctx.fillStyle = flash ? '#ffffff' : wingCol;
   ctx.beginPath();
   ctx.moveTo(0, 6);
@@ -423,14 +409,12 @@ function drawUniqueEnemy(ctx, e) {
   ctx.fill();
   ctx.stroke();
 
-  // Фюзеляж
   ctx.fillStyle = flash ? '#ffffff' : bodyCol;
   ctx.beginPath();
   ctx.ellipse(0, 2, 14, 22, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
 
-  // Носовая пушка
   ctx.fillStyle = '#ffbe0b';
   ctx.beginPath();
   ctx.moveTo(-5, 20); ctx.lineTo(0, 28); ctx.lineTo(5, 20);
@@ -438,14 +422,12 @@ function drawUniqueEnemy(ctx, e) {
   ctx.fill();
   ctx.stroke();
 
-  // Кабина пилота
   ctx.fillStyle = flash ? '#ffffff' : domeCol;
   ctx.beginPath();
   ctx.arc(0, 2, 7.5, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
 
-  // Мозоли/бородавки на кораблях пришельцев или заклёпки
   if (hasWarts) {
     drawWarts(ctx, [[-16, -2, 3.2], [16, -2, 3.2], [-11, 10, 2.8], [11, 10, 2.8]], wartCol, '#ffffff');
   } else {
@@ -464,31 +446,6 @@ function drawUniqueEnemy(ctx, e) {
 }
 
 function drawUniqueBoss(ctx, b, lvl, player, H) {
-  if (b.crossLasers && b.crossLasers.active) {
-    ctx.save();
-    const angle = b.crossLasers.angle;
-    [-1, 1].forEach(dir => {
-      ctx.save();
-      ctx.translate(b.x, b.y + 15);
-      ctx.rotate(dir * angle);
-      if (b.crossLasers.charging) {
-        ctx.strokeStyle = 'rgba(0, 245, 212, 0.7)';
-        ctx.lineWidth = 3;
-        ctx.setLineDash([10, 8]);
-        ctx.beginPath();
-        ctx.moveTo(0, 0); ctx.lineTo(0, H);
-        ctx.stroke();
-      } else {
-        ctx.fillStyle = 'rgba(0, 245, 212, 0.35)';
-        ctx.fillRect(-18, 0, 36, H);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-6, 0, 12, H);
-      }
-      ctx.restore();
-    });
-    ctx.restore();
-  }
-
   if (b.laserState === 'charge') {
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 0, 110, 0.75)';
@@ -517,7 +474,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   const flash = b.hitFlash > 0;
   const lookX = player ? Math.max(-4, Math.min(4, (player.x - b.x) * 0.02)) : 0;
 
-  // Щупальца осьминогов с присосками/мозолями
   const tentacleCount = lvl.id === 10 ? 6 : 4;
   for (let i = 0; i < tentacleCount; i++) {
     const t = i - (tentacleCount - 1) / 2;
@@ -551,7 +507,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     });
   }
 
-  // Купол осьминога-пожирателя
   ctx.fillStyle = flash ? '#ffffff' : lvl.bossColor;
   ctx.strokeStyle = INK;
   ctx.lineWidth = 4;
@@ -563,7 +518,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   ctx.fill();
   ctx.stroke();
 
-  // Мозоли на голове осьминога
   drawWarts(
     ctx,
     [[-38, -18, 5.5], [38, -18, 5.5], [-42, 6, 4.8], [42, 6, 4.8], [-18, -38, 4.5], [18, -38, 4.5]],
@@ -571,7 +525,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     lvl.accent
   );
 
-  // Корона
   ctx.fillStyle = '#ffd166';
   ctx.beginPath();
   ctx.moveTo(-22, -48); ctx.lineTo(-12, -74); ctx.lineTo(0, -54); ctx.lineTo(12, -74); ctx.lineTo(22, -48);
@@ -579,7 +532,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   ctx.fill();
   ctx.stroke();
 
-  // Глаза босса
   [-20, 20].forEach(ex => {
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = INK;
