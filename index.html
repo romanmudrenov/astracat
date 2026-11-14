@@ -4,16 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Астро-Кот</title>
-  <link rel="stylesheet" href="css/style.css?v=3" />
+  <link rel="stylesheet" href="css/style.css?v=4" />
 </head>
 <body>
   <div id="game-wrap">
     <canvas id="game"></canvas>
 
-    <!-- Верхняя панель управления в полёте -->
+    <!-- Верхняя панель управления -->
     <div class="hud-top-right">
       <button id="pause-btn" class="icon-btn hidden" title="Пауза (P)">⏸</button>
-      <button id="settings-open-btn" class="icon-btn" title="Настройки синтезатора">⚙️</button>
+      <button id="settings-open-btn" class="icon-btn" title="Настройки звука">⚙️</button>
       <button id="mute-btn" class="icon-btn" title="Звук (M)">🔊</button>
     </div>
 
@@ -34,14 +34,14 @@
         
         <div class="selected-level-box" id="selected-level-info">
           <strong>Сектор 1: Звёздная Бухта</strong><br>
-          <span>Враги: Слизни-НЛО и Метеоры • Босс: Доктор Кракен-Бот</span>
+          <span>Босс: Доктор Кракен-Бот</span>
         </div>
 
         <div class="bonus-legend">
-          <span>🍕 Веер</span>
-          <span>🍣 Сюрикен</span>
-          <span>🍩 Лазер</span>
-          <span>🍔 Ракеты</span>
+          <span>🍕 +Веер</span>
+          <span>🍣 +Сюрикен</span>
+          <span>🍩 +Лазер</span>
+          <span>🍔 +Ракеты</span>
           <span>🥛 Щит</span>
         </div>
 
@@ -54,22 +54,46 @@
       </div>
     </div>
 
-    <!-- НАСТРОЙКИ ПОЛИФОНИЧЕСКОГО СИНТЕЗАТОРА -->
+    <!-- СЮЖЕТНАЯ ЗАСТАВКА ПЕРЕД МИССИЕЙ -->
+    <div id="intro-overlay" class="overlay hidden">
+      <div class="card intro-card">
+        <div class="intro-hero-art" id="intro-hero-art">
+          <div class="intro-cat-badge">🐱🚀</div>
+          <div class="intro-sector-tag" id="intro-sector-tag">СЕКТОР 1</div>
+        </div>
+        <h2 id="intro-title">ЗВЁЗДНАЯ БУХТА</h2>
+        <p class="intro-story" id="intro-story">
+          Астро-Кот выходит на орбиту! Собирай космическую еду, чтобы объединить её в Омега-Оружие!
+        </p>
+        <div class="intro-intel" id="intro-intel">
+          <div>👾 <b>Враги:</b> Слизни-НЛО и Зубастые Метеоры</div>
+          <div>👑 <b>Босс:</b> Доктор Кракен-Бот</div>
+          <div>⚡ <b>Оружие босса:</b> Плазменный веер и Мега-Луч</div>
+        </div>
+        <div class="btn-row">
+          <button id="intro-launch-btn" class="btn-play">ЗАПУСТИТЬ ДВИГАТЕЛИ! 🔥</button>
+          <button id="intro-back-btn" class="btn-secondary">НАЗАД</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- НАСТРОЙКИ ЗВУКА И ТРЕКОВ -->
     <div id="settings-overlay" class="overlay hidden">
       <div class="card">
         <h2>НАСТРОЙКИ ЗВУКА</h2>
 
         <div class="setting-row">
           <div class="setting-head">
-            <span>🎵 Фоновый секвенсор</span>
+            <span>🎵 Музыка (папка music/)</span>
             <button id="toggle-music" class="toggle-chip">ВКЛ</button>
           </div>
           <input id="music-vol" type="range" min="0" max="100" value="75" />
+          <div class="setting-hint">Файлы: music/level1.mp3 ... level10.mp3, boss.mp3</div>
         </div>
 
         <div class="setting-row">
           <div class="setting-head">
-            <span>💥 Звуковые эффекты (SFX)</span>
+            <span>✨ ASMR-эффекты синтезатора</span>
             <button id="toggle-sfx" class="toggle-chip">ВКЛ</button>
           </div>
           <input id="sfx-vol" type="range" min="0" max="100" value="85" />
@@ -77,17 +101,17 @@
 
         <div class="setting-row">
           <div class="setting-head">
-            <span>🎹 Характер звучания</span>
+            <span>🎹 Тембр эффектов</span>
           </div>
           <div class="diff-row" id="timbre-row" style="margin-bottom:0;">
-            <button class="pill-btn active" data-timbre="classic">Мульт-синт</button>
-            <button class="pill-btn" data-timbre="chiptune">8-Бит Ретро</button>
-            <button class="pill-btn" data-timbre="space">Мягкий Пэд</button>
+            <button class="pill-btn active" data-timbre="space">ASMR Пэд</button>
+            <button class="pill-btn" data-timbre="classic">Мульт-синт</button>
+            <button class="pill-btn" data-timbre="chiptune">Ретро</button>
           </div>
         </div>
 
         <div class="btn-row" style="margin-top:14px;">
-          <button id="test-chord-btn" class="btn-secondary">🎶 Тест аккорда</button>
+          <button id="test-chord-btn" class="btn-secondary">🎶 Тест ASMR</button>
           <button id="settings-close-btn" class="btn-play">ГОТОВО ✔</button>
         </div>
       </div>
@@ -135,11 +159,11 @@
     </div>
   </div>
 
-  <!-- Подключаем все 5 модулей из папки js/ -->
-  <script src="js/synth.js?v=3"></script>
-  <script src="js/vfx.js?v=3"></script>
-  <script src="js/world3d.js?v=3"></script>
-  <script src="js/entities.js?v=3"></script>
-  <script src="js/game.js?v=3"></script>
+  <!-- Модули из папки js/ -->
+  <script src="js/synth.js?v=4"></script>
+  <script src="js/vfx.js?v=4"></script>
+  <script src="js/world3d.js?v=4"></script>
+  <script src="js/entities.js?v=4"></script>
+  <script src="js/game.js?v=4"></script>
 </body>
 </html>
