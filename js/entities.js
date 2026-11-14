@@ -6,8 +6,8 @@ const LEVELS = [
   {
     id: 1,
     name: 'Звёздная Бухта',
-    story: 'Редж выходит на орбиту Котовии-17! Слизни-НЛО, Метеоры и Космические Рыбки перекрыли путь к первым запасам.',
-    enemiesDesc: 'Слизни-НЛО, Метеоры и Космические Рыбки',
+    story: 'Редж выходит на орбиту Котовии-17! Корабли пришельцев, метеоры и космические рыбки перекрыли путь к первым запасам.',
+    enemiesDesc: 'Тарелки Пришельцев, Метеоры и Космические Рыбки',
     bossName: 'Доктор Кракен-Бот',
     bossWeapon: 'Плазменный веер и Мега-Луч',
     theme: 'space',
@@ -152,12 +152,33 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function make3DGrad(ctx, x, y, r, lightCol, midCol, darkCol) {
-  const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.08, x, y, r * 1.15);
-  g.addColorStop(0, lightCol);
-  g.addColorStop(0.55, midCol);
-  g.addColorStop(1, darkCol);
-  return g;
+// =========================================================================
+// БЫСТРЫЕ ТЕКСТУРНЫЕ ХЕЛПЕРЫ (МОЗОЛИ/БОРОДАВКИ, ЗАКЛЁПКИ, ПРИСОСКИ)
+// =========================================================================
+function drawWarts(ctx, spots, baseCol, hiCol) {
+  spots.forEach(([x, y, r]) => {
+    ctx.fillStyle = baseCol;
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = hiCol;
+    ctx.beginPath();
+    ctx.arc(x - r * 0.3, y - r * 0.3, r * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function drawRivets(ctx, points) {
+  ctx.fillStyle = '#e0fbfc';
+  points.forEach(([x, y]) => {
+    ctx.beginPath();
+    ctx.arc(x, y, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  });
 }
 
 // =========================================================================
@@ -166,17 +187,17 @@ function make3DGrad(ctx, x, y, r, lightCol, midCol, darkCol) {
 function drawFoodBonus(ctx, bn) {
   ctx.save();
   ctx.translate(bn.x, bn.y);
-  const pulse = 1 + Math.sin(bn.phase) * 0.1;
+  const pulse = 1 + Math.sin(bn.phase) * 0.08;
   ctx.scale(pulse, pulse);
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
 
   const auraColors = {
-    pizza:  'rgba(255, 183, 3, 0.34)',
-    sushi:  'rgba(6, 214, 160, 0.34)',
-    donut:  'rgba(255, 112, 166, 0.36)',
-    burger: 'rgba(247, 127, 0, 0.34)',
-    milk:   'rgba(72, 219, 251, 0.36)'
+    pizza:  'rgba(255, 183, 3, 0.32)',
+    sushi:  'rgba(6, 214, 160, 0.32)',
+    donut:  'rgba(255, 112, 166, 0.34)',
+    burger: 'rgba(247, 127, 0, 0.32)',
+    milk:   'rgba(72, 219, 251, 0.34)'
   };
 
   ctx.fillStyle = auraColors[bn.type] || 'rgba(255,255,255,0.28)';
@@ -188,7 +209,7 @@ function drawFoodBonus(ctx, bn) {
   ctx.stroke();
 
   if (bn.type === 'pizza') {
-    ctx.fillStyle = make3DGrad(ctx, 0, 0, 15, '#fff3b0', '#ffd166', '#e09f3e');
+    ctx.fillStyle = '#ffd166';
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
@@ -196,19 +217,16 @@ function drawFoodBonus(ctx, bn) {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-
     ctx.fillStyle = '#e07a5f';
     roundRectPath(ctx, -14, 8, 28, 5, 2.5);
     ctx.fill();
     ctx.stroke();
-
     ctx.fillStyle = '#ff5964';
     ctx.beginPath();
     ctx.arc(-3, 2, 2.6, 0, Math.PI * 2);
     ctx.arc(4, 4, 2.4, 0, Math.PI * 2);
     ctx.arc(0, -5, 2.2, 0, Math.PI * 2);
     ctx.fill();
-
   } else if (bn.type === 'sushi') {
     ctx.fillStyle = '#1e1633';
     ctx.strokeStyle = INK;
@@ -216,11 +234,9 @@ function drawFoodBonus(ctx, bn) {
     roundRectPath(ctx, -13, -10, 26, 20, 8);
     ctx.fill();
     ctx.stroke();
-
     ctx.fillStyle = '#fff8eb';
     roundRectPath(ctx, -10, -7, 20, 14, 6);
     ctx.fill();
-
     ctx.fillStyle = '#ff5964';
     ctx.beginPath();
     ctx.arc(-2, 0, 4, 0, Math.PI * 2);
@@ -229,26 +245,22 @@ function drawFoodBonus(ctx, bn) {
     ctx.beginPath();
     ctx.arc(4, 1, 3, 0, Math.PI * 2);
     ctx.fill();
-
   } else if (bn.type === 'donut') {
-    ctx.fillStyle = make3DGrad(ctx, 0, 0, 15, '#ffd6a5', '#f4a261', '#bc6c25');
+    ctx.fillStyle = '#f4a261';
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.arc(0, 0, 14, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-
-    ctx.fillStyle = make3DGrad(ctx, 0, 0, 12, '#ffc2d1', '#ff70a6', '#c9184a');
+    ctx.fillStyle = '#ff70a6';
     ctx.beginPath();
     ctx.arc(0, 0, 11.5, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.fillStyle = '#1e1633';
     ctx.beginPath();
     ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
     ctx.fill();
-
   } else if (bn.type === 'burger') {
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.3;
@@ -262,24 +274,21 @@ function drawFoodBonus(ctx, bn) {
     ctx.stroke();
     ctx.fillStyle = '#8ac926';
     ctx.fillRect(-14, -2, 28, 3);
-    ctx.fillStyle = make3DGrad(ctx, 0, -4, 13, '#ffe169', '#ffb703', '#ca6702');
+    ctx.fillStyle = '#ffb703';
     ctx.beginPath();
     ctx.arc(0, -1, 13, Math.PI, 0);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-
   } else {
-    ctx.fillStyle = make3DGrad(ctx, 0, 0, 16, '#ffffff', '#edf2f4', '#adb5bd');
+    ctx.fillStyle = '#edf2f4';
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.5;
     roundRectPath(ctx, -9, -7, 18, 20, 4);
     ctx.fill();
     ctx.stroke();
-
     ctx.fillStyle = '#48dbfb';
     ctx.fillRect(-7, -1, 14, 8);
-
     ctx.fillStyle = '#ff5964';
     roundRectPath(ctx, -6, -12, 12, 5, 2);
     ctx.fill();
@@ -295,7 +304,7 @@ function drawFoodBonus(ctx, bn) {
 }
 
 // =========================================================================
-// 2. СНАРЯДЫ ИГРОКА В 3D-СТИЛЕ
+// 2. СНАРЯДЫ ИГРОКА
 // =========================================================================
 function drawPlayerBullet(ctx, b) {
   ctx.save();
@@ -305,7 +314,7 @@ function drawPlayerBullet(ctx, b) {
 
   if (b.kind === 'pizza_slice') {
     ctx.rotate(Math.atan2(b.vy, b.vx) + Math.PI / 2);
-    ctx.fillStyle = make3DGrad(ctx, 0, 0, 11, '#fff3b0', '#ffd166', '#e09f3e');
+    ctx.fillStyle = '#ffd166';
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.2;
     ctx.beginPath();
@@ -317,10 +326,9 @@ function drawPlayerBullet(ctx, b) {
     ctx.beginPath();
     ctx.arc(0, 1, 2.4, 0, Math.PI * 2);
     ctx.fill();
-
   } else if (b.kind === 'shuriken') {
     ctx.rotate(b.rot || 0);
-    ctx.fillStyle = make3DGrad(ctx, 0, 0, 11, '#9ef01a', '#06d6a0', '#007f5f');
+    ctx.fillStyle = '#06d6a0';
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.2;
     ctx.beginPath();
@@ -337,9 +345,8 @@ function drawPlayerBullet(ctx, b) {
     ctx.beginPath();
     ctx.arc(0, 0, 3, 0, Math.PI * 2);
     ctx.fill();
-
   } else if (b.kind === 'burger_rocket') {
-    ctx.fillStyle = make3DGrad(ctx, 0, 0, 14, '#ffd166', '#ff9f1c', '#bc6c25');
+    ctx.fillStyle = '#ff9f1c';
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.5;
     roundRectPath(ctx, -7, -12, 14, 24, 7);
@@ -350,17 +357,15 @@ function drawPlayerBullet(ctx, b) {
     ctx.arc(0, -8, 7, Math.PI, 0);
     ctx.fill();
     ctx.stroke();
-
   } else if (b.kind === 'laser_bolt') {
-    ctx.fillStyle = make3DGrad(ctx, 0, 0, 14, '#ffffff', '#ff70a6', '#c9184a');
+    ctx.fillStyle = '#ff70a6';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.8;
     roundRectPath(ctx, -4, -18, 8, 36, 4);
     ctx.fill();
     ctx.stroke();
-
   } else {
-    ctx.fillStyle = make3DGrad(ctx, 0, 0, b.r * 1.4, '#ffffff', b.color, '#1d3557');
+    ctx.fillStyle = b.color;
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
@@ -373,7 +378,7 @@ function drawPlayerBullet(ctx, b) {
 }
 
 // =========================================================================
-// 3. 30 УНИКАЛЬНЫХ ОБЪЁМНЫХ 3D-ВРАГОВ (3 ВИДА НА КАЖДЫЙ ИЗ 10 СЕКТОРОВ)
+// 3. ДЕТАЛИЗИРОВАННЫЕ 30 ВРАГОВ С МОЗОЛЯМИ, БОРОДАВКАМИ, ЗАКЛЁПКАМИ И ЩУПАЛЬЦАМИ
 // =========================================================================
 function drawUniqueEnemy(ctx, e) {
   ctx.save();
@@ -381,35 +386,55 @@ function drawUniqueEnemy(ctx, e) {
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   const flash = e.hitFlash > 0;
-  const g3d = (l, m, d) => (flash ? '#ffffff' : make3DGrad(ctx, 0, 0, e.r, l, m, d));
+  const col = (c) => (flash ? '#ffffff' : c);
 
-  // Объёмная 3D-тень под врагом
+  // Быстрая 3D-тень без создания градиента
   ctx.fillStyle = 'rgba(8, 5, 22, 0.34)';
   ctx.beginPath();
-  ctx.ellipse(5, e.r + 7, e.r * 0.78, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(4, e.r + 6, e.r * 0.75, 6, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.strokeStyle = INK;
   ctx.lineWidth = 3;
 
   switch (e.kind) {
-    // --- СЕКТОР 1 ---
+    // --- СЕКТОР 1: Корабль пришельцев с люками/заклёпками, Метеор, Рыбка с чешуёй ---
     case 'ufo':
-      ctx.fillStyle = g3d('#d8f3dc', '#8ac926', '#386641');
+      // Нижняя броня тарелки
+      ctx.fillStyle = col('#52b788');
       ctx.beginPath();
-      ctx.ellipse(0, 5, 24, 11, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 7, 25, 11, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = g3d('#ffffff', '#bde0fe', '#4ea8de');
+
+      // Верхняя палуба и заклёпки
+      ctx.fillStyle = col('#8ac926');
       ctx.beginPath();
-      ctx.arc(0, 1, 13, Math.PI, 0);
+      ctx.ellipse(0, 3, 24, 9, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+
+      // Посадочные опоры / люки и огни иллюминаторов
+      ctx.fillStyle = '#ffbe0b';
+      [-14, 0, 14].forEach(lx => {
+        ctx.beginPath();
+        ctx.arc(lx, 6, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      drawRivets(ctx, [[-19, 2], [-8, 1], [8, 1], [19, 2]]);
+
+      // Прозрачный купол с пришельцем-мозгом в мозолях
+      ctx.fillStyle = col('rgba(189, 224, 254, 0.75)');
+      ctx.beginPath();
+      ctx.arc(0, 0, 13, Math.PI, 0);
+      ctx.fill();
+      ctx.stroke();
+      drawWarts(ctx, [[-5, -6, 2.2], [5, -6, 2.2]], '#9b5de5', '#e0aaff');
       break;
 
     case 'meteor':
       ctx.rotate(e.rot || 0);
-      ctx.fillStyle = g3d('#f4a261', '#e07a5f', '#6f1d1b');
+      ctx.fillStyle = col('#bc6c25');
       ctx.beginPath();
       for (let i = 0; i < 9; i++) {
         const a = (Math.PI * 2 * i) / 9;
@@ -420,24 +445,25 @@ function drawUniqueEnemy(ctx, e) {
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
+      // Объёмные кратеры и наросты на метеорите
+      drawWarts(ctx, [[-9, -8, 4.2], [10, 6, 3.6], [-4, 11, 3.2], [8, -10, 2.8]], '#7f4f24', '#dda15e');
       ctx.rotate(-(e.rot || 0));
       break;
 
     case 'space_fish':
-      // Космическая Рыбка-Пиранья с плавниками и хвостом
-      ctx.fillStyle = g3d('#ffbe0b', '#fb5607', '#9b2226');
+      ctx.fillStyle = col('#fb5607');
       ctx.beginPath();
       ctx.moveTo(0, -24); ctx.lineTo(-12, -34); ctx.lineTo(12, -34);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
-
-      ctx.fillStyle = g3d('#90e0ef', '#00b4d8', '#023e8a');
+      ctx.fillStyle = col('#0096c7');
       ctx.beginPath();
       ctx.ellipse(0, 2, 16, 22, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-
+      // Чешуйки и шипы на спине
+      drawWarts(ctx, [[-7, 8, 3], [7, 8, 3], [0, 14, 3.2]], '#023e8a', '#90e0ef');
       ctx.fillStyle = '#ffbe0b';
       ctx.beginPath();
       ctx.moveTo(-15, 0); ctx.lineTo(-25, -8); ctx.lineTo(-16, 10);
@@ -446,21 +472,22 @@ function drawUniqueEnemy(ctx, e) {
       ctx.stroke();
       break;
 
-    // --- СЕКТОР 2 ---
+    // --- СЕКТОР 2: Зефир с подпалинами, Леденец, Имбирный пряник ---
     case 'marshmallow':
-      ctx.fillStyle = g3d('#ffffff', '#ffccd5', '#ff758f');
+      ctx.fillStyle = col('#ffccd5');
       roundRectPath(ctx, -20, -22, 40, 44, 15);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = g3d('#ffccd5', '#ff70a6', '#a4133c');
+      ctx.fillStyle = col('#ff70a6');
       ctx.fillRect(-18, -4, 36, 8);
+      drawWarts(ctx, [[-11, -13, 3], [11, 12, 3.4]], '#ff8fab', '#ffffff');
       break;
 
     case 'lollipop':
       ctx.fillStyle = '#fff8eb';
       ctx.fillRect(-3, 8, 6, 18);
       ctx.strokeRect(-3, 8, 6, 18);
-      ctx.fillStyle = g3d('#ffccd5', '#ff4d6d', '#800f2f');
+      ctx.fillStyle = col('#ff4d6d');
       ctx.beginPath();
       ctx.arc(0, -4, 18, 0, Math.PI * 2);
       ctx.fill();
@@ -475,133 +502,114 @@ function drawUniqueEnemy(ctx, e) {
       break;
 
     case 'gingerbread':
-      // Злой Имбирный Пряник с глазурью и пуговками
-      ctx.fillStyle = g3d('#e6ccb2', '#b08968', '#7f5539');
-      // Ручки и ножки
+      ctx.fillStyle = col('#b08968');
       roundRectPath(ctx, -24, -4, 48, 10, 5);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       roundRectPath(ctx, -13, 6, 10, 18, 5);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       roundRectPath(ctx, 3, 6, 10, 18, 5);
-      ctx.fill();
-      ctx.stroke();
-      // Голова и туловище
+      ctx.fill(); ctx.stroke();
       roundRectPath(ctx, -12, -6, 24, 20, 8);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       ctx.beginPath();
       ctx.arc(0, -11, 13, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      // Пуговки-леденцы
+      ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#ff5964';
       ctx.beginPath();
-      ctx.arc(0, 4, 2.5, 0, Math.PI * 2);
-      ctx.arc(0, 10, 2.5, 0, Math.PI * 2);
+      ctx.arc(0, 5, 2.6, 0, Math.PI * 2);
+      ctx.arc(0, 11, 2.6, 0, Math.PI * 2);
       ctx.fill();
       break;
 
-    // --- СЕКТОР 3 ---
+    // --- СЕКТОР 3: Пончик с присыпкой, Кекс, Мармеладный мишка ---
     case 'angry_donut':
-      ctx.fillStyle = g3d('#ffd6a5', '#f4a261', '#9c6644');
+      ctx.fillStyle = col('#f4a261');
       ctx.beginPath();
       ctx.arc(0, 0, 23, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = g3d('#ffc2d1', '#ff70a6', '#c9184a');
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = col('#ff70a6');
       ctx.beginPath();
       ctx.arc(0, 0, 19, 0, Math.PI * 2);
       ctx.fill();
+      // Объёмные драже-мозоли на глазури
+      drawWarts(ctx, [[-12, -9, 2.5], [12, -9, 2.5], [-11, 11, 2.5], [11, 11, 2.5]], '#ffd166', '#ffffff');
       ctx.fillStyle = '#2b193d';
       ctx.beginPath();
       ctx.arc(0, 0, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       break;
 
     case 'cupcake':
-      ctx.fillStyle = g3d('#caf0f8', '#48dbfb', '#0077b6');
+      ctx.fillStyle = col('#48dbfb');
       ctx.beginPath();
       ctx.moveTo(-16, 4); ctx.lineTo(16, 4); ctx.lineTo(12, 22); ctx.lineTo(-12, 22);
       ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = g3d('#fff3b0', '#ffbe0b', '#ca6702');
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = col('#ffbe0b');
       ctx.beginPath();
       ctx.arc(0, 2, 18, Math.PI, 0);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = g3d('#ffccd5', '#ff006e', '#800f2f');
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = col('#ff006e');
       ctx.beginPath();
       ctx.arc(0, -18, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       break;
 
     case 'gummy_bear':
-      // Мармеладный Мишка-Перехватчик
-      ctx.fillStyle = g3d('#9ef01a', '#38b000', '#007200');
+      ctx.fillStyle = col('#38b000');
       ctx.beginPath();
       ctx.arc(-11, -18, 6, 0, Math.PI * 2);
       ctx.arc(11, -18, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       roundRectPath(ctx, -16, -16, 32, 36, 14);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawWarts(ctx, [[0, 10, 4.5]], '#70e000', '#ccff33');
       break;
 
-    // --- СЕКТОР 4 ---
+    // --- СЕКТОР 4: Мухоловка в пятнах, Споровый жук с наростами, Улитка ---
     case 'flytrap':
-      ctx.fillStyle = g3d('#b7e4c7', '#38b000', '#1b4332');
+      ctx.fillStyle = col('#38b000');
       ctx.beginPath();
       ctx.arc(0, 0, 22, 0.25 * Math.PI, 1.75 * Math.PI);
       ctx.lineTo(0, 0);
       ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawWarts(ctx, [[-9, -10, 3.2], [-12, 4, 2.8], [4, -14, 2.8]], '#ff5964', '#ffccd5');
       break;
 
     case 'spore_bug':
-      ctx.fillStyle = g3d('#d8f3dc', '#80ed99', '#2d6a4f');
+      ctx.fillStyle = col('#80ed99');
       ctx.beginPath();
       ctx.ellipse(-18, -4, 12, 7, -0.4, 0, Math.PI * 2);
       ctx.ellipse(18, -4, 12, 7, 0.4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = g3d('#95d5b2', '#007f5f', '#081c15');
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = col('#007f5f');
       ctx.beginPath();
       ctx.ellipse(0, 2, 14, 20, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawWarts(ctx, [[-6, 9, 2.8], [6, 9, 2.8], [0, 15, 3]], '#52b788', '#d8f3dc');
       break;
 
     case 'space_snail':
-      // Космо-Улитка со спиральным панцирем
-      ctx.fillStyle = g3d('#d8f3dc', '#74c69d', '#1b4332');
+      ctx.fillStyle = col('#74c69d');
       roundRectPath(ctx, -20, 4, 40, 14, 7);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = g3d('#fff3b0', '#ffb703', '#ca6702');
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = col('#ffb703');
       ctx.beginPath();
       ctx.arc(2, -4, 16, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawWarts(ctx, [[-4, -8, 3], [8, -2, 3]], '#e07a5f', '#fff3b0');
       break;
 
-    // --- СЕКТОР 5 ---
+    // --- СЕКТОР 5: Снеговик, Сосулька, Кристальный паук ---
     case 'snow_golem':
-      ctx.fillStyle = g3d('#ffffff', '#caf0f8', '#48cae4');
+      ctx.fillStyle = col('#caf0f8');
       ctx.beginPath();
       ctx.arc(0, 8, 18, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       ctx.beginPath();
       ctx.arc(0, -12, 13, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#ff9f1c';
       ctx.beginPath();
       ctx.moveTo(0, -11); ctx.lineTo(10, -9); ctx.lineTo(0, -7);
@@ -610,16 +618,14 @@ function drawUniqueEnemy(ctx, e) {
       break;
 
     case 'icicle':
-      ctx.fillStyle = g3d('#ffffff', '#90e0ef', '#0077b6');
+      ctx.fillStyle = col('#90e0ef');
       ctx.beginPath();
       ctx.moveTo(-16, -20); ctx.lineTo(16, -20); ctx.lineTo(0, 26);
       ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       break;
 
     case 'crystal_spider':
-      // Кристальный Паук с 6 лапками
       ctx.strokeStyle = '#90e0ef';
       ctx.lineWidth = 3.5;
       [-10, 0, 10].forEach(oy => {
@@ -629,48 +635,45 @@ function drawUniqueEnemy(ctx, e) {
       });
       ctx.strokeStyle = INK;
       ctx.lineWidth = 3;
-      ctx.fillStyle = g3d('#caf0f8', '#00b4d8', '#03045e');
+      ctx.fillStyle = col('#00b4d8');
       ctx.beginPath();
       ctx.arc(0, 0, 16, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawWarts(ctx, [[-7, 7, 2.6], [7, 7, 2.6]], '#03045e', '#caf0f8');
       break;
 
-    // --- СЕКТОР 6 ---
+    // --- СЕКТОР 6: Лавовый элементаль в наростах, Скорпион, Магма-бомба ---
     case 'lava_elem':
-      ctx.fillStyle = g3d('#ffccd5', '#e63946', '#590d22');
+      ctx.fillStyle = col('#e63946');
       roundRectPath(ctx, -22, -20, 44, 40, 12);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawWarts(ctx, [[-12, 10, 3.5], [12, 10, 3.5], [0, 13, 3]], '#590d22', '#ffba08');
       ctx.fillStyle = '#ffba08';
       ctx.beginPath();
       ctx.moveTo(-14, -20); ctx.lineTo(-8, -30); ctx.lineTo(-2, -20);
       ctx.moveTo(2, -20); ctx.lineTo(8, -30); ctx.lineTo(14, -20);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       break;
 
     case 'fire_scorp':
-      ctx.fillStyle = g3d('#ffd166', '#f77f00', '#9b2226');
+      ctx.fillStyle = col('#f77f00');
       ctx.beginPath();
       ctx.ellipse(0, 4, 18, 22, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawWarts(ctx, [[-8, 10, 2.8], [8, 10, 2.8]], '#9b2226', '#ffd166');
       ctx.fillStyle = '#ffbe0b';
       ctx.beginPath();
       ctx.arc(-20, 14, 7, 0, Math.PI * 2);
       ctx.arc(20, 14, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       break;
 
     case 'magma_bomb':
-      // Раскалённая Магма-Бомба с фитилём
-      ctx.fillStyle = g3d('#ff9f1c', '#370617', '#03071e');
+      ctx.fillStyle = col('#370617');
       ctx.beginPath();
       ctx.arc(0, 2, 19, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawRivets(ctx, [[-11, -6], [11, -6], [-11, 10], [11, 10]]);
       ctx.strokeStyle = '#ffbe0b';
       ctx.lineWidth = 4;
       ctx.beginPath();
@@ -680,46 +683,44 @@ function drawUniqueEnemy(ctx, e) {
       ctx.lineWidth = 3;
       break;
 
-    // --- СЕКТОР 7 ---
+    // --- СЕКТОР 7: Корабли и турели Кибер-Сити с пластинами и заклёпками ---
     case 'neon_cube':
-      ctx.fillStyle = g3d('#7209b7', '#3a0ca3', '#10002b');
+      ctx.fillStyle = col('#3a0ca3');
       ctx.strokeStyle = '#00f5d4';
       ctx.fillRect(-20, -20, 40, 40);
       ctx.strokeRect(-20, -20, 40, 40);
       ctx.strokeStyle = '#f15bb5';
       ctx.strokeRect(-11, -11, 22, 22);
+      drawRivets(ctx, [[-16, -16], [16, -16], [-16, 16], [16, 16]]);
       ctx.strokeStyle = INK;
       break;
 
     case 'cyber_turret':
-      ctx.fillStyle = g3d('#ffc2d1', '#f15bb5', '#560bad');
+      ctx.fillStyle = col('#f15bb5');
       ctx.beginPath();
       ctx.moveTo(0, 24); ctx.lineTo(-24, -14); ctx.lineTo(0, -6); ctx.lineTo(24, -14);
       ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawRivets(ctx, [[-14, -9], [14, -9], [0, 12]]);
       break;
 
     case 'holo_drone':
-      // Голо-Дрон с боковыми турбинами
-      ctx.fillStyle = g3d('#caf0f8', '#00f5d4', '#0077b6');
+      ctx.fillStyle = col('#00b4d8');
       ctx.beginPath();
       ctx.ellipse(0, 0, 26, 12, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawRivets(ctx, [[-18, 0], [18, 0]]);
       ctx.fillStyle = '#f15bb5';
       ctx.beginPath();
       ctx.arc(0, 0, 11, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       break;
 
     // --- СЕКТОР 8 ---
     case 'mummy_bot':
-      ctx.fillStyle = g3d('#fff3b0', '#f4e285', '#bc6c25');
+      ctx.fillStyle = col('#f4e285');
       roundRectPath(ctx, -19, -22, 38, 44, 15);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       ctx.beginPath();
       ctx.moveTo(-18, -8); ctx.lineTo(18, -4);
       ctx.moveTo(-18, 6);  ctx.lineTo(18, 10);
@@ -727,75 +728,70 @@ function drawUniqueEnemy(ctx, e) {
       break;
 
     case 'sand_drone':
-      ctx.fillStyle = g3d('#ffd166', '#e09f3e', '#7f4f24');
+      ctx.fillStyle = col('#e09f3e');
       ctx.beginPath();
       ctx.moveTo(0, -22); ctx.lineTo(25, 16); ctx.lineTo(-25, 16);
       ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawRivets(ctx, [[-14, 11], [0, 11], [14, 11]]);
       break;
 
     case 'scarab_bot':
-      // Золотой Скарабей с крыльями
-      ctx.fillStyle = g3d('#fff3b0', '#ffbe0b', '#9c6644');
+      ctx.fillStyle = col('#ffbe0b');
       ctx.beginPath();
       ctx.ellipse(0, 2, 19, 21, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       ctx.beginPath();
       ctx.moveTo(0, -19); ctx.lineTo(0, 23);
       ctx.stroke();
+      drawWarts(ctx, [[-9, 9, 2.8], [9, 9, 2.8]], '#bc6c25', '#fff3b0');
       break;
 
     // --- СЕКТОР 9 ---
     case 'ghost_orb':
-      ctx.fillStyle = g3d('#ffffff', '#bdb2ff', '#5a189a');
+      ctx.fillStyle = col('#bdb2ff');
       ctx.beginPath();
       ctx.arc(0, -4, 20, Math.PI, 0);
       ctx.lineTo(20, 18); ctx.lineTo(10, 10); ctx.lineTo(0, 18);
       ctx.lineTo(-10, 10); ctx.lineTo(-20, 18);
       ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawWarts(ctx, [[-11, -11, 2.8], [11, -9, 2.5]], '#7209b7', '#ffffff');
       break;
 
     case 'skull_bot':
-      ctx.fillStyle = g3d('#ffffff', '#e2ece9', '#6c757d');
+      ctx.fillStyle = col('#e2ece9');
       ctx.beginPath();
       ctx.arc(0, -4, 19, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       roundRectPath(ctx, -11, 8, 22, 12, 4);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawRivets(ctx, [[-13, -10], [13, -10]]);
       break;
 
     case 'ghost_lantern':
-      // Призрачный Фонарь с эфирным пламенем
-      ctx.fillStyle = g3d('#e0aaff', '#7209b7', '#240046');
+      ctx.fillStyle = col('#7209b7');
       roundRectPath(ctx, -15, -18, 30, 36, 8);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#72efdd';
       roundRectPath(ctx, -9, -10, 18, 20, 4);
       ctx.fill();
       break;
 
-    // --- СЕКТОР 10 ---
+    // --- СЕКТОР 10: Тяжёлый броненосец с заклёпками, мина, имперский крейсер ---
     case 'dreadnought':
-      ctx.fillStyle = g3d('#ff758f', '#800f2f', '#2b0510');
+      ctx.fillStyle = col('#800f2f');
       roundRectPath(ctx, -26, -20, 52, 40, 10);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawRivets(ctx, [[-20, -14], [0, -14], [20, -14], [-20, 10], [20, 10]]);
       ctx.fillStyle = '#ff006e';
       ctx.fillRect(-20, 14, 10, 10);
       ctx.fillRect(10, 14, 10, 10);
       break;
 
     case 'star_mine':
-      // Звёздная Шипастая Мина Цитадели
       ctx.rotate(e.rot || 0);
-      ctx.fillStyle = g3d('#ffbe0b', '#ff006e', '#370617');
+      ctx.fillStyle = col('#ff006e');
       ctx.beginPath();
       for (let i = 0; i < 12; i++) {
         const a = (Math.PI * i) / 6;
@@ -804,30 +800,28 @@ function drawUniqueEnemy(ctx, e) {
         else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
       }
       ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
       ctx.rotate(-(e.rot || 0));
       break;
 
     case 'royal_guard':
     default:
-      ctx.fillStyle = g3d('#ffccd5', '#d90429', '#590d22');
+      ctx.fillStyle = col('#d90429');
       ctx.beginPath();
       ctx.moveTo(0, 24); ctx.lineTo(-24, -16); ctx.lineTo(0, -24); ctx.lineTo(24, -16);
       ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
+      drawRivets(ctx, [[-14, -13], [14, -13], [0, 12]]);
       break;
   }
 
-  // Выпуклые 3D-глаза
+  // Объёмные глаза с бликами
   if (e.kind !== 'flytrap') {
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(-7, -2, 4.6, 0, Math.PI * 2);
     ctx.arc(7, -2, 4.6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
 
     ctx.fillStyle = INK;
     ctx.beginPath();
@@ -842,10 +836,10 @@ function drawUniqueEnemy(ctx, e) {
     ctx.fill();
   }
 
-  // Глянцевый 3D-блик сверху слева
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+  // Глянцевый блик
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.30)';
   ctx.beginPath();
-  ctx.ellipse(-8, -11, 6, 3, -0.4, 0, Math.PI * 2);
+  ctx.ellipse(-8, -11, 5.5, 2.6, -0.4, 0, Math.PI * 2);
   ctx.fill();
 
   if (e.maxHp > 2 && e.hp < e.maxHp) {
@@ -860,7 +854,7 @@ function drawUniqueEnemy(ctx, e) {
 }
 
 // =========================================================================
-// 4. 10 УНИКАЛЬНЫХ БОССОВ В ОБЪЁМНОМ 3D-СТИЛЕ
+// 4. ДЕТАЛИЗИРОВАННЫЕ 10 БОССОВ (МОЗОЛИ/БОРОДАВКИ, ПРИСОСКИ НА ЩУПАЛЬЦАХ, ЗАКЛЁПКИ)
 // =========================================================================
 function drawUniqueBoss(ctx, b, lvl, player, H) {
   if (b.crossLasers && b.crossLasers.active) {
@@ -875,8 +869,7 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
         ctx.lineWidth = 3;
         ctx.setLineDash([10, 8]);
         ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(0, H);
+        ctx.moveTo(0, 0); ctx.lineTo(0, H);
         ctx.stroke();
       } else {
         ctx.fillStyle = 'rgba(0, 245, 212, 0.35)';
@@ -895,8 +888,7 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.lineWidth = 3.5;
     ctx.setLineDash([10, 8]);
     ctx.beginPath();
-    ctx.moveTo(b.laserX, b.y + 40);
-    ctx.lineTo(b.laserX, H);
+    ctx.moveTo(b.laserX, b.y + 40); ctx.lineTo(b.laserX, H);
     ctx.stroke();
     ctx.restore();
   } else if (b.laserState === 'fire') {
@@ -917,15 +909,15 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
 
   ctx.fillStyle = 'rgba(8, 5, 22, 0.42)';
   ctx.beginPath();
-  ctx.ellipse(10, 56, 58, 18, 0, 0, Math.PI * 2);
+  ctx.ellipse(8, 54, 56, 16, 0, 0, Math.PI * 2);
   ctx.fill();
 
   const flash = b.hitFlash > 0;
-  const gBoss = (l, m, d) => (flash ? '#ffffff' : make3DGrad(ctx, 0, 0, 62, l, m, d));
+  const col = (c) => (flash ? '#ffffff' : c);
   const lookX = player ? Math.max(-4, Math.min(4, (player.x - b.x) * 0.02)) : 0;
 
   if (lvl.id === 2) {
-    ctx.fillStyle = gBoss('#ffe5ec', '#ff70a6', '#a4133c');
+    ctx.fillStyle = col('#ff70a6');
     ctx.strokeStyle = INK;
     ctx.lineWidth = 4;
     [
@@ -935,37 +927,35 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ].forEach(pf => {
       ctx.beginPath();
       ctx.arc(pf.x, pf.y, pf.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
     });
+    // Сахарные наросты на Королеве Зефира
+    drawWarts(ctx, [[-42, 4, 5], [42, 4, 5], [-30, -24, 4.5], [30, -24, 4.5]], '#ff4d6d', '#ffe5ec');
     ctx.fillStyle = '#ffd166';
     ctx.beginPath();
     ctx.moveTo(-22, -38); ctx.lineTo(-12, -62); ctx.lineTo(0, -45); ctx.lineTo(12, -62); ctx.lineTo(22, -38);
     ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
 
   } else if (lvl.id === 3) {
     ctx.strokeStyle = INK;
     ctx.lineWidth = 4;
-    ctx.fillStyle = gBoss('#ffd6a5', '#f4a261', '#9c6644');
+    ctx.fillStyle = col('#f4a261');
     roundRectPath(ctx, -54, 16, 108, 22, 11);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#6f1d1b';
     roundRectPath(ctx, -58, 2, 116, 16, 8);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#8ac926';
     roundRectPath(ctx, -60, -6, 120, 10, 5);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = gBoss('#ffe169', '#f77f00', '#9b2226');
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = col('#f77f00');
     ctx.beginPath();
     ctx.arc(0, -4, 54, Math.PI, 0);
     ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
+    // Кунжутные зёрна-наросты на булке
+    drawWarts(ctx, [[-32, -26, 3.5], [0, -38, 3.8], [32, -26, 3.5], [-16, -34, 3]], '#fff3b0', '#ffffff');
 
   } else if (lvl.id === 4) {
     ctx.strokeStyle = INK;
@@ -975,106 +965,121 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.fillStyle = i % 2 === 0 ? '#ffd166' : '#80ed99';
       ctx.beginPath();
       ctx.ellipse(Math.cos(a) * 44, Math.sin(a) * 34, 22, 14, a, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
     }
-    ctx.fillStyle = gBoss('#b7e4c7', '#38b000', '#1b4332');
+    ctx.fillStyle = col('#38b000');
     ctx.beginPath();
     ctx.arc(0, 0, 44, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
+    drawWarts(ctx, [[-28, -20, 5], [28, -20, 5], [-32, 14, 4.5], [32, 14, 4.5]], '#007f5f', '#b7e4c7');
 
   } else if (lvl.id === 5) {
-    ctx.fillStyle = gBoss('#ffffff', '#48cae4', '#023e8a');
+    ctx.fillStyle = col('#48cae4');
     ctx.strokeStyle = INK;
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(0, -64); ctx.lineTo(58, -10); ctx.lineTo(38, 44); ctx.lineTo(-38, 44); ctx.lineTo(-58, -10);
     ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
+    drawWarts(ctx, [[-34, -6, 5], [34, -6, 5], [0, -38, 5.5]], '#0077b6', '#caf0f8');
 
   } else if (lvl.id === 6) {
     ctx.strokeStyle = INK;
     ctx.lineWidth = 4;
     const clawWave = Math.sin(b.time * 4) * 6;
     [-64, 64].forEach((cx, idx) => {
-      ctx.fillStyle = gBoss('#fff3b0', '#ffba08', '#ca6702');
+      ctx.fillStyle = col('#ffba08');
       ctx.beginPath();
       ctx.arc(cx, 18 + (idx === 0 ? clawWave : -clawWave), 20, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fill(); ctx.stroke();
     });
-    ctx.fillStyle = gBoss('#ffccd5', '#e63946', '#590d22');
+    ctx.fillStyle = col('#e63946');
     roundRectPath(ctx, -56, -34, 112, 66, 26);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
+    drawWarts(ctx, [[-40, -18, 5], [40, -18, 5], [-42, 14, 4.5], [42, 14, 4.5]], '#800f2f', '#ffccd5');
 
   } else if (lvl.id === 7) {
     ctx.strokeStyle = INK;
     ctx.lineWidth = 4;
-    ctx.fillStyle = gBoss('#caf0f8', '#00f5d4', '#0077b6');
+    ctx.fillStyle = col('#00f5d4');
     ctx.beginPath();
     ctx.moveTo(-72, -16); ctx.lineTo(72, -16); ctx.lineTo(48, 18); ctx.lineTo(-48, 18);
     ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = gBoss('#ffc2d1', '#f15bb5', '#560bad');
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = col('#f15bb5');
     ctx.beginPath();
     ctx.moveTo(0, -56); ctx.lineTo(46, 36); ctx.lineTo(-46, 36);
     ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
+    drawRivets(ctx, [[-56, -8], [56, -8], [-28, 26], [28, 26], [0, -38]]);
 
   } else if (lvl.id === 8) {
     ctx.strokeStyle = INK;
     ctx.lineWidth = 4;
-    ctx.fillStyle = gBoss('#fff3b0', '#ff9f1c', '#bc6c25');
+    ctx.fillStyle = col('#ff9f1c');
     ctx.beginPath();
     ctx.arc(0, -46, 20, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = gBoss('#ffe169', '#e09f3e', '#7f4f24');
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = col('#e09f3e');
     ctx.beginPath();
     ctx.ellipse(0, 4, 56, 42, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
+    drawRivets(ctx, [[-42, -8], [42, -8], [-38, 18], [38, 18]]);
 
   } else if (lvl.id === 9) {
     ctx.strokeStyle = INK;
     ctx.lineWidth = 4;
-    ctx.fillStyle = gBoss('#e0aaff', '#7209b7', '#240046');
+    ctx.fillStyle = col('#7209b7');
     ctx.beginPath();
     ctx.arc(0, 0, 48, Math.PI, 0);
     ctx.lineTo(48, 38); ctx.lineTo(24, 24); ctx.lineTo(0, 40); ctx.lineTo(-24, 24); ctx.lineTo(-48, 38);
     ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
+    drawWarts(ctx, [[-34, -14, 5], [34, -14, 5], [0, -34, 4.5]], '#3c096c', '#e0aaff');
     ctx.fillStyle = '#1e1633';
     ctx.beginPath();
     ctx.moveTo(-58, -24); ctx.quadraticCurveTo(0, -64, 58, -24); ctx.quadraticCurveTo(0, -14, -58, -24);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
 
   } else {
+    // Осьминоги-Пожиратели (Сектор 1 Кракен-Бот и Сектор 10 Император Омега-Кракен) с мозолями и присосками!
     const tentacleCount = lvl.id === 10 ? 6 : 4;
     for (let i = 0; i < tentacleCount; i++) {
       const t = i - (tentacleCount - 1) / 2;
       const waveX = Math.sin(b.time * 5 + t * 1.4) * 14;
       const baseX = t * (lvl.id === 10 ? 20 : 28);
+      const midX = baseX + waveX * 0.5;
+      const tipX = baseX * 1.2 - waveX * 0.6;
+
       ctx.strokeStyle = INK;
       ctx.lineWidth = 14;
       ctx.beginPath();
       ctx.moveTo(baseX, 24);
-      ctx.quadraticCurveTo(baseX + waveX, 52, baseX * 1.2 - waveX * 0.6, 74);
+      ctx.quadraticCurveTo(baseX + waveX, 52, tipX, 74);
       ctx.stroke();
+
       ctx.strokeStyle = lvl.accent;
       ctx.lineWidth = 8;
       ctx.stroke();
+
+      // Объёмные присоски / мозоли вдоль щупалец осьминога
+      ctx.fillStyle = '#ffd166';
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 1.6;
+      [
+        [baseX + waveX * 0.25, 38, 3.2],
+        [midX + waveX * 0.35, 54, 2.8],
+        [tipX, 68, 2.4]
+      ].forEach(([sx, sy, sr]) => {
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
     }
-    ctx.fillStyle = lvl.id === 10
-      ? gBoss('#ff758f', '#d90429', '#370617')
-      : gBoss('#e0aaff', '#9b5de5', '#3c096c');
+
+    // Купол осьминога
+    ctx.fillStyle = col(lvl.id === 10 ? '#d90429' : '#9b5de5');
     ctx.strokeStyle = INK;
     ctx.lineWidth = 4;
     ctx.beginPath();
@@ -1082,25 +1087,32 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.quadraticCurveTo(60, 34, 0, 36);
     ctx.quadraticCurveTo(-60, 34, -56, 0);
     ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
 
+    // Мозоли / бородавки на голове осьминога
+    drawWarts(
+      ctx,
+      [[-38, -18, 5.5], [38, -18, 5.5], [-42, 6, 4.8], [42, 6, 4.8], [-18, -38, 4.5], [18, -38, 4.5]],
+      lvl.id === 10 ? '#800f2f' : '#5a189a',
+      lvl.id === 10 ? '#ff758f' : '#e0aaff'
+    );
+
+    // Корона
     ctx.fillStyle = '#ffd166';
     ctx.beginPath();
     ctx.moveTo(-22, -48); ctx.lineTo(-12, -74); ctx.lineTo(0, -54); ctx.lineTo(12, -74); ctx.lineTo(22, -48);
     ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
   }
 
+  // Глаза босса
   [-20, 20].forEach(ex => {
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = INK;
     ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.arc(ex, -4, 14, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fill(); ctx.stroke();
 
     ctx.fillStyle = b.phase === 3 ? '#d90429' : INK;
     ctx.beginPath();
@@ -1127,9 +1139,9 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   ctx.fillRect(-13, 14, 6, 5);
   ctx.fillRect(7, 14, 6, 5);
 
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.32)';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
   ctx.beginPath();
-  ctx.ellipse(-22, -26, 14, 6, -0.45, 0, Math.PI * 2);
+  ctx.ellipse(-22, -26, 13, 5.5, -0.45, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
