@@ -3,35 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Астро-Кот</title>
-  <link rel="stylesheet" href="css/style.css?v=11" />
-  <style>
-    #debug-banner {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 9999;
-      background: #d90429;
-      color: #fff;
-      font: 700 12px/1.35 monospace;
-      padding: 8px 12px;
-      word-break: break-word;
-    }
-  </style>
-  <script>
-    window.onerror = function(msg, url, line) {
-      var b = document.getElementById('debug-banner');
-      if (b) {
-        b.style.display = 'block';
-        var file = url ? url.split('/').pop().split('?')[0] : 'inline';
-        b.textContent = 'Ошибка в ' + file + ' (строка ' + line + '): ' + msg;
-      }
-    };
-  </script>
+  <title>ASTRACAT • Астро-Кот</title>
+  <link rel="stylesheet" href="css/style.css?v=12" />
 </head>
 <body>
-  <div id="debug-banner"></div>
-
   <div id="game-wrap">
     <canvas id="game"></canvas>
 
@@ -42,14 +17,23 @@
       <button id="mute-btn" class="icon-btn" title="Звук (M)">🔊</button>
     </div>
 
-    <!-- ГЛАВНОЕ МЕНЮ -->
-    <div id="start-overlay" class="overlay hidden">
+    <!-- СТАРТОВАЯ ЗАСТАВКА (img/splash.jpg с логотипом ASTRACAT) -->
+    <div id="splash-overlay" class="overlay splash-screen">
+      <img src="img/splash.jpg" class="splash-bg-img" alt="ASTRACAT" onerror="this.style.display='none'" />
+      <div class="splash-bottom-bar">
+        <button id="splash-enter-btn" class="btn-play splash-btn">ИГРАТЬ 🚀</button>
+        <button id="splash-lore-btn" class="btn-secondary">📖 КОМИКС</button>
+      </div>
+    </div>
+
+    <!-- ГЛАВНОЕ МЕНЮ (на фоне img/menu_bg.jpg) -->
+    <div id="start-overlay" class="overlay menu-with-bg hidden">
       <div class="card">
         <div class="top-wallet-row">
           <span class="badge" style="margin-bottom:0;">Котовия-17</span>
           <span class="wallet-pill" id="menu-coins">🪙 0</span>
         </div>
-        <h1>АСТРО-КОТ</h1>
+        <h1>ASTRACAT</h1>
 
         <div class="section-label">Уровень сложности</div>
         <div class="diff-row" id="diff-row">
@@ -80,8 +64,8 @@
       </div>
     </div>
 
-    <!-- МЕНЮ ПРОКАЧКИ: 3 КОРАБЛЯ И 3 БАЗОВЫХ ОРУЖИЯ -->
-    <div id="hangar-overlay" class="overlay hidden">
+    <!-- МЕНЮ ПРОКАЧКИ: АНГАР (на фоне img/hangar_bg.jpg) -->
+    <div id="hangar-overlay" class="overlay hangar-with-bg hidden">
       <div class="card hangar-card">
         <div class="top-wallet-row">
           <span class="badge" style="margin-bottom:0;">Космоверфь</span>
@@ -102,7 +86,7 @@
     </div>
 
     <!-- КОМИКС ПРЕДЫСТОРИИ -->
-    <div id="lore-overlay" class="overlay">
+    <div id="lore-overlay" class="overlay hidden">
       <div class="card lore-card">
         <div class="lore-dots" id="lore-dots">
           <span class="dot active"></span>
@@ -127,11 +111,11 @@
       </div>
     </div>
 
-    <!-- БРИФИНГ ПЕРЕД СЕКТОРОМ -->
+    <!-- ВХОДНАЯ ЗАСТАВКА ПЕРЕД УРОВНЕМ (img/levelN_in.jpg или img/transition_in.jpg) -->
     <div id="intro-overlay" class="overlay hidden">
       <div class="card intro-card">
-        <div class="intro-hero-art" id="intro-hero-art">
-          <div class="intro-cat-badge">🐱🚀</div>
+        <div class="stage-art-box" id="intro-art-box">
+          <img id="intro-stage-img" src="img/transition_in.jpg" alt="Вход в сектор" />
           <div class="intro-sector-tag" id="intro-sector-tag">СЕКТОР 1</div>
         </div>
         <h2 id="intro-title">ЛСД-ТУМАННОСТЬ</h2>
@@ -144,7 +128,7 @@
       </div>
     </div>
 
-    <!-- НАСТРОЙКИ ЗВУКА И ВЫБОР ТРЕКА -->
+    <!-- НАСТРОЙКИ ЗВУКА -->
     <div id="settings-overlay" class="overlay hidden">
       <div class="card">
         <h2>НАСТРОЙКИ ЗВУКА (64-POLY ASMR)</h2>
@@ -202,13 +186,15 @@
       </div>
     </div>
 
-    <!-- ЭКРАН ИТОГОВ УРОВНЯ -->
+    <!-- ВЫХОДНАЯ ЗАСТАВКА ПОСЛЕ УРОВНЯ (img/levelN_out.jpg или img/transition_out.jpg) -->
     <div id="end-overlay" class="overlay hidden">
       <div class="card">
         <div class="badge" id="end-badge">Сектор зачищен</div>
-        <div class="victory-cat-wrap" id="victory-cat-wrap">
-          <canvas id="victory-cat-canvas" width="320" height="145"></canvas>
+
+        <div class="stage-art-box victory-stage-box" id="victory-stage-box">
+          <img id="end-stage-img" src="img/transition_out.jpg" alt="Победа в секторе" />
         </div>
+
         <h1 id="end-title">ПОБЕДА!</h1>
         <p class="subtitle" id="end-subtitle">Пожиратель повержен!</p>
 
@@ -235,10 +221,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=11" onerror="window.onerror('Не найден файл js/synth.js', 'index.html', 0)"></script>
-  <script src="js/vfx.js?v=11" onerror="window.onerror('Не найден файл js/vfx.js', 'index.html', 0)"></script>
-  <script src="js/world3d.js?v=11" onerror="window.onerror('Не найден файл js/world3d.js', 'index.html', 0)"></script>
-  <script src="js/entities.js?v=11" onerror="window.onerror('Не найден файл js/entities.js', 'index.html', 0)"></script>
-  <script src="js/game.js?v=11" onerror="window.onerror('Не найден файл js/game.js', 'index.html', 0)"></script>
+  <script src="js/synth.js?v=12"></script>
+  <script src="js/vfx.js?v=12"></script>
+  <script src="js/world3d.js?v=12"></script>
+  <script src="js/entities.js?v=12"></script>
+  <script src="js/game.js?v=12"></script>
 </body>
 </html>
