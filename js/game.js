@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'astro_cat_hangar_v4';
+  const STORAGE_KEY = 'astro_cat_hangar_v7';
   const BORDER_INK = typeof INK !== 'undefined' ? INK : '#120a28';
 
   function loadProgress() {
@@ -34,6 +34,7 @@
   }
 
   const canvas = document.getElementById('game');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d', { alpha: false });
 
   const synth = typeof PolySynth !== 'undefined' ? new PolySynth() : null;
@@ -71,7 +72,6 @@
   window.addEventListener('resize', resize);
   resize();
 
-  // Универсальный загрузчик картинок (проверяет переименованные файлы и исходные имена со смартфона)
   function resolveImageToElement(imgEl, candidates, onFail = null) {
     if (!imgEl) return;
     let idx = 0;
@@ -93,12 +93,12 @@
     tryNext();
   }
 
-  // Назначаем разные фоновые изображения для внешнего меню, информационного окна и настроек
+  // Точное подключение файлов из твоей папки img/ на GitHub (splash.jpg, menu_bg.jpg, hangar_bg.jpg, transition_in.jpg, transition_out.jpg)
   function setupMenuBackgrounds() {
-    const splashCandidates = ['img/splash.jpg', 'img/Splash.jpg', 'img/splash.png', 'img/1000036349.jpg'];
-    const outerMenuCandidates = ['img/menu_bg.jpg', 'img/Menu_bg.jpg', 'img/menu_bg.png', 'img/1000036350.jpg'];
-    const innerCardCandidates = ['img/card_bg.jpg', 'img/hangar_bg.jpg', 'img/card_bg.png', 'img/1000036353.jpg'];
-    const settingsCandidates = ['img/settings_bg.jpg', 'img/transition_in.jpg', 'img/settings_bg.png', 'img/1000036354.jpg'];
+    const splashCandidates = ['img/splash.jpg', 'img/1000036349.jpg'];
+    const outerMenuCandidates = ['img/menu_bg.jpg', 'img/1000036350.jpg'];
+    const innerCardCandidates = ['img/hangar_bg.jpg', 'img/card_bg.jpg', 'img/1000036353.jpg'];
+    const settingsCandidates = ['img/transition_in.jpg', 'img/settings_bg.jpg', 'img/1000036354.jpg'];
     const outCandidates = ['img/transition_out.jpg', 'img/1000036352.jpg'];
 
     const titleBox = document.getElementById('splash-fallback-title');
@@ -107,35 +107,39 @@
       if (titleBox) titleBox.style.display = 'block';
     });
 
-    // Большой внешний фон меню и ангара (неоновый космодром)
     resolveImageToElement(document.getElementById('menu-outer-bg'), outerMenuCandidates);
     resolveImageToElement(document.getElementById('hangar-outer-bg'), outerMenuCandidates);
     resolveImageToElement(document.getElementById('lore-outer-bg'), outerMenuCandidates);
     resolveImageToElement(document.getElementById('intro-outer-bg'), outerMenuCandidates);
     resolveImageToElement(document.getElementById('end-outer-bg'), outCandidates);
 
-    // Внутренний фон окна информации (парящие астероиды с неоновой площадкой)
     resolveImageToElement(document.getElementById('menu-inner-bg'), innerCardCandidates);
     resolveImageToElement(document.getElementById('hangar-inner-bg'), innerCardCandidates);
 
-    // Фон меню Настроек (кот в кабине корабля перед галактикой)
     resolveImageToElement(document.getElementById('settings-outer-bg'), settingsCandidates);
     resolveImageToElement(document.getElementById('settings-inner-bg'), innerCardCandidates);
   }
   setupMenuBackgrounds();
 
-  function setStageArtImage(imgEl, primaryBase, fallbackList) {
-    const candidates = [
-      `img/${primaryBase}.jpg`,
-      `img/${primaryBase}.png`,
-      ...fallbackList
-    ];
-    resolveImageToElement(imgEl, candidates);
-  }
-
-  // Запускаем музыку заставки сразу при переходе по ссылке
   if (synth) {
     synth.startIntroMusic();
+  }
+
+  // Плоские тонкие кнопки мини-плеера под верхней панелью (Вперёд / Назад)
+  const prevTrackBtn = document.getElementById('prev-track-btn');
+  if (prevTrackBtn) {
+    prevTrackBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (synth) { synth.init(); synth.prevTrack(); }
+    });
+  }
+
+  const nextTrackBtn = document.getElementById('next-track-btn');
+  if (nextTrackBtn) {
+    nextTrackBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (synth) { synth.init(); synth.nextTrack(); }
+    });
   }
 
   const splashEnterBtn = document.getElementById('splash-enter-btn');
@@ -170,9 +174,6 @@
     if (hEl) hEl.textContent = `🪙 ${progress.coins}`;
   }
 
-  // =========================================================================
-  // АНГАР И ПРОКАЧКА
-  // =========================================================================
   function renderHangar() {
     updateCoinsUI();
     const shipsList = document.getElementById('ships-list');
@@ -284,9 +285,6 @@
     startOverlay.classList.remove('hidden');
   });
 
-  // =========================================================================
-  // КОМИКС ПРЕДЫСТОРИИ
-  // =========================================================================
   const LORE_SLIDES = [
     {
       baseName: 'slide1',
@@ -310,39 +308,8 @@
 
   let loreSlideIdx = 0;
   let lastRenderedSlideIdx = -1;
-  let hasCustomSlideImg = false;
   const loreImg = document.getElementById('lore-img');
   const loreCanvas = document.getElementById('lore-canvas');
-  const loreCtx = loreCanvas ? loreCanvas.getContext('2d') : null;
-
-  function loadSlideImageIfExists(slide) {
-    if (!loreImg) return;
-    hasCustomSlideImg = false;
-    loreImg.classList.add('hidden');
-    if (loreCanvas) loreCanvas.style.display = 'block';
-
-    const variants = [
-      `img/${slide.baseName}.jpg`,
-      `img/${slide.baseName}.png`,
-      `img/${slide.baseName}.jpeg`,
-      slide.rawFallback
-    ];
-    let idx = 0;
-    const tryNext = () => {
-      if (idx >= variants.length) return;
-      const src = variants[idx++];
-      const probe = new Image();
-      probe.onload = () => {
-        hasCustomSlideImg = true;
-        loreImg.src = src;
-        loreImg.classList.remove('hidden');
-        if (loreCanvas) loreCanvas.style.display = 'none';
-      };
-      probe.onerror = tryNext;
-      probe.src = src;
-    };
-    tryNext();
-  }
 
   function renderLoreSlide() {
     if (loreOverlay.classList.contains('hidden')) return;
@@ -356,14 +323,13 @@
 
       const dots = document.querySelectorAll('#lore-dots .dot');
       dots.forEach((d, i) => d.classList.toggle('active', i === loreSlideIdx));
-      loadSlideImageIfExists(slide);
-    }
 
-    if (hasCustomSlideImg || !loreCtx) return;
-    const lw = loreCanvas.width;
-    const lh = loreCanvas.height;
-    loreCtx.fillStyle = '#140d33';
-    loreCtx.fillRect(0, 0, lw, lh);
+      if (loreImg) {
+        loreImg.classList.remove('hidden');
+        if (loreCanvas) loreCanvas.style.display = 'none';
+        resolveImageToElement(loreImg, [`img/${slide.baseName}.jpg`, slide.rawFallback]);
+      }
+    }
   }
 
   function openLoreSlides() {
@@ -404,9 +370,6 @@
     startOverlay.classList.remove('hidden');
   }
 
-  // =========================================================================
-  // МЕНЮ И ВХОДНОЙ БРИФИНГ ПЕРЕД УРОВНЕМ
-  // =========================================================================
   const levelsGrid = document.getElementById('levels-grid');
   const selectedLevelInfo = document.getElementById('selected-level-info');
 
@@ -457,15 +420,15 @@
     const lvl = LEVELS[selectedLevelIdx];
     if (synth) { synth.init(); synth.sfxPowerup(); }
 
-    setStageArtImage(document.getElementById('intro-stage-img'), `level${lvl.id}_in`, ['img/transition_in.jpg', 'img/settings_bg.jpg', 'img/1000036354.jpg']);
+    resolveImageToElement(document.getElementById('intro-stage-img'), [`img/level${lvl.id}_in.jpg`, 'img/transition_in.jpg', 'img/1000036354.jpg']);
 
     document.getElementById('intro-sector-tag').textContent = `УРОВЕНЬ ${lvl.id}`;
     document.getElementById('intro-title').textContent = lvl.name.toUpperCase();
     document.getElementById('intro-story').textContent = lvl.story;
     document.getElementById('intro-intel').innerHTML =
       `<div>🛸 <b>Враги:</b> ${lvl.enemiesDesc}</div>` +
-      `<div>👑 <b>Пожиратель:</b> ${lvl.bossName}</div>` +
-      `<div>⚡ <b>Спец-оружие:</b> Сюрикены, Электро-удар, Волновая пушка</div>`;
+      `<div>👑 <b>Босс:</b> ${lvl.bossName}</div>` +
+      `<div>⚡ <b>Оружие босса:</b> ${lvl.bossWeapon}</div>`;
 
     startOverlay.classList.add('hidden');
     endOverlay.classList.add('hidden');
@@ -488,9 +451,6 @@
     startOverlay.classList.remove('hidden');
   });
 
-  // =========================================================================
-  // НАСТРОЙКИ ЗВУКА
-  // =========================================================================
   let state = 'START';
   let prevStateBeforeSettings = 'START';
 
@@ -581,7 +541,7 @@
   });
 
   // =========================================================================
-  // ИГРОВОЙ ПРОЦЕСС, 3 НОВЫХ ОРУЖИЯ 1-ГО УРОВНЯ И ПРЕПЯТСТВИЯ РАЗНЫХ ФОРМ
+  // ИГРОВОЙ ПРОЦЕСС
   // =========================================================================
   let score = 0;
   let runCoins = 0;
@@ -700,7 +660,7 @@
 
     if (synth) {
       synth.init();
-      synth.startMusic('normal');
+      synth.startMusic('normal', lvl.id);
       if (lvl.theme === 'underwater') synth.sfxUnderwater(0);
       else synth.sfxCosmicHum();
     }
@@ -763,7 +723,7 @@
     pauseBtn.classList.remove('hidden');
 
     if (world3d) world3d.setCameraFromPlayer(player.x, W);
-    if (vfx) vfx.addPopup(W / 2, H * 0.36, `УРОВЕНЬ ${lvl.id}: ВОЛНА 1 / 4`, lvl.accent, 1.15);
+    if (vfx) vfx.addPopup(W / 2, H * 0.36, `УРОВЕНЬ ${lvl.id}: ${lvl.name.toUpperCase()}`, lvl.accent, 1.15);
   }
 
   document.getElementById('next-level-btn').addEventListener('click', (e) => {
@@ -775,7 +735,6 @@
     }
   });
 
-  // Спавн металлических светящихся препятствий разных форм (шестигранник, шестерня, пилон, крест)
   function spawnObstacle() {
     const lvl = LEVELS[selectedLevelIdx];
     const margin = 56;
@@ -821,7 +780,7 @@
         vfx.addPopup(W / 2, H * 0.30, '🔥 ВСПЫШКА ВОЗГОРАНИЯ!', '#ff9f1c', 1.15);
       }
       for (let k = 0; k < 4; k++) {
-        enemyBullets.push({ x: 45 + ((W - 90) * k) / 3, y: -20 - k * 35, vx: 0, vy: 260, r: 10, color: '#ff6b35' });
+        enemyBullets.push({ kind: 'fireball', x: 45 + ((W - 90) * k) / 3, y: -20 - k * 35, vx: 0, vy: 260, r: 10, color: '#ff6b35' });
       }
     } else {
       activeEvent = { type: 'underwater', timer: 5.5, dir: Math.random() > 0.5 ? 1 : -1 };
@@ -856,7 +815,7 @@
       freq: 2.2 + Math.random() * 2.4,
       amp: 65 + Math.random() * 60,
       turnTimer: 0.5 + Math.random() * 1.1,
-      shootTimer: (isHeavy ? 1.45 : 1.85) + Math.random() * 0.9,
+      shootTimer: (isHeavy ? 1.35 : 1.75) + Math.random() * 0.8,
       hitFlash: 0,
       points: isHeavy ? 180 : 120,
       coinValue: isHeavy ? 28 : 16
@@ -871,15 +830,15 @@
     boss = {
       x: W / 2, y: -110, targetY: Math.min(150, H * 0.22),
       r: 62, hp: totalHp, maxHp: totalHp, phase: 1, time: 0, hitFlash: 0,
-      smokeTimer: 0, shootTimer: 1.1, specialTimer: 4.5,
+      smokeTimer: 0, shootTimer: 1.0, specialTimer: 3.4,
       laserState: 'idle', laserTimer: 0, laserX: W / 2
     };
     warningBannerTimer = 2.4;
-    if (synth) { synth.sfxBossAlarm(); synth.setMusicMode('boss'); }
+    // Передаём ID уровня, чтобы играл boss.mp3, boss2.mp3, boss3.mp3 и т.д.
+    if (synth) { synth.sfxBossAlarm(); synth.setMusicMode('boss', lvl.id); }
     if (vfx) vfx.triggerFlash(lvl.accent, 0.28);
   }
 
-  // Дроп 3 новых орудий 1-го уровня (Фрактальные сюрикены, Электрический удар, Волновая пушка) и звёздочек
   function maybeDropFoodBonus(x, y, guaranteed = false) {
     if (!guaranteed && Math.random() > 0.20) return;
     const pool = [
@@ -900,7 +859,6 @@
 
     if (synth) synth.sfxShootWeapon(pan, baseId, p.secondaryWeapon);
 
-    // 1. Базовое оружие из Ангара
     if (baseId === 'droplet') {
       bullets.push({ kind: 'plasma', x: p.x, y: p.y - 26, vx: 0, vy: -740, r: 6.5, dmg: 1.15 * dmgScale, color: '#48dbfb' });
     } else if (baseId === 'kalimba') {
@@ -913,45 +871,31 @@
       });
     }
 
-    // 2. Спец-оружие (Фрактальные сюрикены, Электрический удар, Волновая пушка)
     const lv2 = p.secondaryLevel >= 2;
     if (p.secondaryWeapon === 'fractal_shuriken') {
       const angles = lv2 ? [-0.26, 0, 0.26] : [-0.18, 0.18];
       angles.forEach(ang => {
         bullets.push({
-          kind: 'fractal_shuriken',
-          homing: true,
+          kind: 'fractal_shuriken', homing: true,
           x: p.x, y: p.y - 22,
-          vx: Math.sin(ang) * 620,
-          vy: -Math.cos(ang) * 620,
-          rot: 0,
-          r: 10,
-          dmg: 1.55 * dmgScale,
-          color: '#00f5d4'
+          vx: Math.sin(ang) * 620, vy: -Math.cos(ang) * 620,
+          rot: 0, r: 10, dmg: 1.55 * dmgScale, color: '#00f5d4'
         });
       });
     } else if (p.secondaryWeapon === 'electric_shock') {
       const offsets = lv2 ? [-18, 0, 18] : [-14, 14];
       offsets.forEach(ox => {
         bullets.push({
-          kind: 'electric_bolt',
-          chainLightning: true,
-          x: p.x + ox, y: p.y - 24,
-          vx: 0, vy: -880,
-          r: 8,
-          dmg: 1.45 * dmgScale,
-          color: '#fee440'
+          kind: 'electric_bolt', chainLightning: true,
+          x: p.x + ox, y: p.y - 24, vx: 0, vy: -880,
+          r: 8, dmg: 1.45 * dmgScale, color: '#fee440'
         });
       });
     } else if (p.secondaryWeapon === 'wave_cannon') {
       bullets.push({
-        kind: 'wave_pulse',
-        pierce: lv2 ? 4 : 3,
-        x: p.x, y: p.y - 28,
-        vx: 0, vy: -640,
-        r: lv2 ? 34 : 26,
-        dmg: 1.85 * dmgScale,
-        color: '#f15bb5'
+        kind: 'wave_pulse', pierce: lv2 ? 4 : 3,
+        x: p.x, y: p.y - 28, vx: 0, vy: -640,
+        r: lv2 ? 34 : 26, dmg: 1.85 * dmgScale, color: '#f15bb5'
       });
     }
   }
@@ -997,25 +941,50 @@
     if (vfx) vfx.addPopup(bn.x, bn.y, (titles[bn.type] || 'БОНУС') + suffix, '#80ffdb', 1.15);
   }
 
+  // АТАКИ БОССОВ:
+  // - Уровень 1 («Туманность Узоров»): разноцветные психоделические волны изо рта с окнами для уворота!
+  // - Уровень 2 («Сектор Кошмаров»): Вампир-Слизняк извергает живой огонь изо рта!
   function fireUniqueBossWeapon(b, lvl, diff) {
     const pan = ((b.x / W) * 2 - 1) * 0.7;
-    if (synth) synth.sfxHit(pan);
-    const spd = 235 * diff.bulletSpeed;
+    const spd = 225 * diff.bulletSpeed;
     const toPlayer = player ? Math.atan2(player.y - b.y, player.x - b.x) : Math.PI / 2;
 
     if (lvl.id === 1) {
-      b.shootTimer = b.phase === 3 ? 0.85 : 1.15;
-      for (let k = -2; k <= 2; k++) {
-        const ang = Math.PI / 2 + k * 0.22;
-        enemyBullets.push({ x: b.x + k * 12, y: b.y + 40, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 8, color: '#ff70a6' });
-      }
+      if (synth) synth.sfxWave();
+      b.shootTimer = b.phase === 3 ? 1.05 : 1.35;
+      // Выпускаем изо рта веер из 3 широких переливающихся психо-волн с зазорами для уворота
+      [-0.38, 0, 0.38].forEach((offsetAng, idx) => {
+        const ang = Math.PI / 2 + offsetAng + Math.sin(b.time * 2.5) * 0.16;
+        enemyBullets.push({
+          kind: 'psy_wave',
+          hue: (b.time * 140 + idx * 110) % 360,
+          x: b.x,
+          y: b.y + 22,
+          vx: Math.cos(ang) * (spd * 0.92),
+          vy: Math.sin(ang) * (spd * 0.92),
+          ang,
+          r: 22,
+          color: '#00f5d4'
+        });
+      });
     } else if (lvl.id === 2) {
-      b.shootTimer = 0.95;
+      // Вампир-Слизняк извергает поток пламени изо рта!
+      if (synth) synth.sfxIgnite(pan);
+      b.shootTimer = b.phase === 3 ? 0.65 : 0.88;
       for (let k = -1; k <= 1; k++) {
-        const ang = toPlayer + k * 0.25;
-        enemyBullets.push({ x: b.x + k * 22, y: b.y + 38, vx: Math.cos(ang) * (spd * 1.1), vy: Math.sin(ang) * (spd * 1.1), r: 9, color: '#ff002b' });
+        const ang = toPlayer + k * 0.22 + (Math.random() - 0.5) * 0.1;
+        enemyBullets.push({
+          kind: 'fireball',
+          x: b.x + k * 14,
+          y: b.y + 26,
+          vx: Math.cos(ang) * (spd * 1.12),
+          vy: Math.sin(ang) * (spd * 1.12),
+          r: 12,
+          color: '#ff6b35'
+        });
       }
     } else if (lvl.id === 3) {
+      if (synth) synth.sfxHit(pan);
       b.shootTimer = 1.15;
       const rCols = ['#ff5964', '#ff9f1c', '#ffd166', '#06d6a0', '#48dbfb'];
       for (let k = -2; k <= 2; k++) {
@@ -1023,6 +992,7 @@
         enemyBullets.push({ x: b.x + k * 15, y: b.y + 34, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 8.5, color: rCols[k + 2] });
       }
     } else if (lvl.id === 4) {
+      if (synth) synth.sfxHit(pan);
       b.shootTimer = 1.25;
       const sporeCount = b.phase === 3 ? 11 : 8;
       for (let k = 0; k < sporeCount; k++) {
@@ -1030,6 +1000,7 @@
         enemyBullets.push({ x: b.x, y: b.y + 15, vx: Math.cos(ang) * (spd * 0.88), vy: Math.sin(ang) * (spd * 0.88), r: 8, color: '#00f5d4' });
       }
     } else {
+      if (synth) synth.sfxHit(pan);
       b.shootTimer = 0.68;
       for (let k = -2; k <= 2; k++) {
         const ang = toPlayer + k * 0.19;
@@ -1177,7 +1148,6 @@
       firePlayerWeapon(p);
     }
 
-    // Обновление металлических препятствий
     for (let i = obstacles.length - 1; i >= 0; i--) {
       const ob = obstacles[i];
       ob.y += ob.vy * dt;
@@ -1274,12 +1244,50 @@
 
       if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt * 6);
 
+      // СТРЕЛЬБА ВРАГОВ: Лазеры у кораблей-скелетов, Ракеты у летучих мышей, Токсик у зомби!
       e.shootTimer -= dt;
       if (e.shootTimer <= 0 && e.y > 40 && e.y < H * 0.68) {
         e.shootTimer = 1.85 / diff.bulletSpeed;
         const ang = Math.atan2(p.y - e.y, p.x - e.x);
         const spd = 225 * diff.bulletSpeed;
-        enemyBullets.push({ x: e.x, y: e.y + e.r * 0.7, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 7, color: lvl.accent });
+
+        if (e.kind === 'skeleton_ship') {
+          // Скоростной красный лазерный луч
+          enemyBullets.push({
+            kind: 'enemy_laser',
+            x: e.x, y: e.y + 18,
+            vx: Math.cos(ang) * (spd * 1.45),
+            vy: Math.sin(ang) * (spd * 1.45),
+            ang,
+            r: 6.5, color: '#ff002b'
+          });
+        } else if (e.kind === 'bat_ship') {
+          // Боевая ракета с подруливанием и дымным следом
+          enemyBullets.push({
+            kind: 'enemy_missile',
+            homing: true,
+            life: 2.8,
+            x: e.x, y: e.y + 18,
+            vx: Math.cos(ang) * (spd * 0.88),
+            vy: Math.sin(ang) * (spd * 0.88),
+            r: 8.5, color: '#ff758f'
+          });
+        } else if (e.kind === 'zombie_ship') {
+          // Токсичный кислотный сгусток
+          enemyBullets.push({
+            kind: 'toxic_glob',
+            x: e.x, y: e.y + 18,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            r: 9, color: '#a7c957'
+          });
+        } else {
+          enemyBullets.push({
+            x: e.x, y: e.y + e.r * 0.7,
+            vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+            r: 7, color: lvl.accent
+          });
+        }
       }
 
       for (let j = bullets.length - 1; j >= 0; j--) {
@@ -1288,10 +1296,8 @@
           e.hp -= b.dmg;
           e.hitFlash = 1;
 
-          // Снопы искр от попадания снаряда
           if (vfx) vfx.addHitSparks(b.x, b.y, b.color || lvl.accent, 11);
 
-          // Если это «Электрический удар» — бьёт цепной молнией по соседнему врагу!
           if (b.chainLightning && vfx) {
             for (const other of enemies) {
               if (other !== e && Math.hypot(other.x - e.x, other.y - e.y) < 170) {
@@ -1352,19 +1358,36 @@
 
     if (boss) updateBoss(dt);
 
+    // Обновление вражеских снарядов (ракет, лазеров, психо-волн и огня)
     for (let i = enemyBullets.length - 1; i >= 0; i--) {
       const eb = enemyBullets[i];
+
+      if (eb.homing && eb.life > 0) {
+        eb.life -= dt;
+        const ang = Math.atan2(p.y - eb.y, p.x - eb.x);
+        eb.vx += Math.cos(ang) * 190 * dt;
+        eb.vy += Math.sin(ang) * 190 * dt;
+        if (vfx && Math.random() < 0.4) vfx.addTrail(eb.x, eb.y, '#ff758f', 4.5, 0.15);
+      }
+
+      if (eb.kind === 'psy_wave') {
+        eb.hue = (eb.hue + dt * 220) % 360;
+        eb.r = Math.min(36, eb.r + dt * 12);
+      } else if (eb.kind === 'fireball' && vfx && Math.random() < 0.45) {
+        vfx.addTrail(eb.x, eb.y, '#ff9f1c', 6, 0.14);
+      }
+
       eb.x += eb.vx * dt;
       eb.y += eb.vy * dt;
 
-      const activeRadius = (p.giantTimer > 0 ? p.r * 1.5 : p.r) + eb.r - 4;
+      const activeRadius = (p.giantTimer > 0 ? p.r * 1.5 : p.r) + eb.r - 5;
       if (Math.hypot(eb.x - p.x, eb.y - p.y) < activeRadius) {
         if (vfx) vfx.addHitSparks(eb.x, eb.y, '#ff5964', 10);
         enemyBullets.splice(i, 1);
         damagePlayer();
         continue;
       }
-      if (eb.y > H + 25 || eb.y < -40 || eb.x < -25 || eb.x > W + 25) enemyBullets.splice(i, 1);
+      if (eb.y > H + 40 || eb.y < -50 || eb.x < -40 || eb.x > W + 40) enemyBullets.splice(i, 1);
     }
 
     for (let i = bonuses.length - 1; i >= 0; i--) {
@@ -1412,36 +1435,37 @@
     b.shootTimer -= dt;
     if (b.shootTimer <= 0) fireUniqueBossWeapon(b, lvl, diff);
 
+    // Боссы 1-го и 2-го уровней регулярно стреляют двойными лазерами/лучами из глаз!
     b.specialTimer -= dt;
     if (b.specialTimer <= 0) {
-      if (b.phase === 2) {
-        b.specialTimer = 5.4;
-        if (enemies.length < 3) spawnEnemy();
-        maybeDropFoodBonus(b.x, b.y + 45, true);
-      } else if (b.phase === 3 && b.laserState === 'idle') {
+      if ((lvl.id === 1 || lvl.id === 2 || b.phase >= 2) && b.laserState === 'idle') {
         b.laserState = 'charge';
-        b.laserTimer = 1.1;
+        b.laserTimer = 0.95;
         b.laserX = player.x;
         if (synth) synth.sfxBossAlarm();
+      } else {
+        b.specialTimer = 4.8;
+        if (enemies.length < 3) spawnEnemy();
+        maybeDropFoodBonus(b.x, b.y + 45, true);
       }
     }
 
     if (b.laserState === 'charge') {
       b.laserTimer -= dt;
-      b.laserX += (player.x - b.laserX) * Math.min(1, dt * 3.5);
+      b.laserX += (player.x - b.laserX) * Math.min(1, dt * 3.8);
       if (b.laserTimer <= 0) {
         b.laserState = 'fire';
-        b.laserTimer = 0.72;
+        b.laserTimer = 0.78;
         if (synth) synth.sfxExplosion(0, true);
-        if (vfx) vfx.triggerFlash('#ff006e', 0.3);
-        screenShake = 8;
+        if (vfx) vfx.triggerFlash(lvl.id === 2 ? '#ff002b' : '#00f5d4', 0.28);
+        screenShake = 9;
       }
     } else if (b.laserState === 'fire') {
       b.laserTimer -= dt;
-      if (Math.abs(player.x - b.laserX) < 26 + player.r * 0.6 && player.y > b.y) damagePlayer();
+      if (Math.abs(player.x - b.laserX) < 28 + player.r * 0.6 && player.y > b.y) damagePlayer();
       if (b.laserTimer <= 0) {
         b.laserState = 'idle';
-        b.specialTimer = 4.2;
+        b.specialTimer = 3.6;
       }
     }
 
@@ -1528,7 +1552,7 @@
       if (!progress.completed.includes(lvl.id)) progress.completed.push(lvl.id);
       if (victoryStageBox) {
         victoryStageBox.classList.remove('hidden');
-        setStageArtImage(document.getElementById('end-stage-img'), `level${lvl.id}_out`, ['img/transition_out.jpg', 'img/1000036352.jpg']);
+        resolveImageToElement(document.getElementById('end-stage-img'), [`img/level${lvl.id}_out.jpg`, 'img/transition_out.jpg', 'img/1000036352.jpg']);
       }
     } else {
       if (synth) synth.sfxGameOver();
@@ -1579,7 +1603,6 @@
     ctx.restore();
   }
 
-  // 3D ВИД СВЕРХУ КОРАБЛЯ КОТА С НЕОНОВЫМ СВЕЧЕНИЕМ И ВЫПУКЛОЙ КАБИНОЙ
   function drawPlayer(p) {
     if (p.invuln > 0 && Math.floor(p.invuln * 16) % 2 === 0) return;
 
@@ -1599,7 +1622,6 @@
     const wingCol = p.ship.wingColor || '#ff5964';
     const neonCol = p.ship.neonColor || '#48dbfb';
 
-    // Неоновое свечение под 3D-кораблём
     ctx.fillStyle = neonCol;
     ctx.globalAlpha = 0.25;
     ctx.beginPath();
@@ -1607,7 +1629,6 @@
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    // Реактивные струи пламени
     const flameH = 18 + Math.sin(globalTime * 42) * 6;
     [-11, 11].forEach(ox => {
       ctx.fillStyle = '#ff9f1c';
@@ -1621,14 +1642,12 @@
       ctx.closePath(); ctx.fill();
     });
 
-    // Нижний 3D-слой крыльев (объёмная толщина металла)
     ctx.fillStyle = '#140c29';
     ctx.beginPath();
     ctx.moveTo(-14, 3); ctx.lineTo(-35, 20); ctx.lineTo(35, 20); ctx.lineTo(14, 3);
     ctx.closePath();
     ctx.fill();
 
-    // Верхний 3D-слой крыльев с неоновой окантовкой
     ctx.fillStyle = wingCol;
     ctx.strokeStyle = neonCol;
     ctx.lineWidth = 2.4;
@@ -1644,7 +1663,6 @@
       ctx.beginPath(); ctx.moveTo(14, -2); ctx.lineTo(33, 16); ctx.lineTo(12, 20); ctx.closePath(); ctx.fill(); ctx.stroke();
     }
 
-    // Бортовые модули спец-оружия
     if (p.secondaryWeapon !== 'none') {
       ctx.fillStyle = '#ffd166';
       ctx.strokeStyle = '#ffffff';
@@ -1655,7 +1673,6 @@
       });
     }
 
-    // Многослойный 3D-фюзеляж (вид сверху)
     ctx.fillStyle = hullCol;
     ctx.strokeStyle = BORDER_INK;
     ctx.lineWidth = 2.8;
@@ -1666,7 +1683,6 @@
     ctx.fillStyle = wingCol;
     ctx.beginPath(); ctx.arc(0, -14, 13, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Купол кабины и голова Астро-Кота (вид сверху)
     ctx.fillStyle = '#48dbfb';
     ctx.beginPath(); ctx.arc(0, -1, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
@@ -1677,7 +1693,6 @@
     ctx.fill();
     ctx.beginPath(); ctx.arc(0, 0, 8.5, 0, Math.PI * 2); ctx.fill();
 
-    // Блик на стеклянном куполе
     ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
     ctx.beginPath(); ctx.ellipse(-4, -5, 4, 2, -0.5, 0, Math.PI * 2); ctx.fill();
 
@@ -1700,24 +1715,54 @@
     ctx.restore();
   }
 
+  // ОТРИСОВКА МОРДОЧКИ КОТИКА ДЛЯ ИНДИКАТОРА ЖИЗНЕЙ
+  function drawCatLifeIcon(ctx, x, y, active) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    ctx.fillStyle = active ? '#ffb703' : 'rgba(255, 255, 255, 0.18)';
+    ctx.strokeStyle = active ? '#ffffff' : 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 1.6;
+
+    // Ушки котика
+    ctx.beginPath();
+    ctx.moveTo(-7, -2); ctx.lineTo(-8, -10); ctx.lineTo(-2, -6);
+    ctx.moveTo(7, -2);  ctx.lineTo(8, -10);  ctx.lineTo(2, -6);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Мордочка котика
+    ctx.beginPath();
+    ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+
+    if (active) {
+      // Глазки и розовый носик
+      ctx.fillStyle = '#120a28';
+      ctx.beginPath();
+      ctx.arc(-2.8, -1, 1.3, 0, Math.PI * 2);
+      ctx.arc(2.8, -1, 1.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ff5964';
+      ctx.beginPath();
+      ctx.arc(0, 1.8, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
   function drawHUD() {
     if ((state !== 'PLAYING' && state !== 'PAUSED') || !player) return;
     const lvl = LEVELS[selectedLevelIdx];
 
     ctx.save();
+    // Жизни персонажа в виде котиков вместо сердечек!
     for (let i = 0; i < player.maxHp; i++) {
-      const hx = 20 + i * 21;
-      const hy = 26;
-      ctx.fillStyle = i < player.hp ? '#ff5964' : 'rgba(255,255,255,0.2)';
-      ctx.strokeStyle = BORDER_INK;
-      ctx.lineWidth = 2.2;
-      ctx.beginPath();
-      ctx.arc(hx - 3.5, hy, 5, 0, Math.PI * 2);
-      ctx.arc(hx + 3.5, hy, 5, 0, Math.PI * 2);
-      ctx.moveTo(hx - 8, hy + 2);
-      ctx.lineTo(hx, hy + 10);
-      ctx.lineTo(hx + 8, hy + 2);
-      ctx.fill(); ctx.stroke();
+      drawCatLifeIcon(ctx, 22 + i * 22, 26, i < player.hp);
     }
 
     ctx.fillStyle = '#fff8eb';
@@ -1738,15 +1783,15 @@
     ctx.fillText(subHud, 18, 78);
 
     if (boss) {
-      const bw = Math.min(320, W - 170);
-      const bx = (W - bw) / 2;
+      const bw = Math.min(260, W - 200);
+      const bx = (W - bw) / 2 - 20;
       const by = 18;
 
       ctx.fillStyle = '#ffd166';
       ctx.font = '900 11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.strokeText(lvl.bossName.toUpperCase(), W / 2, by + 32);
-      ctx.fillText(lvl.bossName.toUpperCase(), W / 2, by + 32);
+      ctx.strokeText(lvl.bossName.toUpperCase(), bx + bw / 2, by + 32);
+      ctx.fillText(lvl.bossName.toUpperCase(), bx + bw / 2, by + 32);
 
       roundRectPath(ctx, bx, by, bw, 15, 8);
       ctx.fillStyle = BORDER_INK;
@@ -1764,10 +1809,71 @@
       ctx.fillStyle = '#ff5964';
       ctx.strokeStyle = BORDER_INK;
       ctx.lineWidth = 5;
-      ctx.font = '900 26px sans-serif';
+      ctx.font = '900 24px sans-serif';
       ctx.textAlign = 'center';
       ctx.strokeText('⚠ ВНИМАНИЕ: ПОЖИРАТЕЛЬ! ⚠', W / 2, H * 0.44);
       ctx.fillText('⚠ ВНИМАНИЕ: ПОЖИРАТЕЛЬ! ⚠', W / 2, H * 0.44);
+    }
+
+    ctx.restore();
+  }
+
+  function drawEnemyBullet(ctx, eb) {
+    ctx.save();
+    ctx.translate(eb.x, eb.y);
+
+    if (eb.kind === 'psy_wave') {
+      // Эпичная разноцветная психоделическая волна изо рта босса 1-го уровня
+      ctx.rotate((eb.ang || Math.PI / 2) - Math.PI / 2);
+      const col1 = `hsl(${eb.hue || 0}, 100%, 62%)`;
+      const col2 = `hsl(${((eb.hue || 0) + 90) % 360}, 100%, 72%)`;
+
+      ctx.strokeStyle = col1;
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.arc(0, -6, eb.r, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+
+      ctx.strokeStyle = col2;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(0, -2, eb.r * 0.72, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+
+    } else if (eb.kind === 'enemy_laser') {
+      // Лазер корабля-скелета
+      ctx.rotate(Math.atan2(eb.vy, eb.vx) - Math.PI / 2);
+      ctx.fillStyle = '#ff002b';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.6;
+      roundRectPath(ctx, -3.5, -14, 7, 28, 3.5);
+      ctx.fill(); ctx.stroke();
+
+    } else if (eb.kind === 'enemy_missile') {
+      // Ракета корабля-летучей мыши
+      ctx.rotate(Math.atan2(eb.vy, eb.vx) - Math.PI / 2);
+      ctx.fillStyle = '#4a4e69';
+      ctx.strokeStyle = '#ff0054';
+      ctx.lineWidth = 2;
+      roundRectPath(ctx, -5, -10, 10, 20, 4);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffbe0b';
+      ctx.beginPath(); ctx.arc(0, -10, 4, 0, Math.PI * 2); ctx.fill();
+
+    } else if (eb.kind === 'fireball') {
+      // Огненный шар изо рта Вампира-Слизняка
+      ctx.fillStyle = 'rgba(255, 107, 53, 0.45)';
+      ctx.beginPath(); ctx.arc(0, 0, eb.r * 1.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ff9f1c';
+      ctx.beginPath(); ctx.arc(0, 0, eb.r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(-2, -2, eb.r * 0.45, 0, Math.PI * 2); ctx.fill();
+
+    } else {
+      ctx.fillStyle = eb.color;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, eb.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     }
 
     ctx.restore();
@@ -1811,10 +1917,7 @@
     }
 
     for (const eb of enemyBullets) {
-      ctx.fillStyle = eb.color;
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(eb.x, eb.y, eb.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      drawEnemyBullet(ctx, eb);
     }
 
     if (player && state !== 'GAMEOVER' && state !== 'START') {
