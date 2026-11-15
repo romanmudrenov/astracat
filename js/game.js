@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'astro_cat_hangar_v8';
+  const STORAGE_KEY = 'astro_cat_hangar_v9';
   const BORDER_INK = typeof INK !== 'undefined' ? INK : '#120a28';
 
   function loadProgress() {
@@ -37,7 +37,7 @@
   if (!canvas) return;
   const ctx = canvas.getContext('2d', { alpha: false });
 
-  const synth = typeof PolySynth !== 'undefined' ? new PolySynth() : null;
+  const synth = typeof AstraCatSynth !== 'undefined' ? new AstraCatSynth(128) : null;
   const world3d = typeof World3DEngine !== 'undefined' ? new World3DEngine() : null;
   const vfx = typeof VFXEngine !== 'undefined' ? new VFXEngine() : null;
 
@@ -124,6 +124,15 @@
     synth.startIntroMusic();
   }
 
+  // Переключение зелёной био-темы сайта для 5-го уровня
+  function applySiteTheme(lvl) {
+    if (lvl && lvl.theme === 'organic') {
+      document.body.classList.add('theme-organic');
+    } else {
+      document.body.classList.remove('theme-organic');
+    }
+  }
+
   const prevTrackBtn = document.getElementById('prev-track-btn');
   if (prevTrackBtn) {
     prevTrackBtn.addEventListener('click', (e) => {
@@ -146,7 +155,7 @@
       e.stopPropagation();
       if (synth) {
         synth.init();
-        synth.sfxPowerup();
+        synth.sfxMenuTransition();
         synth.startIntroMusic();
       }
       splashOverlay.classList.add('hidden');
@@ -156,7 +165,7 @@
   }
 
   function getActiveShip() {
-    if (typeof SHIPS_CATALOG === 'undefined') return { id: 'shuttle', hpBonus: 0, speedMult: 1, fireRateMult: 1, dmgMult: 1, coinMult: 1, hullColor: '#e0fbfc', wingColor: '#ff5964', neonColor: '#48dbfb' };
+    if (typeof SHIPS_CATALOG === 'undefined') return { id: 'shuttle', hpBonus: 0, speedMult: 1, fireRateMult: 1, dmgMult: 1, coinMult: 1, gunMounts: 1, hullColor: '#e0fbfc', wingColor: '#ff5964', neonColor: '#48dbfb' };
     return SHIPS_CATALOG.find(s => s.id === progress.equippedShip) || SHIPS_CATALOG[0];
   }
 
@@ -165,11 +174,12 @@
     return WEAPONS_CATALOG.find(w => w.id === progress.equippedWeapon) || WEAPONS_CATALOG[0];
   }
 
+  // Валюта: кошачья еда (🐟 рыбка)
   function updateCoinsUI() {
     const mEl = document.getElementById('menu-coins');
     const hEl = document.getElementById('hangar-coins');
-    if (mEl) mEl.textContent = `🪙 ${progress.coins}`;
-    if (hEl) hEl.textContent = `🪙 ${progress.coins}`;
+    if (mEl) mEl.textContent = `🐟 ${progress.coins}`;
+    if (hEl) hEl.textContent = `🐟 ${progress.coins}`;
   }
 
   function renderHangar() {
@@ -189,7 +199,7 @@
       let btnLabel = '';
       if (equipped) { btnClass += 'active'; btnLabel = 'ВЫБРАН ✔'; }
       else if (owned) { btnClass += 'equip'; btnLabel = 'ВЫБРАТЬ'; }
-      else { btnClass += 'buy'; btnLabel = `${ship.price} 🪙`; }
+      else { btnClass += 'buy'; btnLabel = `${ship.price} 🐟`; }
 
       item.innerHTML = `
         <div class="shop-info">
@@ -202,18 +212,21 @@
       item.querySelector('button').addEventListener('click', (e) => {
         e.stopPropagation();
         if (synth) synth.init();
-        if (equipped) return;
+        if (equipped) {
+          if (synth) synth.sfxMenuTap();
+          return;
+        }
         if (owned) {
           progress.equippedShip = ship.id;
           saveProgress(progress);
-          if (synth) synth.sfxPowerup();
+          if (synth) synth.sfxMenuSelect();
           renderHangar();
         } else if (progress.coins >= ship.price) {
           progress.coins -= ship.price;
           progress.unlockedShips.push(ship.id);
           progress.equippedShip = ship.id;
           saveProgress(progress);
-          if (synth) synth.sfxVictory();
+          if (synth) synth.sfxBuyItem();
           renderHangar();
         } else {
           if (synth) synth.sfxHurt();
@@ -233,7 +246,7 @@
       let btnLabel = '';
       if (equipped) { btnClass += 'active'; btnLabel = 'УСТАНОВЛЕНО ✔'; }
       else if (owned) { btnClass += 'equip'; btnLabel = 'ВЫБРАТЬ'; }
-      else { btnClass += 'buy'; btnLabel = `${wp.price} 🪙`; }
+      else { btnClass += 'buy'; btnLabel = `${wp.price} 🐟`; }
 
       item.innerHTML = `
         <div class="shop-info">
@@ -246,18 +259,21 @@
       item.querySelector('button').addEventListener('click', (e) => {
         e.stopPropagation();
         if (synth) synth.init();
-        if (equipped) return;
+        if (equipped) {
+          if (synth) synth.sfxMenuTap();
+          return;
+        }
         if (owned) {
           progress.equippedWeapon = wp.id;
           saveProgress(progress);
-          if (synth) synth.sfxPowerup();
+          if (synth) synth.sfxMenuSelect();
           renderHangar();
         } else if (progress.coins >= wp.price) {
           progress.coins -= wp.price;
           progress.unlockedWeapons.push(wp.id);
           progress.equippedWeapon = wp.id;
           saveProgress(progress);
-          if (synth) synth.sfxVictory();
+          if (synth) synth.sfxBuyItem();
           renderHangar();
         } else {
           if (synth) synth.sfxHurt();
@@ -269,7 +285,7 @@
 
   document.getElementById('hangar-open-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    if (synth) { synth.init(); synth.sfxHit(0); }
+    if (synth) { synth.init(); synth.sfxMenuTransition(); }
     renderHangar();
     startOverlay.classList.add('hidden');
     hangarOverlay.classList.remove('hidden');
@@ -277,7 +293,7 @@
 
   document.getElementById('hangar-close-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    if (synth) synth.sfxHit(0);
+    if (synth) synth.sfxMenuSelect();
     hangarOverlay.classList.add('hidden');
     renderLevelGrid();
     startOverlay.classList.remove('hidden');
@@ -288,19 +304,19 @@
       baseName: 'slide1',
       rawFallback: 'img/1000036324.jpg',
       title: 'ПЛАНЕТА КОТОВИЯ-17',
-      text: 'На родной планете Котовия-17 у кота по имени Редж заканчивается еда. Еда выдаётся только по талонам, а миски пустеют!'
+      text: 'На родной планете Котовия-17 у кота по имени Редж заканчивается еда. Рыбка, колбаска и сметана выдаются только по талонам!'
     },
     {
       baseName: 'slide2',
       rawFallback: 'img/1000036326.jpg',
       title: 'СЕКРЕТНЫЙ ОТРЯД «АСТРО-КОТ»',
-      text: 'Редж — один из 10 отважных котов, отобранных для секретной программы освоения запасов еды дальнего космоса. Его ракета готова к старту!'
+      text: 'Редж — один из 10 отважных котов, отобранных для секретной программы добычи провизии в дальнем космосе!'
     },
     {
       baseName: 'slide3',
       rawFallback: 'img/1000036323.jpg',
       title: 'БИТВА С ПОЖИРАТЕЛЯМИ КОСМОСА',
-      text: 'Реджу предстоит исследовать 5 галактик и сразиться со злобными Пожирателями Космоса, зарабатывая монеты на улучшение флота!'
+      text: 'Добывай космическую рыбку 🐟 в боях, открывай 5 кораблей и 5 видов оружия в Ангаре и накорми родную планету!'
     }
   ];
 
@@ -333,7 +349,7 @@
   function openLoreSlides() {
     loreSlideIdx = 0;
     lastRenderedSlideIdx = -1;
-    if (synth) { synth.init(); synth.sfxPowerup(); }
+    if (synth) { synth.init(); synth.sfxMenuTransition(); }
     startOverlay.classList.add('hidden');
     loreOverlay.classList.remove('hidden');
     renderLoreSlide();
@@ -346,7 +362,7 @@
 
   document.getElementById('lore-next-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    if (synth) synth.sfxHit(0);
+    if (synth) synth.sfxMenuTap();
     if (loreSlideIdx < LORE_SLIDES.length - 1) {
       loreSlideIdx++;
       renderLoreSlide();
@@ -357,6 +373,7 @@
 
   document.getElementById('lore-skip-btn').addEventListener('click', (e) => {
     e.stopPropagation();
+    if (synth) synth.sfxMenuTap();
     finishLoreSlides();
   });
 
@@ -384,19 +401,23 @@
       btn.innerHTML = `<span>${lvl.id}</span><span class="star">${done ? '★' : '☆'}</span>`;
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (synth) { synth.init(); synth.sfxHit(0); }
+        if (synth) { synth.init(); synth.sfxMenuSelect(); }
         selectedLevelIdx = idx;
+        applySiteTheme(LEVELS[selectedLevelIdx]);
         renderLevelGrid();
       });
       levelsGrid.appendChild(btn);
     });
 
     const cur = LEVELS[selectedLevelIdx];
+    applySiteTheme(cur);
     const ship = getActiveShip();
     const wp = getActiveBaseWeapon();
+    const diff = DIFFICULTIES[selectedDiffKey];
+    const bossCountLabel = diff && diff.twoBosses ? '2 БОССА ПОДРЯД!' : cur.bossName;
     selectedLevelInfo.innerHTML =
-      `<strong>Уровень ${cur.id}: ${cur.name}</strong> (Награда: +${cur.coinReward} 🪙)<br>` +
-      `<span>Корабль: ${ship.name} • Оружие: ${wp.name}</span>`;
+      `<strong>Уровень ${cur.id}: ${cur.name}</strong> (+${cur.coinReward} 🐟)<br>` +
+      `<span>Босс: ${bossCountLabel} • ${ship.name}</span>`;
     document.getElementById('start-best').textContent =
       `Рекорд: ${progress.bestScore} • Пройдено: ${progress.completed.length}/${LEVELS.length}`;
   }
@@ -405,10 +426,11 @@
   document.querySelectorAll('#diff-row .pill-3d').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (synth) { synth.init(); synth.sfxHit(0); }
+      if (synth) { synth.init(); synth.sfxMenuSelect(); }
       selectedDiffKey = btn.dataset.diff;
       document.querySelectorAll('#diff-row .pill-3d').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      renderLevelGrid();
     });
   });
 
@@ -416,17 +438,19 @@
     if (typeof LEVELS === 'undefined') return;
     selectedLevelIdx = idx;
     const lvl = LEVELS[selectedLevelIdx];
-    if (synth) { synth.init(); synth.sfxPowerup(); }
+    applySiteTheme(lvl);
+    if (synth) { synth.init(); synth.sfxMenuTransition(); }
 
     resolveImageToElement(document.getElementById('intro-stage-img'), [`img/level${lvl.id}_in.jpg`, 'img/transition_in.jpg', 'img/1000036354.jpg']);
 
-    document.getElementById('intro-sector-tag').textContent = `УРОВЕНЬ ${lvl.id}`;
+    const diff = DIFFICULTIES[selectedDiffKey];
+    document.getElementById('intro-sector-tag').textContent = `УРОВЕНЬ ${lvl.id} • ${diff.label.toUpperCase()}`;
     document.getElementById('intro-title').textContent = lvl.name.toUpperCase();
     document.getElementById('intro-story').textContent = lvl.story;
     document.getElementById('intro-intel').innerHTML =
       `<div>🛸 <b>Враги:</b> ${lvl.enemiesDesc}</div>` +
-      `<div>👑 <b>Босс:</b> ${lvl.bossName}</div>` +
-      `<div>⚡ <b>Оружие босса:</b> ${lvl.bossWeapon}</div>`;
+      `<div>👑 <b>Босс:</b> ${diff.twoBosses ? lvl.bossName + ' (x2: Средний + Мега-Босс!)' : lvl.bossName}</div>` +
+      `<div>🐟 <b>Награда провизией:</b> +${lvl.coinReward} рыбок</div>`;
 
     startOverlay.classList.add('hidden');
     endOverlay.classList.add('hidden');
@@ -440,28 +464,40 @@
 
   document.getElementById('intro-launch-btn').addEventListener('click', (e) => {
     e.stopPropagation();
+    if (synth) synth.sfxMenuSelect();
     startLevel(selectedLevelIdx);
   });
 
   document.getElementById('intro-back-btn').addEventListener('click', (e) => {
     e.stopPropagation();
+    if (synth) synth.sfxMenuTap();
     introOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
   });
 
+  // =========================================================================
+  // НАСТРОЙКИ 128-VOICE COZY COSMIC ASMR SYNTH
+  // =========================================================================
   let state = 'START';
   let prevStateBeforeSettings = 'START';
 
   function openSettings() {
-    if (synth) synth.init();
+    if (synth) { synth.init(); synth.sfxMenuTap(); }
     prevStateBeforeSettings = state;
-    if (state === 'PLAYING') state = 'PAUSED';
+    if (state === 'PLAYING') {
+      state = 'PAUSED';
+      if (synth) synth.pauseMusic();
+    }
     settingsOverlay.classList.remove('hidden');
   }
 
   function closeSettings() {
+    if (synth) synth.sfxMenuSelect();
     settingsOverlay.classList.add('hidden');
-    if (prevStateBeforeSettings === 'PLAYING') state = 'PLAYING';
+    if (prevStateBeforeSettings === 'PLAYING') {
+      state = 'PLAYING';
+      if (synth) synth.resumeMusic();
+    }
   }
 
   document.getElementById('settings-open-btn').addEventListener('click', (e) => { e.stopPropagation(); openSettings(); });
@@ -477,6 +513,7 @@
     toggleMusicBtn.textContent = synth.musicEnabled ? 'ВКЛ' : 'ВЫКЛ';
     toggleMusicBtn.classList.toggle('off', !synth.musicEnabled);
     synth.updateMusicVolume();
+    synth.sfxMenuTap();
   });
 
   const trackSelect = document.getElementById('track-select');
@@ -484,10 +521,11 @@
     trackSelect.addEventListener('change', (e) => {
       if (!synth) return;
       synth.init();
+      synth.sfxMenuSelect();
       synth.selectedTrack = e.target.value;
       if (synth.selectedTrack !== 'auto') {
         synth.playTrack(synth.selectedTrack);
-      } else if (state === 'PLAYING' || state === 'PAUSED') {
+      } else if (state === 'PLAYING') {
         synth.startMusic('normal');
       }
     });
@@ -501,34 +539,102 @@
     synth.sfxEnabled = !synth.sfxEnabled;
     toggleSfxBtn.textContent = synth.sfxEnabled ? 'ВКЛ' : 'ВЫКЛ';
     toggleSfxBtn.classList.toggle('off', !synth.sfxEnabled);
+    synth.updateSfxVolume();
+    if (synth.sfxEnabled) synth.sfxMenuTap();
   });
 
-  document.getElementById('music-vol').addEventListener('input', (e) => {
-    if (synth) {
-      synth.musicVolume = Number(e.target.value) / 100;
-      synth.updateMusicVolume();
-    }
-  });
+  const musicVolInput = document.getElementById('music-vol');
+  if (musicVolInput) {
+    musicVolInput.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      const lbl = document.getElementById('val-music-vol');
+      if (lbl) lbl.textContent = `${v}%`;
+      if (synth) {
+        synth.musicVolume = v / 100;
+        synth.updateMusicVolume();
+      }
+    });
+  }
 
-  document.getElementById('sfx-vol').addEventListener('input', (e) => {
-    if (synth) synth.sfxVolume = Number(e.target.value) / 100;
-  });
+  const sfxVolInput = document.getElementById('sfx-vol');
+  if (sfxVolInput) {
+    sfxVolInput.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      const lbl = document.getElementById('val-sfx-vol');
+      if (lbl) lbl.textContent = `${v}%`;
+      if (synth) synth.setMasterVolume(v / 100);
+    });
+  }
+
+  // Ползунки базовых показателей AstraCatSynth (LPF, Space, Drift)
+  const ctrlWarmth = document.getElementById('ctrl-warmth');
+  if (ctrlWarmth) {
+    ctrlWarmth.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      const lbl = document.getElementById('val-warmth');
+      if (lbl) lbl.textContent = `${v} Hz`;
+      if (synth) synth.setWarmthCutoff(v);
+    });
+  }
+
+  const ctrlSpace = document.getElementById('ctrl-space');
+  if (ctrlSpace) {
+    ctrlSpace.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      const lbl = document.getElementById('val-space');
+      if (lbl) lbl.textContent = `${v}%`;
+      if (synth) synth.setSpaceMix(v / 100);
+    });
+  }
+
+  const ctrlPsy = document.getElementById('ctrl-psy');
+  if (ctrlPsy) {
+    ctrlPsy.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      const lbl = document.getElementById('val-psy');
+      if (lbl) lbl.textContent = `${v}%`;
+      if (synth) synth.setPsyDrift(v / 100);
+    });
+  }
+
+  const ambientToggleBtn = document.getElementById('ambient-toggle-btn');
+  if (ambientToggleBtn) {
+    ambientToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!synth) return;
+      const isOn = synth.toggleAmbient();
+      ambientToggleBtn.textContent = isOn ? 'Эмбиент: ВКЛ' : 'Эмбиент: ВЫКЛ';
+      ambientToggleBtn.classList.toggle('off', !isOn);
+    });
+  }
+
+  const asmrPresets = {
+    velvet: { sfx: 40, warmth: 2400, space: 42, psy: 55 },
+    nebula: { sfx: 45, warmth: 1650, space: 68, psy: 85 },
+    purr:   { sfx: 38, warmth: 1150, space: 35, psy: 40 }
+  };
 
   document.querySelectorAll('#timbre-row .pill-3d').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (!synth) return;
       synth.init();
-      synth.timbre = btn.dataset.timbre;
+      const p = asmrPresets[btn.dataset.preset];
+      if (p) {
+        if (sfxVolInput) { sfxVolInput.value = p.sfx; sfxVolInput.dispatchEvent(new Event('input')); }
+        if (ctrlWarmth)  { ctrlWarmth.value = p.warmth; ctrlWarmth.dispatchEvent(new Event('input')); }
+        if (ctrlSpace)   { ctrlSpace.value = p.space; ctrlSpace.dispatchEvent(new Event('input')); }
+        if (ctrlPsy)     { ctrlPsy.value = p.psy; ctrlPsy.dispatchEvent(new Event('input')); }
+      }
       document.querySelectorAll('#timbre-row .pill-3d').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      synth.sfxPowerup();
+      synth.playStarCollect();
     });
   });
 
   document.getElementById('test-chord-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    if (synth) { synth.init(); synth.sfxExplosion(0, false); }
+    if (synth) { synth.init(); synth.playCosmicMeow(); }
   });
 
   muteBtn.addEventListener('click', (e) => {
@@ -539,7 +645,7 @@
   });
 
   // =========================================================================
-  // ИГРОВОЙ ПРОЦЕСС
+  // ИГРОВОЙ ПРОЦЕСС + ПАУЗА С ОСТАНОВКОЙ МУЗЫКИ + 2 БОССА НА «БЕЗУМИИ»
   // =========================================================================
   let score = 0;
   let runCoins = 0;
@@ -555,6 +661,7 @@
   let screenShake = 0;
   let warningBannerTimer = 0;
   let globalTime = 0;
+  let midBossDefeated = false;
 
   let player = null;
   let bullets = [];
@@ -567,13 +674,16 @@
   const keys = {};
   const pointer = { active: false, x: 0, y: 0, isTouch: false };
 
+  // При нажатии на паузу музыка выключается, при продолжении — включается снова
   function togglePause() {
     if (state === 'PLAYING') {
       state = 'PAUSED';
       pointer.active = false;
+      if (synth) { synth.sfxMenuTap(); synth.pauseMusic(); }
       pauseOverlay.classList.remove('hidden');
     } else if (state === 'PAUSED' && settingsOverlay.classList.contains('hidden')) {
       state = 'PLAYING';
+      if (synth) { synth.sfxMenuSelect(); synth.resumeMusic(); }
       pauseOverlay.classList.add('hidden');
     }
   }
@@ -592,7 +702,7 @@
     bonuses = [];
     activeEvent = null;
     if (vfx) vfx.clear();
-    if (synth) synth.startIntroMusic();
+    if (synth) { synth.sfxMenuTap(); synth.startIntroMusic(); }
 
     pauseOverlay.classList.add('hidden');
     endOverlay.classList.add('hidden');
@@ -656,11 +766,12 @@
     const ship = getActiveShip();
     const wp = getActiveBaseWeapon();
 
+    applySiteTheme(lvl);
+
     if (synth) {
       synth.init();
       synth.startMusic('normal', lvl.id);
-      if (lvl.theme === 'underwater') synth.sfxUnderwater(0);
-      else synth.sfxCosmicHum();
+      synth.sfxCosmicHum();
     }
 
     score = 0;
@@ -676,6 +787,7 @@
     activeEvent = null;
     screenShake = 0;
     warningBannerTimer = 0;
+    midBossDefeated = false;
 
     const totalHp = diff.playerHp + (ship.hpBonus || 0);
 
@@ -726,6 +838,7 @@
 
   document.getElementById('next-level-btn').addEventListener('click', (e) => {
     e.stopPropagation();
+    if (synth) synth.sfxMenuSelect();
     if (state === 'VICTORY') {
       showIntro((selectedLevelIdx + 1) % LEVELS.length);
     } else {
@@ -733,42 +846,32 @@
     }
   });
 
-  // Спавн препятствий: на 3-м уровне («Радужный Поток») — Пончики, Облачка-Мечтания и Радужные Облачка!
   function spawnObstacle() {
     const lvl = LEVELS[selectedLevelIdx];
     const margin = 56;
     const x = margin + Math.random() * (W - margin * 2);
 
-    if (lvl.theme === 'rainbow') {
-      const rainbowShapes = ['rainbow_donut', 'dream_bubble', 'rainbow_cloud'];
-      const shape = rainbowShapes[Math.floor(Math.random() * rainbowShapes.length)];
-      obstacles.push({
-        shape,
-        neonColor: '#ff70a6',
-        x,
-        y: -48,
-        r: 26,
-        vy: 96,
-        rot: 0,
-        vrot: shape === 'rainbow_donut' ? 1.2 : 0,
-        phase: Math.random() * Math.PI * 2
-      });
-      return;
+    let shape = 'hex_reactor';
+    if (lvl.theme === 'horror') {
+      shape = Math.random() < 0.65 ? 'skull_bones' : 'blood_pentagram';
+    } else if (lvl.theme === 'rainbow') {
+      const rShapes = ['rainbow_donut', 'dream_bubble', 'rainbow_cloud'];
+      shape = rShapes[Math.floor(Math.random() * rShapes.length)];
+    } else if (lvl.theme === 'underwater') {
+      shape = Math.random() < 0.55 ? 'neon_coral' : 'seaweed_kelp';
+    } else if (lvl.theme === 'organic') {
+      shape = 'thorn_pod';
     }
-
-    const shapes = ['hex_reactor', 'cog_turret', 'tri_pylon', 'cross_gen'];
-    const shape = shapes[Math.floor(Math.random() * shapes.length)];
-    const neonColors = ['#00f5d4', '#ff70a6', '#fee440', '#72efdd'];
 
     obstacles.push({
       shape,
-      neonColor: lvl.accent || neonColors[Math.floor(Math.random() * neonColors.length)],
+      neonColor: lvl.accent || '#00f5d4',
       x,
       y: -48,
       r: 26,
-      vy: 98,
-      rot: Math.random() * Math.PI * 2,
-      vrot: shape === 'cog_turret' ? 1.8 : 0.45,
+      vy: 96,
+      rot: 0,
+      vrot: (shape === 'skull_bones' || shape === 'blood_pentagram' || shape === 'rainbow_donut' || shape === 'thorn_pod') ? 1.4 : 0,
       phase: Math.random() * Math.PI * 2
     });
   }
@@ -780,7 +883,7 @@
 
     if (type === 'gravity') {
       activeEvent = { type: 'gravity', timer: 6.5, x: W * (0.25 + Math.random() * 0.5), y: H * 0.42 };
-      if (synth) synth.sfxGravity(0);
+      if (synth) synth.sfxGravity();
       if (vfx) vfx.addPopup(W / 2, H * 0.30, '🌀 ГРАВИТАЦИОННАЯ ВОРОНКА!', '#bdb2ff', 1.15);
     } else if (type === 'wave') {
       activeEvent = { type: 'wave', timer: 5.5, dir: Math.random() > 0.5 ? 1 : -1 };
@@ -788,11 +891,11 @@
       if (vfx) vfx.addPopup(W / 2, H * 0.30, '🌊 ЭНЕРГЕТИЧЕСКАЯ ВОЛНА!', '#48dbfb', 1.15);
     } else if (type === 'sticky') {
       activeEvent = { type: 'sticky', timer: 6.5, x: W * (0.2 + Math.random() * 0.6), y: H * 0.65, r: 72 };
-      if (synth) synth.sfxSticky(0);
+      if (synth) synth.sfxSticky();
       if (vfx) vfx.addPopup(W / 2, H * 0.30, '🍯 ЛИПКАЯ АНОМАЛИЯ!', '#ffafcc', 1.15);
-    } else if (type === 'ignite') {
+    } else {
       activeEvent = { type: 'ignite', timer: 5.0 };
-      if (synth) synth.sfxIgnite(0);
+      if (synth) synth.sfxIgnite();
       if (vfx) {
         vfx.triggerFlash('#ff6b35', 0.22);
         vfx.addPopup(W / 2, H * 0.30, '🔥 ВСПЫШКА ВОЗГОРАНИЯ!', '#ff9f1c', 1.15);
@@ -800,10 +903,6 @@
       for (let k = 0; k < 4; k++) {
         enemyBullets.push({ kind: 'fireball', x: 45 + ((W - 90) * k) / 3, y: -20 - k * 35, vx: 0, vy: 260, r: 10, color: '#ff6b35' });
       }
-    } else {
-      activeEvent = { type: 'underwater', timer: 5.5, dir: Math.random() > 0.5 ? 1 : -1 };
-      if (synth) synth.sfxUnderwater(0);
-      if (vfx) vfx.addPopup(W / 2, H * 0.30, '🫧 ПОДВОДНОЕ ТЕЧЕНИЕ!', '#00f5d4', 1.15);
     }
   }
 
@@ -818,7 +917,7 @@
     const typeIdx = Math.floor(Math.random() * types.length);
     const kind = types[typeIdx];
     const isHeavy = typeIdx === 1;
-    const hp = Math.max(1, Math.round((isHeavy ? 4 : 2) * hpScale));
+    const hp = Math.max(1, Math.round((isHeavy ? 4.5 : 2.2) * hpScale));
 
     const patterns = ['zigzag', 'dash', 'figure8', 'erratic'];
     const movePattern = patterns[Math.floor(Math.random() * patterns.length)];
@@ -833,23 +932,39 @@
       freq: 2.2 + Math.random() * 2.4,
       amp: 65 + Math.random() * 60,
       turnTimer: 0.5 + Math.random() * 1.1,
-      shootTimer: (isHeavy ? 1.35 : 1.75) + Math.random() * 0.8,
+      shootTimer: (isHeavy ? 1.25 : 1.65) + Math.random() * 0.7,
       hitFlash: 0,
       points: isHeavy ? 180 : 120,
-      coinValue: isHeavy ? 28 : 16
+      coinValue: isHeavy ? 32 : 18
     });
   }
 
-  function spawnBoss() {
+  // Спавн босса (isMidBoss = true для первого среднего босса в режиме «Безумие», false для финального!)
+  function spawnBoss(isMidBoss = false) {
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
-    const totalHp = Math.round(230 * lvl.hpMult * diff.enemyHp);
+    const mult = isMidBoss ? 0.58 : (diff.twoBosses ? 1.35 : 1.0);
+    const bScale = isMidBoss ? 0.82 : (diff.twoBosses ? 1.24 : 1.0);
+    const totalHp = Math.round(240 * lvl.hpMult * diff.enemyHp * mult);
 
     boss = {
-      x: W / 2, y: -110, targetY: Math.min(150, H * 0.22),
-      r: 62, hp: totalHp, maxHp: totalHp, phase: 1, time: 0, hitFlash: 0,
-      smokeTimer: 0, shootTimer: 1.0, specialTimer: 3.4,
-      laserState: 'idle', laserTimer: 0, laserX: W / 2
+      isMidBoss,
+      bossScale: bScale,
+      x: W / 2,
+      y: -110,
+      targetY: Math.min(155, H * 0.22),
+      r: 62 * bScale,
+      hp: totalHp,
+      maxHp: totalHp,
+      phase: 1,
+      time: 0,
+      hitFlash: 0,
+      smokeTimer: 0,
+      shootTimer: 0.95,
+      specialTimer: 3.2,
+      laserState: 'idle',
+      laserTimer: 0,
+      laserX: W / 2
     };
     warningBannerTimer = 2.4;
     if (synth) { synth.sfxBossAlarm(); synth.setMusicMode('boss', lvl.id); }
@@ -869,25 +984,42 @@
     bonuses.push({ type: chosen, x, y, r: 18, vy: 105, phase: Math.random() * Math.PI * 2 });
   }
 
+  // СТРЕЛЬБА С УЧЁТОМ КОЛИЧЕСТВА СТВОЛОВ КОРАБЛЯ (1..5) И ТИПА ОРУЖИЯ (1..5)
   function firePlayerWeapon(p) {
     const pan = ((p.x / W) * 2 - 1) * 0.7;
     const baseId = p.baseWeapon.id;
     const dmgScale = (p.ship.dmgMult || 1) * (p.baseWeapon.dmgBonus || 1) * (p.giantTimer > 0 ? 1.35 : 1.0);
+    const mounts = p.ship.gunMounts || 1;
 
     if (synth) synth.sfxShootWeapon(pan, baseId, p.secondaryWeapon);
 
-    if (baseId === 'droplet') {
-      bullets.push({ kind: 'plasma', x: p.x, y: p.y - 26, vx: 0, vy: -740, r: 6.5, dmg: 1.15 * dmgScale, color: '#48dbfb' });
-    } else if (baseId === 'kalimba') {
-      [-12, 12].forEach(ox => {
-        bullets.push({ kind: 'kalimba_crystal', x: p.x + ox, y: p.y - 24, vx: 0, vy: -840, r: 6, dmg: 0.95 * dmgScale, color: '#72efdd' });
-      });
-    } else {
-      [-0.18, 0, 0.18].forEach(ang => {
-        bullets.push({ kind: 'plasma', x: p.x, y: p.y - 24, vx: Math.sin(ang) * 740, vy: -Math.cos(ang) * 740, r: 6.5, dmg: 0.85 * dmgScale, color: '#ff8fab' });
-      });
-    }
+    // Схемы расположения стволов в зависимости от поколения корабля (1..5)
+    let mountConfigs = [[0, 0]];
+    if (mounts === 2) mountConfigs = [[-13, 0], [13, 0]];
+    else if (mounts === 3) mountConfigs = [[-16, -0.08], [0, 0], [16, 0.08]];
+    else if (mounts === 4) mountConfigs = [[-22, -0.14], [-8, -0.03], [8, 0.03], [22, 0.14]];
+    else if (mounts >= 5) mountConfigs = [[-26, -0.20], [-13, -0.09], [0, 0], [13, 0.09], [26, 0.20]];
 
+    const bulletKind = baseId === 'prism_beam' ? 'prism_spear' : (baseId === 'nova_pulse' ? 'nova_star' : 'plasma');
+    const bulletSpeed = baseId === 'prism_beam' ? 890 : 770;
+    const bulletColor = p.baseWeapon.bulletColor || '#48dbfb';
+
+    mountConfigs.forEach(([ox, ang]) => {
+      bullets.push({
+        kind: bulletKind,
+        pierce: baseId === 'prism_beam' ? 2 : 0,
+        x: p.x + ox,
+        y: p.y - 24,
+        vx: Math.sin(ang) * bulletSpeed,
+        vy: -Math.cos(ang) * bulletSpeed,
+        rot: 0,
+        r: baseId === 'nova_pulse' ? 8.5 : 6.5,
+        dmg: 0.92 * dmgScale,
+        color: bulletColor
+      });
+    });
+
+    // Второе бонусное оружие
     const lv2 = p.secondaryLevel >= 2;
     if (p.secondaryWeapon === 'fractal_shuriken') {
       const angles = lv2 ? [-0.26, 0, 0.26] : [-0.18, 0.18];
@@ -896,7 +1028,7 @@
           kind: 'fractal_shuriken', homing: true,
           x: p.x, y: p.y - 22,
           vx: Math.sin(ang) * 620, vy: -Math.cos(ang) * 620,
-          rot: 0, r: 10, dmg: 1.55 * dmgScale, color: '#00f5d4'
+          rot: 0, r: 10, dmg: 1.45 * dmgScale, color: '#00f5d4'
         });
       });
     } else if (p.secondaryWeapon === 'electric_shock') {
@@ -905,14 +1037,14 @@
         bullets.push({
           kind: 'electric_bolt', chainLightning: true,
           x: p.x + ox, y: p.y - 24, vx: 0, vy: -880,
-          r: 8, dmg: 1.45 * dmgScale, color: '#fee440'
+          r: 8, dmg: 1.40 * dmgScale, color: '#fee440'
         });
       });
     } else if (p.secondaryWeapon === 'wave_cannon') {
       bullets.push({
         kind: 'wave_pulse', pierce: lv2 ? 4 : 3,
         x: p.x, y: p.y - 28, vx: 0, vy: -640,
-        r: lv2 ? 34 : 26, dmg: 1.85 * dmgScale, color: '#f15bb5'
+        r: lv2 ? 34 : 26, dmg: 1.75 * dmgScale, color: '#f15bb5'
       });
     }
   }
@@ -958,10 +1090,8 @@
     if (vfx) vfx.addPopup(bn.x, bn.y, (titles[bn.type] || 'БОНУС') + suffix, '#80ffdb', 1.15);
   }
 
-  // АТАКИ БОССОВ:
-  // - Уровень 1 («Туманность Узоров») и Уровень 3 («Пончик-Мутант»): выпускают изо рта разноцветные волны радуги!
+  // АТАКИ БОССОВ УРОВНЕЙ 1–5
   function fireUniqueBossWeapon(b, lvl, diff) {
-    const pan = ((b.x / W) * 2 - 1) * 0.7;
     const spd = 225 * diff.bulletSpeed;
     const toPlayer = player ? Math.atan2(player.y - b.y, player.x - b.x) : Math.PI / 2;
 
@@ -973,50 +1103,83 @@
         enemyBullets.push({
           kind: 'psy_wave',
           hue: (b.time * 140 + idx * 110) % 360,
-          x: b.x,
-          y: b.y + 16,
+          x: b.x, y: b.y + 16,
           vx: Math.cos(ang) * (spd * 0.92),
           vy: Math.sin(ang) * (spd * 0.92),
-          ang,
-          r: 22,
-          color: '#00f5d4'
+          ang, r: 22, color: '#00f5d4'
         });
       });
     } else if (lvl.id === 2) {
-      if (synth) synth.sfxIgnite(pan);
+      if (synth) synth.sfxIgnite();
       b.shootTimer = b.phase === 3 ? 0.65 : 0.88;
       for (let k = -1; k <= 1; k++) {
-        const ang = toPlayer + k * 0.22 + (Math.random() - 0.5) * 0.1;
+        const ang = toPlayer + k * 0.22;
         enemyBullets.push({
           kind: 'fireball',
-          x: b.x + k * 14,
-          y: b.y + 26,
+          x: b.x + k * 14, y: b.y + 26,
           vx: Math.cos(ang) * (spd * 1.12),
           vy: Math.sin(ang) * (spd * 1.12),
-          r: 12,
-          color: '#ff6b35'
+          r: 12, color: '#ff6b35'
         });
       }
     } else if (lvl.id === 4) {
-      if (synth) synth.sfxHit(pan);
-      b.shootTimer = 1.25;
-      const sporeCount = b.phase === 3 ? 11 : 8;
-      for (let k = 0; k < sporeCount; k++) {
-        const ang = b.time * 1.5 + (Math.PI * 2 * k) / sporeCount;
-        enemyBullets.push({ x: b.x, y: b.y + 15, vx: Math.cos(ang) * (spd * 0.88), vy: Math.sin(ang) * (spd * 0.88), r: 8, color: '#00f5d4' });
-      }
+      // БОСС 4-ГО УРОВНЯ (Осьминог): волновой удар изо рта + лучи из щупалец!
+      if (synth) synth.sfxWave();
+      b.shootTimer = b.phase === 3 ? 0.95 : 1.22;
+      // Волновой удар изо рта
+      enemyBullets.push({
+        kind: 'psy_wave',
+        hue: 185,
+        x: b.x, y: b.y + 20,
+        vx: Math.cos(toPlayer) * spd,
+        vy: Math.sin(toPlayer) * spd,
+        ang: toPlayer, r: 24, color: '#9bf6ff'
+      });
+      // Лучи из боковых щупалец
+      [-45, 45].forEach(ox => {
+        const ang = Math.atan2(player.y - (b.y + 55), player.x - (b.x + ox));
+        enemyBullets.push({
+          kind: 'enemy_laser',
+          x: b.x + ox, y: b.y + 55,
+          vx: Math.cos(ang) * (spd * 1.25),
+          vy: Math.sin(ang) * (spd * 1.25),
+          ang, r: 6.5, color: '#9bf6ff'
+        });
+      });
     } else {
-      if (synth) synth.sfxHit(pan);
-      b.shootTimer = 0.68;
-      for (let k = -2; k <= 2; k++) {
-        const ang = toPlayer + k * 0.19;
-        enemyBullets.push({ x: b.x, y: b.y + 36, vx: Math.cos(ang) * (spd * 1.15), vy: Math.sin(ang) * (spd * 1.15), r: 8, color: '#ff006e' });
-      }
+      // БОСС 5-ГО УРОВНЯ (Страшный Цветок): выпускает большие вращающиеся лазерные цветки + хлещущие лианы!
+      if (synth) synth.sfxWave();
+      b.shootTimer = b.phase === 3 ? 0.92 : 1.18;
+      [-0.28, 0.28].forEach(offsetAng => {
+        const ang = toPlayer + offsetAng;
+        enemyBullets.push({
+          kind: 'laser_flower',
+          rot: 0,
+          x: b.x, y: b.y + 24,
+          vx: Math.cos(ang) * (spd * 0.92),
+          vy: Math.sin(ang) * (spd * 0.92),
+          r: 16, color: '#ff006e'
+        });
+      });
+      // Хлыст-лиана по центру
+      enemyBullets.push({
+        kind: 'vine_whip',
+        x: b.x, y: b.y + 30,
+        vx: Math.cos(toPlayer) * (spd * 1.18),
+        vy: Math.sin(toPlayer) * (spd * 1.18),
+        ang: toPlayer, r: 11, color: '#80ed99'
+      });
     }
   }
 
   function update(dt) {
     globalTime += dt;
+
+    // Обновляем индикатор активных голосов 128-Voice Synth в окне настроек
+    if (synth && !settingsOverlay.classList.contains('hidden')) {
+      const badge = document.getElementById('voice-pool-badge');
+      if (badge) badge.textContent = `Голоса: ${synth.getActiveVoiceCount()} / 128`;
+    }
 
     if (typeof LEVELS === 'undefined' || typeof DIFFICULTIES === 'undefined') return;
     const lvl = LEVELS[selectedLevelIdx];
@@ -1048,24 +1211,30 @@
 
     obstacleTimer -= dt;
     if (obstacleTimer <= 0 && !boss) {
-      obstacleTimer = 3.8 + Math.random() * 2.0;
+      obstacleTimer = 3.6 + Math.random() * 1.8;
       spawnObstacle();
     }
 
+    // Длительность уровня масштабируется на +20% в режиме «Безумие» + спавн 1-го среднего босса на середине!
+    const dMult = diff.durationMult || 1.0;
     waveTimer += dt;
     if (!boss) {
-      if (wave === 1 && waveTimer > 22) {
+      if (wave === 1 && waveTimer > 22 * dMult) {
         wave = 2;
-        if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 2 / 4: НОВЫЙ ПЕЙЗАЖ!', lvl.accent, 1.2);
-      } else if (wave === 2 && waveTimer > 44) {
-        wave = 3;
-        if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 3 / 4: ШТУРМ!', lvl.accent, 1.2);
-      } else if (wave === 3 && waveTimer > 66) {
+        if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 2 / 4!', lvl.accent, 1.2);
+      } else if (wave === 2 && waveTimer > 44 * dMult) {
+        if (diff.twoBosses && !midBossDefeated) {
+          spawnBoss(true); // 1-й босс средней сложности в режиме «Безумие»
+        } else {
+          wave = 3;
+          if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 3 / 4: ШТУРМ!', lvl.accent, 1.2);
+        }
+      } else if (wave === 3 && waveTimer > 66 * dMult) {
         wave = 4;
         if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 4 / 4: ЭЛИТА!', '#ffd166', 1.25);
-      } else if (wave === 4 && waveTimer > 85) {
+      } else if (wave === 4 && waveTimer > 85 * dMult) {
         wave = 5;
-        spawnBoss();
+        spawnBoss(false); // Главный прокачанный босс в финале
       }
 
       if (wave <= 4) {
@@ -1105,7 +1274,7 @@
           speedFactor *= 0.45;
           if (p.stickyTimer <= 0) {
             p.stickyTimer = 1.2;
-            if (synth) synth.sfxSticky(0);
+            if (synth) synth.sfxSticky();
           }
         }
       }
@@ -1182,8 +1351,8 @@
 
     for (let i = bullets.length - 1; i >= 0; i--) {
       const b = bullets[i];
+      b.rot = (b.rot || 0) + dt * 16;
       if (b.homing) {
-        b.rot = (b.rot || 0) + dt * 18;
         let target = boss;
         let bestDist = boss ? Math.hypot(boss.x - b.x, boss.y - b.y) : 9999;
         for (const e of enemies) {
@@ -1251,33 +1420,49 @@
 
       if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt * 6);
 
-      // СТРЕЛЬБА ВРАГОВ: Лазеры у Скелетов и Кибер-Единорогов, Ракеты у Летучих Мышей и Радужек-Мутантов!
+      // СТРЕЛЬБА ВРАГОВ ПО УРОВНЯМ (включая Рыб/Осьминогов на Ур.4 и Растения/Лианы на Ур.5!)
       e.shootTimer -= dt;
       if (e.shootTimer <= 0 && e.y > 40 && e.y < H * 0.68) {
-        e.shootTimer = 1.85 / diff.bulletSpeed;
+        e.shootTimer = 1.80 / diff.bulletSpeed;
         const ang = Math.atan2(p.y - e.y, p.x - e.x);
         const spd = 225 * diff.bulletSpeed;
 
-        if (e.kind === 'skeleton_ship' || e.kind === 'unicorn_lancer') {
+        if (e.kind === 'skeleton_ship' || e.kind === 'unicorn_lancer' || e.kind === 'fish_ship' || e.kind === 'plant_flytrap') {
+          // Лазеры (красные у скелетов, бирюзовые у рыб, зелёные у растений!)
+          const lCol = e.kind === 'plant_flytrap' ? '#80ed99' : (e.kind === 'fish_ship' ? '#9bf6ff' : '#ff002b');
           enemyBullets.push({
             kind: 'enemy_laser',
             x: e.x, y: e.y + 18,
-            vx: Math.cos(ang) * (spd * 1.45),
-            vy: Math.sin(ang) * (spd * 1.45),
-            ang,
-            r: 6.5,
-            color: e.kind === 'unicorn_lancer' ? '#00f5d4' : '#ff002b'
+            vx: Math.cos(ang) * (spd * 1.42),
+            vy: Math.sin(ang) * (spd * 1.42),
+            ang, r: 6.5, color: lCol
           });
-        } else if (e.kind === 'bat_ship' || e.kind === 'iris_mutant') {
+        } else if (e.kind === 'bat_ship' || e.kind === 'iris_mutant' || e.kind === 'octopus_ship' || e.kind === 'plant_thorn') {
+          // Самонаводящиеся ракеты / органические пакеты / водные торпеды
+          const mCol = e.kind === 'plant_thorn' ? '#70e000' : (e.kind === 'octopus_ship' ? '#9bf6ff' : '#ff758f');
           enemyBullets.push({
             kind: 'enemy_missile',
-            homing: true,
-            life: 2.8,
+            homing: true, life: 2.7,
             x: e.x, y: e.y + 18,
             vx: Math.cos(ang) * (spd * 0.88),
             vy: Math.sin(ang) * (spd * 0.88),
-            r: 8.5,
-            color: e.kind === 'iris_mutant' ? '#ffd166' : '#ff758f'
+            r: 8.5, color: mCol
+          });
+        } else if (e.kind === 'manta_wave') {
+          // Скат-зонд 4-го уровня выпускает пастельную морскую волну
+          enemyBullets.push({
+            kind: 'psy_wave', hue: 185,
+            x: e.x, y: e.y + 18,
+            vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+            ang, r: 18, color: '#9bf6ff'
+          });
+        } else if (e.kind === 'plant_vine') {
+          // Лиана-дрон 5-го уровня выпускает зелёную хлещущую лиану
+          enemyBullets.push({
+            kind: 'vine_whip',
+            x: e.x, y: e.y + 18,
+            vx: Math.cos(ang) * (spd * 1.15), vy: Math.sin(ang) * (spd * 1.15),
+            ang, r: 10, color: '#80ed99'
           });
         } else {
           enemyBullets.push({
@@ -1315,21 +1500,19 @@
 
           if (e.hp <= 0) {
             const pan = ((e.x / W) * 2 - 1) * 0.8;
-            if (synth) {
-              synth.sfxExplosion(pan, false);
-              if (lvl.theme === 'underwater') synth.sfxUnderwater(pan);
-            }
-            if (vfx) {
-              vfx.addRealisticExplosion(e.x, e.y, lvl.accent, 1.05, e.wingCol, e.bodyCol);
-            }
+            if (synth) synth.sfxExplosion(pan, false);
+            if (vfx) vfx.addRealisticExplosion(e.x, e.y, lvl.accent, 1.05, e.wingCol, e.bodyCol);
+
             const pts = Math.round(e.points * combo * diff.scoreMult);
-            const earnedCoins = Math.round(e.coinValue * (p.ship.coinMult || 1));
+            const earnedFood = Math.round(e.coinValue * (p.ship.coinMult || 1));
             score += pts;
-            runCoins += earnedCoins;
+            runCoins += earnedFood;
             kills++;
             combo = Math.min(5, combo + 1);
             comboTimer = 3.2;
-            if (vfx) vfx.addPopup(e.x, e.y, `+${earnedCoins} 🪙`, '#ffd6a5');
+            const foodIcons = ['🐟', '🍖', '🥛'];
+            const fIcon = foodIcons[kills % foodIcons.length];
+            if (vfx) vfx.addPopup(e.x, e.y, `+${earnedFood} ${fIcon}`, '#ffd6a5');
             maybeDropFoodBonus(e.x, e.y, false);
             enemies.splice(i, 1);
             screenShake = Math.max(screenShake, 7);
@@ -1370,8 +1553,8 @@
       if (eb.kind === 'psy_wave') {
         eb.hue = (eb.hue + dt * 220) % 360;
         eb.r = Math.min(36, eb.r + dt * 12);
-      } else if (eb.kind === 'fireball' && vfx && Math.random() < 0.45) {
-        vfx.addTrail(eb.x, eb.y, '#ff9f1c', 6, 0.14);
+      } else if (eb.kind === 'laser_flower') {
+        eb.rot = (eb.rot || 0) + dt * 8;
       }
 
       eb.x += eb.vx * dt;
@@ -1432,16 +1615,15 @@
     b.shootTimer -= dt;
     if (b.shootTimer <= 0) fireUniqueBossWeapon(b, lvl, diff);
 
-    // Боссы 1-го, 2-го и 3-го уровней регулярно бьют двойными лазерами прямо из глаз!
     b.specialTimer -= dt;
     if (b.specialTimer <= 0) {
-      if ((lvl.id <= 3 || b.phase >= 2) && b.laserState === 'idle') {
+      if (b.laserState === 'idle') {
         b.laserState = 'charge';
         b.laserTimer = 0.95;
         b.laserX = player.x;
         if (synth) synth.sfxBossAlarm();
       } else {
-        b.specialTimer = 4.8;
+        b.specialTimer = 4.5;
         if (enemies.length < 3) spawnEnemy();
         maybeDropFoodBonus(b.x, b.y + 45, true);
       }
@@ -1454,7 +1636,7 @@
         b.laserState = 'fire';
         b.laserTimer = 0.78;
         if (synth) synth.sfxExplosion(0, true);
-        if (vfx) vfx.triggerFlash(lvl.id === 2 ? '#ff002b' : '#00f5d4', 0.24);
+        if (vfx) vfx.triggerFlash(lvl.accent, 0.24);
         screenShake = 9;
       }
     } else if (b.laserState === 'fire') {
@@ -1462,7 +1644,7 @@
       if (Math.abs(player.x - b.laserX) < 28 + player.r * 0.6 && player.y > b.y) damagePlayer();
       if (b.laserTimer <= 0) {
         b.laserState = 'idle';
-        b.specialTimer = 3.6;
+        b.specialTimer = 3.5;
       }
     }
 
@@ -1479,15 +1661,30 @@
         bullets.splice(j, 1);
 
         if (b.hp <= 0) {
-          score += Math.round((2500 + lvl.id * 400) * diff.scoreMult);
-          runCoins += Math.round((lvl.coinReward || 350) * (player.ship.coinMult || 1));
-          kills++;
-          if (synth) synth.sfxExplosion(0, true);
+          if (synth) synth.sfxBossExplosion();
           if (vfx) {
             vfx.triggerFlash('#ffffff', 0.65);
             vfx.addRealisticExplosion(b.x, b.y, lvl.accent, 2.3, lvl.bossColor, '#ffd166');
           }
           screenShake = 22;
+
+          // Если это был 1-й промежуточный босс в режиме «Безумие» — продолжаем полёт ко 2-му мега-боссу!
+          if (b.isMidBoss) {
+            midBossDefeated = true;
+            score += 1800;
+            runCoins += Math.round((lvl.coinReward || 380) * 0.5);
+            kills++;
+            maybeDropFoodBonus(b.x, b.y, true);
+            boss = null;
+            wave = 3;
+            if (synth) synth.startMusic('normal', lvl.id);
+            if (vfx) vfx.addPopup(W / 2, H * 0.35, '1-Й БОСС ПОВЕРЖЕН! ВПЕРЕДИ МЕГА-БОСС!', '#80ffdb', 1.2);
+            return;
+          }
+
+          score += Math.round((2500 + lvl.id * 400) * diff.scoreMult);
+          runCoins += Math.round((lvl.coinReward || 380) * (player.ship.coinMult || 1));
+          kills++;
           boss = null;
           enemyBullets = [];
           enemies = [];
@@ -1563,13 +1760,13 @@
       ? `Уровень ${lvl.id} пройден!`
       : `Уровень ${lvl.id}: Корабль подбит`;
     document.getElementById('end-title').textContent = victory
-      ? (lvl.id === 5 ? 'КОТОВИЯ-17 СПАСЕНА! 👑' : 'ПОБЕДА! 🏆')
+      ? (lvl.id === 5 ? 'КОТОВИЯ-17 НАКОРМЛЕНА! 👑' : 'ПОБЕДА! 🏆')
       : 'ИГРА ОКОНЧЕНА';
     document.getElementById('end-subtitle').textContent = victory
-      ? `${lvl.bossName} повержен! Загляни в Ангар, чтобы прокачать флот!`
-      : `Ты собрал +${runCoins} 🪙! Прокачайся в Ангаре!`;
+      ? `${lvl.bossName} повержен! Загляни в Ангар, чтобы обменять рыбку на новый корабль!`
+      : `Ты добыл +${runCoins} 🐟 провизии! Прокачай флот в Ангаре!`;
     document.getElementById('final-score').textContent = score;
-    document.getElementById('final-coins').textContent = `+${runCoins} 🪙`;
+    document.getElementById('final-coins').textContent = `+${runCoins} 🐟`;
     document.getElementById('final-kills').textContent = kills;
 
     const nextBtn = document.getElementById('next-level-btn');
@@ -1600,6 +1797,7 @@
     ctx.restore();
   }
 
+  // ОТРИСОВКА 5 ВИДОВ КОРАБЛЕЙ КОТА (включая Био-Фрегат «Валькирия» и Архонт «Кото-Император»)
   function drawPlayer(p) {
     if (p.invuln > 0 && Math.floor(p.invuln * 16) % 2 === 0) return;
 
@@ -1622,9 +1820,18 @@
     ctx.fillStyle = neonCol;
     ctx.globalAlpha = 0.25;
     ctx.beginPath();
-    ctx.arc(0, 2, 32, 0, Math.PI * 2);
+    ctx.arc(0, 2, 34, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
+
+    // Для 5-го корабля («Кото-Император») вращается золотое плазменное кольцо вокруг корпуса
+    if (shipId === 'emperor') {
+      ctx.strokeStyle = '#fee440';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 2, 36, globalTime * 3, globalTime * 3 + Math.PI * 1.4);
+      ctx.stroke();
+    }
 
     const flameH = 18 + Math.sin(globalTime * 42) * 6;
     [-11, 11].forEach(ox => {
@@ -1632,18 +1839,7 @@
       ctx.beginPath();
       ctx.moveTo(ox - 6, 17); ctx.lineTo(ox, 17 + flameH); ctx.lineTo(ox + 6, 17);
       ctx.closePath(); ctx.fill();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.moveTo(ox - 3, 17); ctx.lineTo(ox, 17 + flameH * 0.55); ctx.lineTo(ox + 3, 17);
-      ctx.closePath(); ctx.fill();
     });
-
-    ctx.fillStyle = '#140c29';
-    ctx.beginPath();
-    ctx.moveTo(-14, 3); ctx.lineTo(-35, 20); ctx.lineTo(35, 20); ctx.lineTo(14, 3);
-    ctx.closePath();
-    ctx.fill();
 
     ctx.fillStyle = wingCol;
     ctx.strokeStyle = neonCol;
@@ -1655,30 +1851,29 @@
     } else if (shipId === 'dreadnought') {
       roundRectPath(ctx, -36, -4, 72, 22, 8);
       ctx.fill(); ctx.stroke();
+    } else if (shipId === 'valkyrie') {
+      // Двойные серповидные био-крылья «Валькирии»
+      ctx.beginPath();
+      ctx.moveTo(0, -10); ctx.lineTo(-40, -6); ctx.lineTo(-30, 18); ctx.lineTo(0, 14);
+      ctx.lineTo(30, 18); ctx.lineTo(40, -6);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (shipId === 'emperor') {
+      // Королевские 4-лучевые крылья «Кото-Императора»
+      ctx.beginPath();
+      ctx.moveTo(0, -14); ctx.lineTo(-42, -12); ctx.lineTo(-28, 4); ctx.lineTo(-38, 20);
+      ctx.lineTo(0, 16); ctx.lineTo(38, 20); ctx.lineTo(28, 4); ctx.lineTo(42, -12);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
     } else {
       ctx.beginPath(); ctx.moveTo(-14, -2); ctx.lineTo(-33, 16); ctx.lineTo(-12, 20); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(14, -2); ctx.lineTo(33, 16); ctx.lineTo(12, 20); ctx.closePath(); ctx.fill(); ctx.stroke();
-    }
-
-    if (p.secondaryWeapon !== 'none') {
-      ctx.fillStyle = '#ffd166';
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.8;
-      [-24, 24].forEach(wx => {
-        roundRectPath(ctx, wx - 4, -4, 8, 16, 4);
-        ctx.fill(); ctx.stroke();
-      });
     }
 
     ctx.fillStyle = hullCol;
     ctx.strokeStyle = BORDER_INK;
     ctx.lineWidth = 2.8;
     ctx.beginPath();
-    ctx.ellipse(0, 2, shipId === 'dreadnought' ? 21 : 18, 26, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 2, shipId === 'dreadnought' || shipId === 'emperor' ? 21 : 18, 26, 0, 0, Math.PI * 2);
     ctx.fill(); ctx.stroke();
-
-    ctx.fillStyle = wingCol;
-    ctx.beginPath(); ctx.arc(0, -14, 13, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
 
     ctx.fillStyle = '#48dbfb';
     ctx.beginPath(); ctx.arc(0, -1, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -1689,9 +1884,6 @@
     ctx.moveTo(8, -4); ctx.lineTo(6, -11); ctx.lineTo(2, -6);
     ctx.fill();
     ctx.beginPath(); ctx.arc(0, 0, 8.5, 0, Math.PI * 2); ctx.fill();
-
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
-    ctx.beginPath(); ctx.ellipse(-4, -5, 4, 2, -0.5, 0, Math.PI * 2); ctx.fill();
 
     if (p.shield) {
       const pulse = 35 + Math.sin(globalTime * 8) * 2.5;
@@ -1754,7 +1946,7 @@
 
     ctx.save();
     for (let i = 0; i < player.maxHp; i++) {
-      drawCatLifeIcon(ctx, 22 + i * 22, 26, i < player.hp);
+      drawCatLifeIcon(ctx, 22 + i * 21, 26, i < player.hp);
     }
 
     ctx.fillStyle = '#fff8eb';
@@ -1762,12 +1954,12 @@
     ctx.lineWidth = 4;
     ctx.font = '900 20px sans-serif';
     ctx.textAlign = 'left';
-    ctx.strokeText(`${score}  •  🪙 ${runCoins}`, 18, 60);
-    ctx.fillText(`${score}  •  🪙 ${runCoins}`, 18, 60);
+    ctx.strokeText(`${score}  •  🐟 ${runCoins}`, 18, 60);
+    ctx.fillText(`${score}  •  🐟 ${runCoins}`, 18, 60);
 
     ctx.fillStyle = lvl.accent;
     ctx.font = '800 12px sans-serif';
-    const waveLabel = boss ? 'БОСС' : `ВОЛНА ${Math.min(4, wave)}/4`;
+    const waveLabel = boss ? (boss.isMidBoss ? 'МИНИ-БОСС' : 'МЕГА-БОСС') : `ВОЛНА ${Math.min(4, wave)}/4`;
     const subHud = combo > 1
       ? `УРОВЕНЬ ${lvl.id} • ${waveLabel} • x${combo}`
       : `УРОВЕНЬ ${lvl.id} • ${waveLabel}`;
@@ -1775,15 +1967,16 @@
     ctx.fillText(subHud, 18, 78);
 
     if (boss) {
-      const bw = Math.min(260, W - 200);
-      const bx = (W - bw) / 2 - 20;
+      const bw = Math.min(250, W - 210);
+      const bx = (W - bw) / 2 - 18;
       const by = 18;
 
       ctx.fillStyle = '#ffd166';
       ctx.font = '900 11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.strokeText(lvl.bossName.toUpperCase(), bx + bw / 2, by + 32);
-      ctx.fillText(lvl.bossName.toUpperCase(), bx + bw / 2, by + 32);
+      const bTitle = boss.isMidBoss ? `АВАНГАРД: ${lvl.bossName.toUpperCase()}` : lvl.bossName.toUpperCase();
+      ctx.strokeText(bTitle, bx + bw / 2, by + 32);
+      ctx.fillText(bTitle, bx + bw / 2, by + 32);
 
       roundRectPath(ctx, bx, by, bw, 15, 8);
       ctx.fillStyle = BORDER_INK;
@@ -1829,6 +2022,32 @@
       ctx.lineWidth = 3.5;
       ctx.beginPath();
       ctx.arc(0, -2, eb.r * 0.72, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+
+    } else if (eb.kind === 'laser_flower') {
+      // Вращающийся большой лазерный цветок босса 5-го уровня
+      ctx.rotate(eb.rot || 0);
+      ctx.fillStyle = '#ff006e';
+      ctx.strokeStyle = '#80ed99';
+      ctx.lineWidth = 2.2;
+      for (let k = 0; k < 6; k++) {
+        ctx.rotate(Math.PI / 3);
+        ctx.beginPath();
+        ctx.ellipse(9, 0, 8, 4.5, 0, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+      }
+      ctx.fillStyle = '#fee440';
+      ctx.beginPath(); ctx.arc(0, 0, 5.5, 0, Math.PI * 2); ctx.fill();
+
+    } else if (eb.kind === 'vine_whip') {
+      // Зелёная неоновая лиана врагов и босса 5-го уровня
+      ctx.rotate((eb.ang || Math.PI / 2) - Math.PI / 2);
+      ctx.strokeStyle = '#80ed99';
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      ctx.moveTo(0, -14);
+      ctx.quadraticCurveTo(6, -4, -5, 6);
+      ctx.quadraticCurveTo(5, 12, 0, 18);
       ctx.stroke();
 
     } else if (eb.kind === 'enemy_laser') {
