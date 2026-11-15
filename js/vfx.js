@@ -38,7 +38,6 @@ class VFXEngine {
     });
   }
 
-  // Яркие направленные искры при попадании снаряда в броню корабля или препятствие
   addHitSparks(x, y, color = '#80ffdb', count = 10) {
     for (let i = 0; i < count; i++) {
       if (this.sparks.length > 140) this.sparks.shift();
@@ -57,9 +56,8 @@ class VFXEngine {
     }
   }
 
-  // Электрическая дуга молнии между двумя точками (для оружия «Электрический удар»)
   addLightningArc(x1, y1, x2, y2, color = '#72efdd') {
-    if (this.lightnings.length > 16) this.lightnings.shift();
+    if (this.lightnings.length > 18) this.lightnings.shift();
     const segments = 7;
     const pts = [{ x: x1, y: y1 }];
     for (let i = 1; i < segments; i++) {
@@ -86,20 +84,17 @@ class VFXEngine {
         color: colors[i % colors.length],
         life,
         maxLife: life,
-        drag: 0.92,
-        glow: true
+        drag: 0.92
       });
     }
   }
 
-  // РЕАЛИСТИЧНЫЙ ВЗРЫВ КОРАБЛЯ: Огненные клубы + Разлетающиеся 3D-детали корабля + Искры
   addRealisticExplosion(x, y, accent = '#ff9f1c', scale = 1.0, wingCol = '#ff5964', bodyCol = '#3a506b') {
     this.addShockwave(x, y, accent, 95 * scale, 0.42);
     if (scale >= 1.1) {
       this.addShockwave(x, y, '#ffd166', 145 * scale, 0.56);
     }
 
-    // 1. Клубы настоящего огня (переход: белое ядро -> жёлтое пламя -> оранжевый огонь -> тёмный дым)
     const fireCount = Math.round(14 * scale);
     for (let i = 0; i < fireCount; i++) {
       if (this.fireballs.length > 90) this.fireballs.shift();
@@ -117,10 +112,8 @@ class VFXEngine {
       });
     }
 
-    // 2. Снопы раскалённых искр
     this.addHitSparks(x, y, accent, Math.round(16 * scale));
 
-    // 3. Различающиеся детали разрушенного вражеского корабля (крылья, турбины, бронелисты, кабина)
     const partTypes = ['wing_left', 'wing_right', 'turbine', 'hull_plate', 'dome_shard'];
     const partsCount = Math.min(8, Math.round(5 * scale));
     for (let i = 0; i < partsCount; i++) {
@@ -258,7 +251,6 @@ class VFXEngine {
   }
 
   renderForeground(ctx, W, H) {
-    // 1. Детали разрушенных кораблей (объёмные обломки)
     for (const d of this.debris) {
       const alpha = Math.max(0, d.life / d.maxLife);
       ctx.save();
@@ -277,8 +269,6 @@ class VFXEngine {
         ctx.lineTo(-s * 0.4, s * 0.8);
         ctx.closePath();
         ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#e0fbfc';
-        ctx.beginPath(); ctx.arc(-s * 0.3, 0, 1.4, 0, Math.PI * 2); ctx.fill();
       } else if (d.part === 'turbine') {
         ctx.fillStyle = '#4a5759';
         ctx.fillRect(-s * 0.6, -s * 0.4, s * 1.2, s * 0.8);
@@ -299,13 +289,10 @@ class VFXEngine {
       ctx.restore();
     }
 
-    // 2. Огненные шары и клубы пламени (с переходом в дым)
     for (const fb of this.fireballs) {
       const ratio = fb.life / fb.maxLife;
       ctx.save();
-      if (ratio > 0.35) {
-        ctx.globalCompositeOperation = 'lighter';
-      }
+      if (ratio > 0.35) ctx.globalCompositeOperation = 'lighter';
       ctx.globalAlpha = Math.min(1, ratio * 1.25);
       if (ratio > 0.75) ctx.fillStyle = '#ffffff';
       else if (ratio > 0.52) ctx.fillStyle = '#ffe169';
@@ -318,7 +305,6 @@ class VFXEngine {
       ctx.restore();
     }
 
-    // 3. Неоновые ударные волны, искры попаданий и дуги молний (Additive Glow)
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
 
@@ -373,7 +359,6 @@ class VFXEngine {
     }
     ctx.restore();
 
-    // 4. Всплывающий текст очков и бонусов
     ctx.save();
     ctx.textAlign = 'center';
     for (const pop of this.popups) {
