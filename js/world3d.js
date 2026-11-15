@@ -19,6 +19,19 @@ class World3DEngine {
       };
     });
 
+    // Специальные частицы для Радужного уровня (маленькие звёздочки, шоколадное печенье и глазированные пончики)
+    this.sweetParticles = Array.from({ length: 28 }, (_, i) => ({
+      x: Math.random(),
+      y: Math.random(),
+      z: 0.35 + (i % 3) * 0.25,
+      kind: i % 3 === 0 ? 'donut' : (i % 3 === 1 ? 'cookie' : 'star'),
+      r: 6 + (i % 3) * 2.5,
+      rot: Math.random() * Math.PI * 2,
+      vrot: (Math.random() - 0.5) * 2.2,
+      speed: 0.045 + (i % 3) * 0.035,
+      hue: (i * 55) % 360
+    }));
+
     this.planets = [
       { x: 0.22, y: 0.18, z: 0.35, r: 54, kind: 'ringed', speed: 0.022, hueShift: 0 },
       { x: 0.76, y: 0.56, z: 0.50, r: 44, kind: 'crater', speed: 0.030, hueShift: 90 },
@@ -42,6 +55,15 @@ class World3DEngine {
       if (s.y > 1.02) { s.y = -0.02; s.x = Math.random(); }
     }
 
+    for (const sp of this.sweetParticles) {
+      sp.y += sp.speed * mult * dt;
+      sp.rot += sp.vrot * dt;
+      if (sp.y > 1.06) {
+        sp.y = -0.06;
+        sp.x = Math.random();
+      }
+    }
+
     const planetTypes = ['ringed', 'crater', 'glow_orb', 'twin_moon'];
     for (const p of this.planets) {
       p.y += p.speed * mult * dt;
@@ -54,19 +76,16 @@ class World3DEngine {
     }
   }
 
-  // Отрисовка мрачной 3D-планеты в форме ЧЕРЕПА для 2-го уровня (Хоррор)
   drawSkullPlanet(ctx, px, py, r) {
     ctx.save();
     ctx.translate(px, py);
 
-    // Кроваво-чёрная аура вокруг планеты-черепа
     ctx.fillStyle = '#ff002b';
     ctx.globalAlpha = 0.16;
     ctx.beginPath();
     ctx.arc(0, 0, r * 1.32, 0, Math.PI * 2);
     ctx.fill();
 
-    // Тёмный рельеф костяного черепа
     ctx.globalAlpha = 0.88;
     ctx.fillStyle = '#2b2333';
     ctx.strokeStyle = '#09040e';
@@ -79,20 +98,17 @@ class World3DEngine {
     ctx.fill();
     ctx.stroke();
 
-    // Светлая 3D-выпуклость лба черепа
     ctx.fillStyle = '#4a3e56';
     ctx.beginPath();
     ctx.arc(-r * 0.15, -r * 0.25, r * 0.62, 0, Math.PI * 2);
     ctx.fill();
 
-    // Зловещие провалы глазниц
     ctx.fillStyle = '#07030a';
     ctx.beginPath();
     ctx.ellipse(-r * 0.34, -r * 0.05, r * 0.24, r * 0.28, -0.15, 0, Math.PI * 2);
     ctx.ellipse(r * 0.34, -r * 0.05, r * 0.24, r * 0.28, 0.15, 0, Math.PI * 2);
     ctx.fill();
 
-    // Пульсирующие красные зрачки в глазницах планеты
     const glow = 0.45 + 0.45 * Math.sin(this.time * 3 + px);
     ctx.fillStyle = `rgba(255, 0, 43, ${glow})`;
     ctx.beginPath();
@@ -100,7 +116,6 @@ class World3DEngine {
     ctx.arc(r * 0.34, -r * 0.05, r * 0.09, 0, Math.PI * 2);
     ctx.fill();
 
-    // Треугольная носовая впадина
     ctx.fillStyle = '#07030a';
     ctx.beginPath();
     ctx.moveTo(0, r * 0.12);
@@ -109,7 +124,6 @@ class World3DEngine {
     ctx.closePath();
     ctx.fill();
 
-    // Зубы челюсти планеты-черепа
     ctx.strokeStyle = '#07030a';
     ctx.lineWidth = 2.5;
     for (let k = -2; k <= 2; k++) {
@@ -120,13 +134,6 @@ class World3DEngine {
       ctx.stroke();
     }
 
-    // Трещина на виске
-    ctx.beginPath();
-    ctx.moveTo(r * 0.45, -r * 0.65);
-    ctx.lineTo(r * 0.22, -r * 0.42);
-    ctx.lineTo(r * 0.35, -r * 0.28);
-    ctx.stroke();
-
     ctx.restore();
   }
 
@@ -135,7 +142,6 @@ class World3DEngine {
     const py = p.y * H;
     const r = p.r;
 
-    // На 2-м уровне (Хоррор) все планеты рендерятся как жуткие планеты-черепа!
     if (lvl.theme === 'horror') {
       this.drawSkullPlanet(ctx, px, py, r);
       return;
@@ -161,11 +167,9 @@ class World3DEngine {
 
     ctx.globalAlpha = 0.85;
     let pal = ['#7209b7', '#f72585', '#4cc9f0'];
-    if (lvl.theme === 'lsd') {
+    if (lvl.theme === 'lsd' || lvl.theme === 'rainbow') {
       const h1 = (this.time * 35 + p.hueShift) % 360;
-      pal = [`hsl(${h1}, 80%, 32%)`, `hsl(${(h1 + 45) % 360}, 90%, 55%)`, `hsl(${(h1 + 95) % 360}, 95%, 72%)`];
-    } else if (lvl.theme === 'rainbow') {
-      pal = ['#3a0ca3', '#4361ee', '#4cc9f0'];
+      pal = [`hsl(${h1}, 80%, 36%)`, `hsl(${(h1 + 45) % 360}, 90%, 58%)`, `hsl(${(h1 + 95) % 360}, 95%, 74%)`];
     } else if (lvl.theme === 'underwater') {
       pal = ['#023e8a', '#0077b6', '#00b4d8'];
     } else if (lvl.theme === 'organic') {
@@ -187,22 +191,6 @@ class World3DEngine {
     ctx.arc(-r * 0.28, -r * 0.28, r * 0.52, 0, Math.PI * 2);
     ctx.fill();
 
-    if (p.kind === 'crater') {
-      ctx.fillStyle = pal[0];
-      [[-r * 0.25, r * 0.2, r * 0.18], [r * 0.3, -r * 0.1, r * 0.14], [r * 0.1, r * 0.35, r * 0.12]].forEach(([cx, cy, cr]) => {
-        ctx.beginPath();
-        ctx.arc(cx, cy, cr, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    } else if (p.kind === 'twin_moon') {
-      const mx = Math.cos(this.time * 1.4) * (r * 1.45);
-      const my = Math.sin(this.time * 1.4) * (r * 0.55);
-      ctx.fillStyle = '#ffd166';
-      ctx.beginPath();
-      ctx.arc(mx, my, r * 0.24, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
     if (p.kind === 'ringed') {
       ctx.globalAlpha = 0.68;
       ctx.strokeStyle = '#ffd166';
@@ -215,6 +203,57 @@ class World3DEngine {
     ctx.restore();
   }
 
+  // Отрисовка фоновых частиц звёздочек, шоколадного печенья и глазированных пончиков для Радужного уровня
+  drawRainbowParticles(ctx, W, H) {
+    ctx.save();
+    for (const sp of this.sweetParticles) {
+      const px = ((sp.x * W - this.camX * (sp.z * 48)) % W + W) % W;
+      const py = sp.y * H;
+      const r = sp.r;
+
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(sp.rot);
+      ctx.globalAlpha = 0.78;
+
+      if (sp.kind === 'donut') {
+        // Маленький пончик с розово-неоновой глазурью
+        ctx.fillStyle = '#f4a261';
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `hsl(${(sp.hue + this.time * 60) % 360}, 95%, 68%)`;
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#1d1447';
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.32, 0, Math.PI * 2); ctx.fill();
+      } else if (sp.kind === 'cookie') {
+        // Печенье с шоколадной крошкой
+        ctx.fillStyle = '#e09f3e';
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#3d1e05';
+        [[-r * 0.35, -r * 0.25], [r * 0.3, -r * 0.2], [0, r * 0.35], [-r * 0.25, r * 0.25]].forEach(([cx, cy]) => {
+          ctx.beginPath(); ctx.arc(cx, cy, r * 0.18, 0, Math.PI * 2); ctx.fill();
+        });
+      } else {
+        // Маленькая неоновая звёздочка
+        ctx.fillStyle = `hsl(${(sp.hue + this.time * 90) % 360}, 100%, 72%)`;
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+          const x1 = Math.cos(a) * r;
+          const y1 = Math.sin(a) * r;
+          const x2 = Math.cos(a + Math.PI / 5) * (r * 0.42);
+          const y2 = Math.sin(a + Math.PI / 5) * (r * 0.42);
+          if (i === 0) ctx.moveTo(x1, y1);
+          else ctx.lineTo(x1, y1);
+          ctx.lineTo(x2, y2);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
   render(ctx, lvl, W, H) {
     const grad = ctx.createLinearGradient(0, 0, 0, H);
     grad.addColorStop(0, lvl.skyTop);
@@ -223,7 +262,32 @@ class World3DEngine {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    // Мрачные багровые полосы тумана на 2-м уровне
+    // 1. УРОВЕНЬ 3 («Радужный Поток»): ШИРОКИЕ СИНУСОИДЫ В ВИДЕ РАДУГ ВО ВЕСЬ ФОН
+    if (lvl.theme === 'rainbow') {
+      ctx.save();
+      ctx.globalAlpha = 0.28;
+      ctx.lineCap = 'round';
+      const rainbowBands = ['#ff3366', '#ff9933', '#ffee33', '#33ee88', '#33ccff', '#aa66ff'];
+
+      for (let ribbon = 0; ribbon < 2; ribbon++) {
+        const baseY = H * (0.28 + ribbon * 0.44);
+        rainbowBands.forEach((col, bIdx) => {
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 14;
+          ctx.beginPath();
+          for (let x = -20; x <= W + 20; x += 18) {
+            const sy = baseY + bIdx * 12 +
+              Math.sin(x * 0.011 + this.time * 1.8 + ribbon * 2.1) * 58 -
+              this.camX * 26;
+            if (x === -20) ctx.moveTo(x, sy);
+            else ctx.lineTo(x, sy);
+          }
+          ctx.stroke();
+        });
+      }
+      ctx.restore();
+    }
+
     if (lvl.theme === 'horror') {
       ctx.save();
       ctx.globalAlpha = 0.22;
@@ -237,7 +301,6 @@ class World3DEngine {
       ctx.restore();
     }
 
-    // Движущиеся за планетами синусоиды и фракталы на 1-м уровне («Туманность Узоров»)
     if (lvl.theme === 'lsd') {
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
@@ -290,6 +353,11 @@ class World3DEngine {
 
     for (const p of this.planets) {
       this.drawPlanet3D(ctx, p, lvl, W, H);
+    }
+
+    // Генерация частиц звёздочек, печенья и пончиков поверх фона на 3-м уровне
+    if (lvl.theme === 'rainbow') {
+      this.drawRainbowParticles(ctx, W, H);
     }
   }
 }
