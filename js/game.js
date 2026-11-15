@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'astro_cat_hangar_v7';
+  const STORAGE_KEY = 'astro_cat_hangar_v8';
   const BORDER_INK = typeof INK !== 'undefined' ? INK : '#120a28';
 
   function loadProgress() {
@@ -93,7 +93,6 @@
     tryNext();
   }
 
-  // Точное подключение файлов из твоей папки img/ на GitHub (splash.jpg, menu_bg.jpg, hangar_bg.jpg, transition_in.jpg, transition_out.jpg)
   function setupMenuBackgrounds() {
     const splashCandidates = ['img/splash.jpg', 'img/1000036349.jpg'];
     const outerMenuCandidates = ['img/menu_bg.jpg', 'img/1000036350.jpg'];
@@ -125,7 +124,6 @@
     synth.startIntroMusic();
   }
 
-  // Плоские тонкие кнопки мини-плеера под верхней панелью (Вперёд / Назад)
   const prevTrackBtn = document.getElementById('prev-track-btn');
   if (prevTrackBtn) {
     prevTrackBtn.addEventListener('click', (e) => {
@@ -735,10 +733,29 @@
     }
   });
 
+  // Спавн препятствий: на 3-м уровне («Радужный Поток») — Пончики, Облачка-Мечтания и Радужные Облачка!
   function spawnObstacle() {
     const lvl = LEVELS[selectedLevelIdx];
     const margin = 56;
     const x = margin + Math.random() * (W - margin * 2);
+
+    if (lvl.theme === 'rainbow') {
+      const rainbowShapes = ['rainbow_donut', 'dream_bubble', 'rainbow_cloud'];
+      const shape = rainbowShapes[Math.floor(Math.random() * rainbowShapes.length)];
+      obstacles.push({
+        shape,
+        neonColor: '#ff70a6',
+        x,
+        y: -48,
+        r: 26,
+        vy: 96,
+        rot: 0,
+        vrot: shape === 'rainbow_donut' ? 1.2 : 0,
+        phase: Math.random() * Math.PI * 2
+      });
+      return;
+    }
+
     const shapes = ['hex_reactor', 'cog_turret', 'tri_pylon', 'cross_gen'];
     const shape = shapes[Math.floor(Math.random() * shapes.length)];
     const neonColors = ['#00f5d4', '#ff70a6', '#fee440', '#72efdd'];
@@ -751,7 +768,8 @@
       r: 26,
       vy: 98,
       rot: Math.random() * Math.PI * 2,
-      vrot: shape === 'cog_turret' ? 1.8 : 0.45
+      vrot: shape === 'cog_turret' ? 1.8 : 0.45,
+      phase: Math.random() * Math.PI * 2
     });
   }
 
@@ -834,7 +852,6 @@
       laserState: 'idle', laserTimer: 0, laserX: W / 2
     };
     warningBannerTimer = 2.4;
-    // Передаём ID уровня, чтобы играл boss.mp3, boss2.mp3, boss3.mp3 и т.д.
     if (synth) { synth.sfxBossAlarm(); synth.setMusicMode('boss', lvl.id); }
     if (vfx) vfx.triggerFlash(lvl.accent, 0.28);
   }
@@ -942,24 +959,22 @@
   }
 
   // АТАКИ БОССОВ:
-  // - Уровень 1 («Туманность Узоров»): разноцветные психоделические волны изо рта с окнами для уворота!
-  // - Уровень 2 («Сектор Кошмаров»): Вампир-Слизняк извергает живой огонь изо рта!
+  // - Уровень 1 («Туманность Узоров») и Уровень 3 («Пончик-Мутант»): выпускают изо рта разноцветные волны радуги!
   function fireUniqueBossWeapon(b, lvl, diff) {
     const pan = ((b.x / W) * 2 - 1) * 0.7;
     const spd = 225 * diff.bulletSpeed;
     const toPlayer = player ? Math.atan2(player.y - b.y, player.x - b.x) : Math.PI / 2;
 
-    if (lvl.id === 1) {
+    if (lvl.id === 1 || lvl.id === 3) {
       if (synth) synth.sfxWave();
-      b.shootTimer = b.phase === 3 ? 1.05 : 1.35;
-      // Выпускаем изо рта веер из 3 широких переливающихся психо-волн с зазорами для уворота
-      [-0.38, 0, 0.38].forEach((offsetAng, idx) => {
+      b.shootTimer = b.phase === 3 ? 1.05 : 1.32;
+      [-0.36, 0, 0.36].forEach((offsetAng, idx) => {
         const ang = Math.PI / 2 + offsetAng + Math.sin(b.time * 2.5) * 0.16;
         enemyBullets.push({
           kind: 'psy_wave',
           hue: (b.time * 140 + idx * 110) % 360,
           x: b.x,
-          y: b.y + 22,
+          y: b.y + 16,
           vx: Math.cos(ang) * (spd * 0.92),
           vy: Math.sin(ang) * (spd * 0.92),
           ang,
@@ -968,7 +983,6 @@
         });
       });
     } else if (lvl.id === 2) {
-      // Вампир-Слизняк извергает поток пламени изо рта!
       if (synth) synth.sfxIgnite(pan);
       b.shootTimer = b.phase === 3 ? 0.65 : 0.88;
       for (let k = -1; k <= 1; k++) {
@@ -982,14 +996,6 @@
           r: 12,
           color: '#ff6b35'
         });
-      }
-    } else if (lvl.id === 3) {
-      if (synth) synth.sfxHit(pan);
-      b.shootTimer = 1.15;
-      const rCols = ['#ff5964', '#ff9f1c', '#ffd166', '#06d6a0', '#48dbfb'];
-      for (let k = -2; k <= 2; k++) {
-        const ang = Math.PI / 2 + k * 0.24;
-        enemyBullets.push({ x: b.x + k * 15, y: b.y + 34, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 8.5, color: rCols[k + 2] });
       }
     } else if (lvl.id === 4) {
       if (synth) synth.sfxHit(pan);
@@ -1152,6 +1158,7 @@
       const ob = obstacles[i];
       ob.y += ob.vy * dt;
       ob.rot = (ob.rot || 0) + (ob.vrot || 0.5) * dt;
+      ob.phase = (ob.phase || 0) + dt * 2.5;
 
       for (let j = bullets.length - 1; j >= 0; j--) {
         const b = bullets[j];
@@ -1244,25 +1251,24 @@
 
       if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt * 6);
 
-      // СТРЕЛЬБА ВРАГОВ: Лазеры у кораблей-скелетов, Ракеты у летучих мышей, Токсик у зомби!
+      // СТРЕЛЬБА ВРАГОВ: Лазеры у Скелетов и Кибер-Единорогов, Ракеты у Летучих Мышей и Радужек-Мутантов!
       e.shootTimer -= dt;
       if (e.shootTimer <= 0 && e.y > 40 && e.y < H * 0.68) {
         e.shootTimer = 1.85 / diff.bulletSpeed;
         const ang = Math.atan2(p.y - e.y, p.x - e.x);
         const spd = 225 * diff.bulletSpeed;
 
-        if (e.kind === 'skeleton_ship') {
-          // Скоростной красный лазерный луч
+        if (e.kind === 'skeleton_ship' || e.kind === 'unicorn_lancer') {
           enemyBullets.push({
             kind: 'enemy_laser',
             x: e.x, y: e.y + 18,
             vx: Math.cos(ang) * (spd * 1.45),
             vy: Math.sin(ang) * (spd * 1.45),
             ang,
-            r: 6.5, color: '#ff002b'
+            r: 6.5,
+            color: e.kind === 'unicorn_lancer' ? '#00f5d4' : '#ff002b'
           });
-        } else if (e.kind === 'bat_ship') {
-          // Боевая ракета с подруливанием и дымным следом
+        } else if (e.kind === 'bat_ship' || e.kind === 'iris_mutant') {
           enemyBullets.push({
             kind: 'enemy_missile',
             homing: true,
@@ -1270,22 +1276,14 @@
             x: e.x, y: e.y + 18,
             vx: Math.cos(ang) * (spd * 0.88),
             vy: Math.sin(ang) * (spd * 0.88),
-            r: 8.5, color: '#ff758f'
-          });
-        } else if (e.kind === 'zombie_ship') {
-          // Токсичный кислотный сгусток
-          enemyBullets.push({
-            kind: 'toxic_glob',
-            x: e.x, y: e.y + 18,
-            vx: Math.cos(ang) * spd,
-            vy: Math.sin(ang) * spd,
-            r: 9, color: '#a7c957'
+            r: 8.5,
+            color: e.kind === 'iris_mutant' ? '#ffd166' : '#ff758f'
           });
         } else {
           enemyBullets.push({
             x: e.x, y: e.y + e.r * 0.7,
             vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
-            r: 7, color: lvl.accent
+            r: 7.5, color: lvl.accent
           });
         }
       }
@@ -1358,7 +1356,6 @@
 
     if (boss) updateBoss(dt);
 
-    // Обновление вражеских снарядов (ракет, лазеров, психо-волн и огня)
     for (let i = enemyBullets.length - 1; i >= 0; i--) {
       const eb = enemyBullets[i];
 
@@ -1367,7 +1364,7 @@
         const ang = Math.atan2(p.y - eb.y, p.x - eb.x);
         eb.vx += Math.cos(ang) * 190 * dt;
         eb.vy += Math.sin(ang) * 190 * dt;
-        if (vfx && Math.random() < 0.4) vfx.addTrail(eb.x, eb.y, '#ff758f', 4.5, 0.15);
+        if (vfx && Math.random() < 0.4) vfx.addTrail(eb.x, eb.y, eb.color || '#ff758f', 4.5, 0.15);
       }
 
       if (eb.kind === 'psy_wave') {
@@ -1435,10 +1432,10 @@
     b.shootTimer -= dt;
     if (b.shootTimer <= 0) fireUniqueBossWeapon(b, lvl, diff);
 
-    // Боссы 1-го и 2-го уровней регулярно стреляют двойными лазерами/лучами из глаз!
+    // Боссы 1-го, 2-го и 3-го уровней регулярно бьют двойными лазерами прямо из глаз!
     b.specialTimer -= dt;
     if (b.specialTimer <= 0) {
-      if ((lvl.id === 1 || lvl.id === 2 || b.phase >= 2) && b.laserState === 'idle') {
+      if ((lvl.id <= 3 || b.phase >= 2) && b.laserState === 'idle') {
         b.laserState = 'charge';
         b.laserTimer = 0.95;
         b.laserX = player.x;
@@ -1457,7 +1454,7 @@
         b.laserState = 'fire';
         b.laserTimer = 0.78;
         if (synth) synth.sfxExplosion(0, true);
-        if (vfx) vfx.triggerFlash(lvl.id === 2 ? '#ff002b' : '#00f5d4', 0.28);
+        if (vfx) vfx.triggerFlash(lvl.id === 2 ? '#ff002b' : '#00f5d4', 0.24);
         screenShake = 9;
       }
     } else if (b.laserState === 'fire') {
@@ -1715,7 +1712,6 @@
     ctx.restore();
   }
 
-  // ОТРИСОВКА МОРДОЧКИ КОТИКА ДЛЯ ИНДИКАТОРА ЖИЗНЕЙ
   function drawCatLifeIcon(ctx, x, y, active) {
     ctx.save();
     ctx.translate(x, y);
@@ -1726,20 +1722,17 @@
     ctx.strokeStyle = active ? '#ffffff' : 'rgba(255, 255, 255, 0.3)';
     ctx.lineWidth = 1.6;
 
-    // Ушки котика
     ctx.beginPath();
     ctx.moveTo(-7, -2); ctx.lineTo(-8, -10); ctx.lineTo(-2, -6);
     ctx.moveTo(7, -2);  ctx.lineTo(8, -10);  ctx.lineTo(2, -6);
     ctx.closePath();
     ctx.fill(); ctx.stroke();
 
-    // Мордочка котика
     ctx.beginPath();
     ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
     ctx.fill(); ctx.stroke();
 
     if (active) {
-      // Глазки и розовый носик
       ctx.fillStyle = '#120a28';
       ctx.beginPath();
       ctx.arc(-2.8, -1, 1.3, 0, Math.PI * 2);
@@ -1760,7 +1753,6 @@
     const lvl = LEVELS[selectedLevelIdx];
 
     ctx.save();
-    // Жизни персонажа в виде котиков вместо сердечек!
     for (let i = 0; i < player.maxHp; i++) {
       drawCatLifeIcon(ctx, 22 + i * 22, 26, i < player.hp);
     }
@@ -1823,7 +1815,6 @@
     ctx.translate(eb.x, eb.y);
 
     if (eb.kind === 'psy_wave') {
-      // Эпичная разноцветная психоделическая волна изо рта босса 1-го уровня
       ctx.rotate((eb.ang || Math.PI / 2) - Math.PI / 2);
       const col1 = `hsl(${eb.hue || 0}, 100%, 62%)`;
       const col2 = `hsl(${((eb.hue || 0) + 90) % 360}, 100%, 72%)`;
@@ -1841,19 +1832,17 @@
       ctx.stroke();
 
     } else if (eb.kind === 'enemy_laser') {
-      // Лазер корабля-скелета
       ctx.rotate(Math.atan2(eb.vy, eb.vx) - Math.PI / 2);
-      ctx.fillStyle = '#ff002b';
+      ctx.fillStyle = eb.color || '#ff002b';
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1.6;
       roundRectPath(ctx, -3.5, -14, 7, 28, 3.5);
       ctx.fill(); ctx.stroke();
 
     } else if (eb.kind === 'enemy_missile') {
-      // Ракета корабля-летучей мыши
       ctx.rotate(Math.atan2(eb.vy, eb.vx) - Math.PI / 2);
       ctx.fillStyle = '#4a4e69';
-      ctx.strokeStyle = '#ff0054';
+      ctx.strokeStyle = eb.color || '#ff0054';
       ctx.lineWidth = 2;
       roundRectPath(ctx, -5, -10, 10, 20, 4);
       ctx.fill(); ctx.stroke();
@@ -1861,7 +1850,6 @@
       ctx.beginPath(); ctx.arc(0, -10, 4, 0, Math.PI * 2); ctx.fill();
 
     } else if (eb.kind === 'fireball') {
-      // Огненный шар изо рта Вампира-Слизняка
       ctx.fillStyle = 'rgba(255, 107, 53, 0.45)';
       ctx.beginPath(); ctx.arc(0, 0, eb.r * 1.4, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#ff9f1c';
