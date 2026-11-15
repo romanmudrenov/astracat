@@ -770,4 +770,309 @@ function drawUniqueEnemy(ctx, e) {
     wartCol = `hsl(${(hue1 + 160) % 360}, 95%, 65%)`;
   }
 
-  e.
+  e.wingCol = wingCol;
+  e.bodyCol = bodyCol;
+
+  ctx.fillStyle = domeCol;
+  ctx.globalAlpha = 0.25;
+  ctx.beginPath(); ctx.arc(0, 0, e.r + 9, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = '#140c29';
+  ctx.beginPath();
+  ctx.moveTo(0, 11); ctx.lineTo(-27, -7); ctx.lineTo(-19, 19); ctx.lineTo(0, 26); ctx.lineTo(19, 19); ctx.lineTo(27, -7);
+  ctx.closePath(); ctx.fill();
+
+  ctx.fillStyle = flash ? '#ffffff' : wingCol;
+  ctx.strokeStyle = domeCol;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.moveTo(0, 6); ctx.lineTo(-26, -12); ctx.lineTo(-18, 14); ctx.lineTo(0, 22); ctx.lineTo(18, 14); ctx.lineTo(26, -12);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = flash ? '#ffffff' : bodyCol;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 2.8;
+  ctx.beginPath(); ctx.ellipse(0, 2, 14, 21, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = flash ? '#ffffff' : domeCol;
+  ctx.beginPath(); ctx.ellipse(0, 3, 7.5, 10, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+  if (hasWarts) {
+    drawWarts(ctx, [[-16, -2, 3.2], [16, -2, 3.2], [-11, 10, 2.8], [11, 10, 2.8]], wartCol, '#ffffff');
+  } else {
+    drawRivets(ctx, [[-16, -4], [16, -4], [-12, 10], [12, 10], [0, -12]]);
+  }
+
+  if (e.maxHp > 2 && e.hp < e.maxHp) {
+    const bw = 34;
+    ctx.fillStyle = INK;
+    ctx.fillRect(-bw / 2, -e.r - 12, bw, 6);
+    ctx.fillStyle = '#06d6a0';
+    ctx.fillRect(-bw / 2 + 1, -e.r - 11, (bw - 2) * (e.hp / e.maxHp), 4);
+  }
+
+  ctx.restore();
+}
+
+// =========================================================================
+// БОССЫ (Уровень 3 — ПОНЧИК-МУТАНТ, испускающий изо рта волны радуги, а из глаз лазеры!)
+// =========================================================================
+function drawUniqueBoss(ctx, b, lvl, player, H) {
+  // ДВОЙНЫЕ ЛАЗЕРЫ ИЗ ГЛАЗ БОССА (Уровни 1, 2, 3)
+  if (b.laserState === 'charge') {
+    ctx.save();
+    ctx.strokeStyle = lvl.id === 2 ? 'rgba(255, 0, 43, 0.85)' : 'rgba(255, 230, 109, 0.85)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([10, 8]);
+    [-22, 22].forEach(ex => {
+      ctx.beginPath();
+      ctx.moveTo(b.x + ex, b.y - 8);
+      ctx.lineTo(b.laserX + ex * 0.6, H);
+      ctx.stroke();
+    });
+    ctx.restore();
+  } else if (b.laserState === 'fire') {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    [-22, 22].forEach((ex, idx) => {
+      const startX = b.x + ex;
+      const startY = b.y - 8;
+      const endX = b.laserX + ex * 0.6;
+      const beamCol = lvl.id === 2
+        ? '#ff002b'
+        : `hsl(${(b.time * 220 + idx * 140) % 360}, 100%, 62%)`;
+
+      ctx.strokeStyle = beamCol;
+      ctx.lineWidth = 22;
+      ctx.globalAlpha = 0.44;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, H);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 6;
+      ctx.globalAlpha = 0.95;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, H);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  const flash = b.hitFlash > 0;
+  const lookX = player ? Math.max(-4, Math.min(4, (player.x - b.x) * 0.02)) : 0;
+
+  // --- БОСС УРОВНЯ 3: ПОНЧИК-МУТАНТ ГЛАЗУРНЫЙ ---
+  if (lvl.id === 3) {
+    const hue = Math.floor((b.time * 75) % 360);
+    const icingCol = `hsl(${hue}, 95%, 64%)`;
+    const neonCol = `hsl(${(hue + 140) % 360}, 100%, 68%)`;
+
+    // Радужное неоновое свечение вокруг Пончика-Мутанта
+    ctx.fillStyle = icingCol;
+    ctx.globalAlpha = 0.26;
+    ctx.beginPath(); ctx.arc(0, 0, 78, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Карамельно-радужные мутант-щупальца снизу пончика
+    for (let i = 0; i < 4; i++) {
+      const t = i - 1.5;
+      const waveX = Math.sin(b.time * 5 + i) * 14;
+      ctx.strokeStyle = `hsl(${(hue + i * 65) % 360}, 95%, 62%)`;
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(t * 24, 34);
+      ctx.quadraticCurveTo(t * 26 + waveX, 60, t * 28 - waveX * 0.5, 76);
+      ctx.stroke();
+    }
+
+    // Тесто гигантского пончика
+    ctx.fillStyle = flash ? '#ffffff' : '#f4a261';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, 0, 58, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+
+    // Стекающая мутировавшая радужная глазурь
+    ctx.fillStyle = flash ? '#ffffff' : icingCol;
+    ctx.strokeStyle = neonCol;
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    for (let i = 0; i < 16; i++) {
+      const a = (Math.PI * 2 * i) / 16;
+      const r = 48 + Math.sin(b.time * 4 + i * 2) * 5;
+      if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+      else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Выпуклые мозоли-посыпки разных неоновых цветов на глазури
+    drawWarts(
+      ctx,
+      [[-38, -14, 5.2], [38, -14, 5.2], [-34, 24, 4.8], [34, 24, 4.8], [0, -40, 5.5]],
+      neonCol,
+      '#ffffff'
+    );
+
+    // Центральное кольцо пончика — ЗУБАСТАЯ ПАСТЬ, из которой вылетают волны радуги!
+    ctx.fillStyle = '#120824';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 12, 22, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+
+    // Радужное сияние внутри пасти
+    ctx.fillStyle = neonCol;
+    ctx.beginPath();
+    ctx.arc(0, 12, 11 + Math.sin(b.time * 12) * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Зубы по кругу отверстия пончика
+    ctx.fillStyle = '#ffffff';
+    for (let k = 0; k < 6; k++) {
+      const a = (Math.PI * 2 * k) / 6;
+      const tx = Math.cos(a) * 19;
+      const ty = 12 + Math.sin(a) * 19;
+      ctx.beginPath();
+      ctx.arc(tx, ty, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Безумные глаза Пончика-Мутанта (стреляют лазерами)
+    [-22, 22].forEach((ex, idx) => {
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.arc(ex, -10, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = `hsl(${(hue + idx * 140) % 360}, 100%, 55%)`;
+      ctx.beginPath(); ctx.arc(ex + lookX, -8, 6.5, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(ex + lookX - 2, -10, 2.5, 0, Math.PI * 2); ctx.fill();
+    });
+
+    ctx.restore();
+    return;
+  }
+
+  // --- БОСС УРОВНЯ 2: СТРАШНЫЙ ВАМПИР-СЛИЗНЯК ---
+  if (lvl.id === 2) {
+    ctx.fillStyle = '#2b0514';
+    ctx.strokeStyle = '#ff002b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-68, -28); ctx.lineTo(-42, -66); ctx.lineTo(0, -44); ctx.lineTo(42, -66); ctx.lineTo(68, -28);
+    ctx.lineTo(52, 24); ctx.lineTo(-52, 24);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    const squish = Math.sin(b.time * 4) * 5;
+    ctx.fillStyle = flash ? '#ffffff' : '#590d22';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, -6, 54 + squish * 0.4, Math.PI, 0);
+    ctx.bezierCurveTo(66, 28, 45, 52, 0, 48 + squish);
+    ctx.bezierCurveTo(-45, 52, -66, 28, -54 - squish * 0.4, -6);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    drawWarts(ctx, [[-36, -18, 6.5], [36, -18, 6.5], [-42, 8, 5.5], [42, 8, 5.5], [0, -34, 5.8]], '#800f2f', '#ff4d6d');
+
+    ctx.fillStyle = '#090206';
+    ctx.strokeStyle = '#ff002b';
+    ctx.lineWidth = 3;
+    roundRectPath(ctx, -28, 12, 56, 26, 12);
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = '#ff6b35';
+    ctx.beginPath(); ctx.arc(0, 26, 12 + Math.sin(b.time * 18) * 3, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2;
+    [[-18, 12, -13, 28, -8, 12], [8, 12, 13, 28, 18, 12]].forEach(([x1, y1, x2, y2, x3, y3]) => {
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.closePath(); ctx.fill(); ctx.stroke();
+    });
+
+    [-20, 20].forEach(ex => {
+      ctx.fillStyle = '#ffccd5';
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.arc(ex, -6, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ff002b';
+      ctx.beginPath(); ctx.arc(ex + lookX, -4, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(ex + lookX - 2, -6, 2.5, 0, Math.PI * 2); ctx.fill();
+    });
+
+    ctx.restore();
+    return;
+  }
+
+  // --- БОСС УРОВНЯ 1 И ОСТАЛЬНЫХ УРОВНЕЙ ---
+  const isLsdBoss = lvl.id === 1;
+  const bossHue = Math.floor((b.time * 65) % 360);
+  const dynamicBossCol = isLsdBoss ? `hsl(${bossHue}, 88%, 54%)` : lvl.bossColor;
+  const dynamicAccent = isLsdBoss ? `hsl(${(bossHue + 120) % 360}, 95%, 65%)` : lvl.accent;
+
+  ctx.fillStyle = dynamicAccent;
+  ctx.globalAlpha = 0.25;
+  ctx.beginPath(); ctx.arc(0, 8, 76, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  const tentacleCount = lvl.id === 5 ? 6 : 4;
+  for (let i = 0; i < tentacleCount; i++) {
+    const t = i - (tentacleCount - 1) / 2;
+    const waveX = Math.sin(b.time * 5 + t * 1.4) * 14;
+    const baseX = t * (lvl.id === 5 ? 20 : 28);
+    const tipX = baseX * 1.2 - waveX * 0.6;
+
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 14;
+    ctx.beginPath(); ctx.moveTo(baseX, 24); ctx.quadraticCurveTo(baseX + waveX, 52, tipX, 74); ctx.stroke();
+
+    ctx.strokeStyle = isLsdBoss ? `hsl(${(bossHue + i * 55) % 360}, 95%, 62%)` : lvl.accent;
+    ctx.lineWidth = 8;
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = flash ? '#ffffff' : dynamicBossCol;
+  ctx.strokeStyle = dynamicAccent;
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, 56, Math.PI, 0);
+  ctx.quadraticCurveTo(60, 34, 0, 36);
+  ctx.quadraticCurveTo(-60, 34, -56, 0);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  drawWarts(ctx, [[-38, -18, 5.5], [38, -18, 5.5], [-42, 6, 4.8], [42, 6, 4.8], [-18, -38, 4.5], [18, -38, 4.5]], '#3c096c', dynamicAccent);
+
+  [-20, 20].forEach(ex => {
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.arc(ex, -4, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = b.phase >= 2 ? '#ff006e' : INK;
+    ctx.beginPath(); ctx.arc(ex + lookX, -2, flash ? 4 : 6, 0, Math.PI * 2); ctx.fill();
+  });
+
+  ctx.fillStyle = INK;
+  roundRectPath(ctx, -22, 13, 44, 14, 7);
+  ctx.fill();
+
+  ctx.restore();
+}
