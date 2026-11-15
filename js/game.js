@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'astro_cat_hangar_v9';
-  const BORDER_INK = typeof INK !== 'undefined' ? INK : '#120a28';
+  const STORAGE_KEY = 'astro_cat_hangar_v10';
+  const BORDER_INK = typeof INK !== 'undefined' ? INK : '#100824';
 
   function loadProgress() {
     try {
@@ -124,7 +124,6 @@
     synth.startIntroMusic();
   }
 
-  // Переключение зелёной био-темы сайта для 5-го уровня
   function applySiteTheme(lvl) {
     if (lvl && lvl.theme === 'organic') {
       document.body.classList.add('theme-organic');
@@ -165,7 +164,7 @@
   }
 
   function getActiveShip() {
-    if (typeof SHIPS_CATALOG === 'undefined') return { id: 'shuttle', hpBonus: 0, speedMult: 1, fireRateMult: 1, dmgMult: 1, coinMult: 1, gunMounts: 1, hullColor: '#e0fbfc', wingColor: '#ff5964', neonColor: '#48dbfb' };
+    if (typeof SHIPS_CATALOG === 'undefined') return { id: 'shuttle', hpBonus: 0, speedMult: 1, fireRateMult: 1, dmgMult: 1, coinMult: 1, gunMounts: 1, hullColor: '#e0fbfc', hullDark: '#98c1d9', wingColor: '#ff5964', neonColor: '#48dbfb' };
     return SHIPS_CATALOG.find(s => s.id === progress.equippedShip) || SHIPS_CATALOG[0];
   }
 
@@ -174,7 +173,6 @@
     return WEAPONS_CATALOG.find(w => w.id === progress.equippedWeapon) || WEAPONS_CATALOG[0];
   }
 
-  // Валюта: кошачья еда (🐟 рыбка)
   function updateCoinsUI() {
     const mEl = document.getElementById('menu-coins');
     const hEl = document.getElementById('hangar-coins');
@@ -412,7 +410,6 @@
     const cur = LEVELS[selectedLevelIdx];
     applySiteTheme(cur);
     const ship = getActiveShip();
-    const wp = getActiveBaseWeapon();
     const diff = DIFFICULTIES[selectedDiffKey];
     const bossCountLabel = diff && diff.twoBosses ? '2 БОССА ПОДРЯД!' : cur.bossName;
     selectedLevelInfo.innerHTML =
@@ -476,7 +473,7 @@
   });
 
   // =========================================================================
-  // НАСТРОЙКИ 128-VOICE COZY COSMIC ASMR SYNTH
+  // НАСТРОЙКИ ЗВУКА ASMR
   // =========================================================================
   let state = 'START';
   let prevStateBeforeSettings = 'START';
@@ -566,7 +563,6 @@
     });
   }
 
-  // Ползунки базовых показателей AstraCatSynth (LPF, Space, Drift)
   const ctrlWarmth = document.getElementById('ctrl-warmth');
   if (ctrlWarmth) {
     ctrlWarmth.addEventListener('input', (e) => {
@@ -597,41 +593,6 @@
     });
   }
 
-  const ambientToggleBtn = document.getElementById('ambient-toggle-btn');
-  if (ambientToggleBtn) {
-    ambientToggleBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (!synth) return;
-      const isOn = synth.toggleAmbient();
-      ambientToggleBtn.textContent = isOn ? 'Эмбиент: ВКЛ' : 'Эмбиент: ВЫКЛ';
-      ambientToggleBtn.classList.toggle('off', !isOn);
-    });
-  }
-
-  const asmrPresets = {
-    velvet: { sfx: 40, warmth: 2400, space: 42, psy: 55 },
-    nebula: { sfx: 45, warmth: 1650, space: 68, psy: 85 },
-    purr:   { sfx: 38, warmth: 1150, space: 35, psy: 40 }
-  };
-
-  document.querySelectorAll('#timbre-row .pill-3d').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (!synth) return;
-      synth.init();
-      const p = asmrPresets[btn.dataset.preset];
-      if (p) {
-        if (sfxVolInput) { sfxVolInput.value = p.sfx; sfxVolInput.dispatchEvent(new Event('input')); }
-        if (ctrlWarmth)  { ctrlWarmth.value = p.warmth; ctrlWarmth.dispatchEvent(new Event('input')); }
-        if (ctrlSpace)   { ctrlSpace.value = p.space; ctrlSpace.dispatchEvent(new Event('input')); }
-        if (ctrlPsy)     { ctrlPsy.value = p.psy; ctrlPsy.dispatchEvent(new Event('input')); }
-      }
-      document.querySelectorAll('#timbre-row .pill-3d').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      synth.playStarCollect();
-    });
-  });
-
   document.getElementById('test-chord-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     if (synth) { synth.init(); synth.playCosmicMeow(); }
@@ -645,7 +606,7 @@
   });
 
   // =========================================================================
-  // ИГРОВОЙ ПРОЦЕСС + ПАУЗА С ОСТАНОВКОЙ МУЗЫКИ + 2 БОССА НА «БЕЗУМИИ»
+  // ИГРОВОЙ ПРОЦЕСС
   // =========================================================================
   let score = 0;
   let runCoins = 0;
@@ -674,7 +635,6 @@
   const keys = {};
   const pointer = { active: false, x: 0, y: 0, isTouch: false };
 
-  // При нажатии на паузу музыка выключается, при продолжении — включается снова
   function togglePause() {
     if (state === 'PLAYING') {
       state = 'PAUSED';
@@ -939,7 +899,6 @@
     });
   }
 
-  // Спавн босса (isMidBoss = true для первого среднего босса в режиме «Безумие», false для финального!)
   function spawnBoss(isMidBoss = false) {
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
@@ -984,7 +943,6 @@
     bonuses.push({ type: chosen, x, y, r: 18, vy: 105, phase: Math.random() * Math.PI * 2 });
   }
 
-  // СТРЕЛЬБА С УЧЁТОМ КОЛИЧЕСТВА СТВОЛОВ КОРАБЛЯ (1..5) И ТИПА ОРУЖИЯ (1..5)
   function firePlayerWeapon(p) {
     const pan = ((p.x / W) * 2 - 1) * 0.7;
     const baseId = p.baseWeapon.id;
@@ -993,7 +951,6 @@
 
     if (synth) synth.sfxShootWeapon(pan, baseId, p.secondaryWeapon);
 
-    // Схемы расположения стволов в зависимости от поколения корабля (1..5)
     let mountConfigs = [[0, 0]];
     if (mounts === 2) mountConfigs = [[-13, 0], [13, 0]];
     else if (mounts === 3) mountConfigs = [[-16, -0.08], [0, 0], [16, 0.08]];
@@ -1019,7 +976,6 @@
       });
     });
 
-    // Второе бонусное оружие
     const lv2 = p.secondaryLevel >= 2;
     if (p.secondaryWeapon === 'fractal_shuriken') {
       const angles = lv2 ? [-0.26, 0, 0.26] : [-0.18, 0.18];
@@ -1090,7 +1046,6 @@
     if (vfx) vfx.addPopup(bn.x, bn.y, (titles[bn.type] || 'БОНУС') + suffix, '#80ffdb', 1.15);
   }
 
-  // АТАКИ БОССОВ УРОВНЕЙ 1–5
   function fireUniqueBossWeapon(b, lvl, diff) {
     const spd = 225 * diff.bulletSpeed;
     const toPlayer = player ? Math.atan2(player.y - b.y, player.x - b.x) : Math.PI / 2;
@@ -1123,50 +1078,39 @@
         });
       }
     } else if (lvl.id === 4) {
-      // БОСС 4-ГО УРОВНЯ (Осьминог): волновой удар изо рта + лучи из щупалец!
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.95 : 1.22;
-      // Волновой удар изо рта
       enemyBullets.push({
-        kind: 'psy_wave',
-        hue: 185,
+        kind: 'psy_wave', hue: 185,
         x: b.x, y: b.y + 20,
-        vx: Math.cos(toPlayer) * spd,
-        vy: Math.sin(toPlayer) * spd,
+        vx: Math.cos(toPlayer) * spd, vy: Math.sin(toPlayer) * spd,
         ang: toPlayer, r: 24, color: '#9bf6ff'
       });
-      // Лучи из боковых щупалец
       [-45, 45].forEach(ox => {
         const ang = Math.atan2(player.y - (b.y + 55), player.x - (b.x + ox));
         enemyBullets.push({
           kind: 'enemy_laser',
           x: b.x + ox, y: b.y + 55,
-          vx: Math.cos(ang) * (spd * 1.25),
-          vy: Math.sin(ang) * (spd * 1.25),
+          vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25),
           ang, r: 6.5, color: '#9bf6ff'
         });
       });
     } else {
-      // БОСС 5-ГО УРОВНЯ (Страшный Цветок): выпускает большие вращающиеся лазерные цветки + хлещущие лианы!
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.92 : 1.18;
       [-0.28, 0.28].forEach(offsetAng => {
         const ang = toPlayer + offsetAng;
         enemyBullets.push({
-          kind: 'laser_flower',
-          rot: 0,
+          kind: 'laser_flower', rot: 0,
           x: b.x, y: b.y + 24,
-          vx: Math.cos(ang) * (spd * 0.92),
-          vy: Math.sin(ang) * (spd * 0.92),
+          vx: Math.cos(ang) * (spd * 0.92), vy: Math.sin(ang) * (spd * 0.92),
           r: 16, color: '#ff006e'
         });
       });
-      // Хлыст-лиана по центру
       enemyBullets.push({
         kind: 'vine_whip',
         x: b.x, y: b.y + 30,
-        vx: Math.cos(toPlayer) * (spd * 1.18),
-        vy: Math.sin(toPlayer) * (spd * 1.18),
+        vx: Math.cos(toPlayer) * (spd * 1.18), vy: Math.sin(toPlayer) * (spd * 1.18),
         ang: toPlayer, r: 11, color: '#80ed99'
       });
     }
@@ -1175,7 +1119,6 @@
   function update(dt) {
     globalTime += dt;
 
-    // Обновляем индикатор активных голосов 128-Voice Synth в окне настроек
     if (synth && !settingsOverlay.classList.contains('hidden')) {
       const badge = document.getElementById('voice-pool-badge');
       if (badge) badge.textContent = `Голоса: ${synth.getActiveVoiceCount()} / 128`;
@@ -1215,7 +1158,6 @@
       spawnObstacle();
     }
 
-    // Длительность уровня масштабируется на +20% в режиме «Безумие» + спавн 1-го среднего босса на середине!
     const dMult = diff.durationMult || 1.0;
     waveTimer += dt;
     if (!boss) {
@@ -1224,7 +1166,7 @@
         if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 2 / 4!', lvl.accent, 1.2);
       } else if (wave === 2 && waveTimer > 44 * dMult) {
         if (diff.twoBosses && !midBossDefeated) {
-          spawnBoss(true); // 1-й босс средней сложности в режиме «Безумие»
+          spawnBoss(true);
         } else {
           wave = 3;
           if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 3 / 4: ШТУРМ!', lvl.accent, 1.2);
@@ -1234,7 +1176,7 @@
         if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 4 / 4: ЭЛИТА!', '#ffd166', 1.25);
       } else if (wave === 4 && waveTimer > 85 * dMult) {
         wave = 5;
-        spawnBoss(false); // Главный прокачанный босс в финале
+        spawnBoss(false);
       }
 
       if (wave <= 4) {
@@ -1420,7 +1362,6 @@
 
       if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt * 6);
 
-      // СТРЕЛЬБА ВРАГОВ ПО УРОВНЯМ (включая Рыб/Осьминогов на Ур.4 и Растения/Лианы на Ур.5!)
       e.shootTimer -= dt;
       if (e.shootTimer <= 0 && e.y > 40 && e.y < H * 0.68) {
         e.shootTimer = 1.80 / diff.bulletSpeed;
@@ -1428,7 +1369,6 @@
         const spd = 225 * diff.bulletSpeed;
 
         if (e.kind === 'skeleton_ship' || e.kind === 'unicorn_lancer' || e.kind === 'fish_ship' || e.kind === 'plant_flytrap') {
-          // Лазеры (красные у скелетов, бирюзовые у рыб, зелёные у растений!)
           const lCol = e.kind === 'plant_flytrap' ? '#80ed99' : (e.kind === 'fish_ship' ? '#9bf6ff' : '#ff002b');
           enemyBullets.push({
             kind: 'enemy_laser',
@@ -1438,7 +1378,6 @@
             ang, r: 6.5, color: lCol
           });
         } else if (e.kind === 'bat_ship' || e.kind === 'iris_mutant' || e.kind === 'octopus_ship' || e.kind === 'plant_thorn') {
-          // Самонаводящиеся ракеты / органические пакеты / водные торпеды
           const mCol = e.kind === 'plant_thorn' ? '#70e000' : (e.kind === 'octopus_ship' ? '#9bf6ff' : '#ff758f');
           enemyBullets.push({
             kind: 'enemy_missile',
@@ -1449,7 +1388,6 @@
             r: 8.5, color: mCol
           });
         } else if (e.kind === 'manta_wave') {
-          // Скат-зонд 4-го уровня выпускает пастельную морскую волну
           enemyBullets.push({
             kind: 'psy_wave', hue: 185,
             x: e.x, y: e.y + 18,
@@ -1457,7 +1395,6 @@
             ang, r: 18, color: '#9bf6ff'
           });
         } else if (e.kind === 'plant_vine') {
-          // Лиана-дрон 5-го уровня выпускает зелёную хлещущую лиану
           enemyBullets.push({
             kind: 'vine_whip',
             x: e.x, y: e.y + 18,
@@ -1668,7 +1605,6 @@
           }
           screenShake = 22;
 
-          // Если это был 1-й промежуточный босс в режиме «Безумие» — продолжаем полёт ко 2-му мега-боссу!
           if (b.isMidBoss) {
             midBossDefeated = true;
             score += 1800;
@@ -1797,7 +1733,9 @@
     ctx.restore();
   }
 
-  // ОТРИСОВКА 5 ВИДОВ КОРАБЛЕЙ КОТА (включая Био-Фрегат «Валькирия» и Архонт «Кото-Император»)
+  // =========================================================================
+  // ВЫСОКОДЕТАЛИЗИРОВАННАЯ ОБТЕКАЕМАЯ 3D-ОТРИСОВКА КОРАБЛЯ ИГРОКА (МНОГО ПОЛИГОНОВ)
+  // =========================================================================
   function drawPlayer(p) {
     if (p.invuln > 0 && Math.floor(p.invuln * 16) % 2 === 0) return;
 
@@ -1814,79 +1752,103 @@
 
     const shipId = p.ship.id;
     const hullCol = p.ship.hullColor || '#e0fbfc';
+    const hullDark = p.ship.hullDark || '#98c1d9';
     const wingCol = p.ship.wingColor || '#ff5964';
     const neonCol = p.ship.neonColor || '#48dbfb';
 
+    // Неоновое поле вокруг 3D-корабля
     ctx.fillStyle = neonCol;
-    ctx.globalAlpha = 0.25;
-    ctx.beginPath();
-    ctx.arc(0, 2, 34, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.globalAlpha = 0.24;
+    ctx.beginPath(); ctx.arc(0, 2, 36, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1;
 
-    // Для 5-го корабля («Кото-Император») вращается золотое плазменное кольцо вокруг корпуса
+    // Плазменное кольцо для флагмана «Кото-Император»
     if (shipId === 'emperor') {
       ctx.strokeStyle = '#fee440';
       ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(0, 2, 36, globalTime * 3, globalTime * 3 + Math.PI * 1.4);
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 2, 37, globalTime * 3, globalTime * 3 + Math.PI * 1.4); ctx.stroke();
     }
 
-    const flameH = 18 + Math.sin(globalTime * 42) * 6;
+    // Двойные реактивные сопла с 3D-окантовкой и пламенем
+    const flameH = 19 + Math.sin(globalTime * 42) * 6;
     [-11, 11].forEach(ox => {
+      ctx.fillStyle = '#2b2d42';
+      ctx.strokeStyle = BORDER_INK;
+      ctx.lineWidth = 2;
+      roundRectPath(ctx, ox - 5, 14, 10, 7, 2);
+      ctx.fill(); ctx.stroke();
+
       ctx.fillStyle = '#ff9f1c';
-      ctx.beginPath();
-      ctx.moveTo(ox - 6, 17); ctx.lineTo(ox, 17 + flameH); ctx.lineTo(ox + 6, 17);
-      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(ox - 5, 20); ctx.lineTo(ox, 20 + flameH); ctx.lineTo(ox + 5, 20); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.moveTo(ox - 2.5, 20); ctx.lineTo(ox, 20 + flameH * 0.55); ctx.lineTo(ox + 2.5, 20); ctx.closePath(); ctx.fill();
     });
 
-    ctx.fillStyle = wingCol;
-    ctx.strokeStyle = neonCol;
-    ctx.lineWidth = 2.4;
+    // Многополигональные обтекаемые крылья со световыми и теневыми гранями
+    if (typeof drawPoly === 'function') {
+      if (shipId === 'interceptor') {
+        // Стреловидные 3D-крылья Перехватчика (8 полигонов)
+        drawPoly(ctx, [[0, -10], [-38, 12], [-34, 19], [-12, 16]], wingCol, neonCol, 2.2);
+        drawPoly(ctx, [[0, -10], [38, 12], [34, 19], [12, 16]], wingCol, neonCol, 2.2);
+        drawPoly(ctx, [[0, -10], [-38, 12], [-22, 14], [0, -2]], 'rgba(255,255,255,0.28)', null);
+      } else if (shipId === 'dreadnought') {
+        // Тяжёлые бронированные 3D-крылья Линкора
+        drawPoly(ctx, [[-12, -12], [-38, -2], [-35, 18], [-12, 20]], wingCol, neonCol, 2.4);
+        drawPoly(ctx, [[12, -12], [38, -2], [35, 18], [12, 20]], wingCol, neonCol, 2.4);
+        drawPoly(ctx, [[-12, -12], [-38, -2], [-25, 8], [-12, 4]], 'rgba(255,255,255,0.25)', null);
+      } else if (shipId === 'valkyrie') {
+        // Обтекаемые серповидные био-крылья «Валькирии»
+        drawPoly(ctx, [[0, -14], [-42, -6], [-32, 18], [-14, 14]], wingCol, neonCol, 2.2);
+        drawPoly(ctx, [[0, -14], [42, -6], [32, 18], [14, 14]], wingCol, neonCol, 2.2);
+        drawPoly(ctx, [[0, -14], [-42, -6], [-24, 4]], 'rgba(255,255,255,0.28)', null);
+      } else if (shipId === 'emperor') {
+        // 4-лучевые крылья флагмана «Кото-Император»
+        drawPoly(ctx, [[0, -16], [-44, -12], [-28, 3], [-40, 21], [-12, 16]], wingCol, neonCol, 2.2);
+        drawPoly(ctx, [[0, -16], [44, -12], [28, 3], [40, 21], [12, 16]], wingCol, neonCol, 2.2);
+        drawPoly(ctx, [[0, -16], [-44, -12], [-20, -2]], 'rgba(255,255,255,0.32)', null);
+      } else {
+        // Базовый обтекаемый 3D-шаттл МК-1
+        drawPoly(ctx, [[-10, -8], [-35, 12], [-30, 19], [-10, 19]], wingCol, neonCol, 2.2);
+        drawPoly(ctx, [[10, -8], [35, 12], [30, 19], [10, 19]], wingCol, neonCol, 2.2);
+        drawPoly(ctx, [[-10, -8], [-35, 12], [-20, 14]], 'rgba(255,255,255,0.26)', null);
+      }
 
-    if (shipId === 'interceptor') {
-      ctx.beginPath(); ctx.moveTo(-12, -8); ctx.lineTo(-37, 14); ctx.lineTo(-14, 18); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(12, -8); ctx.lineTo(37, 14); ctx.lineTo(14, 18); ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (shipId === 'dreadnought') {
-      roundRectPath(ctx, -36, -4, 72, 22, 8);
-      ctx.fill(); ctx.stroke();
-    } else if (shipId === 'valkyrie') {
-      // Двойные серповидные био-крылья «Валькирии»
-      ctx.beginPath();
-      ctx.moveTo(0, -10); ctx.lineTo(-40, -6); ctx.lineTo(-30, 18); ctx.lineTo(0, 14);
-      ctx.lineTo(30, 18); ctx.lineTo(40, -6);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (shipId === 'emperor') {
-      // Королевские 4-лучевые крылья «Кото-Императора»
-      ctx.beginPath();
-      ctx.moveTo(0, -14); ctx.lineTo(-42, -12); ctx.lineTo(-28, 4); ctx.lineTo(-38, 20);
-      ctx.lineTo(0, 16); ctx.lineTo(38, 20); ctx.lineTo(28, 4); ctx.lineTo(42, -12);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else {
-      ctx.beginPath(); ctx.moveTo(-14, -2); ctx.lineTo(-33, 16); ctx.lineTo(-12, 20); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(14, -2); ctx.lineTo(33, 16); ctx.lineTo(12, 20); ctx.closePath(); ctx.fill(); ctx.stroke();
+      // Многогранный обтекаемый 3D-фюзеляж (левая светлая грань, правая теневая грань, носовой обтекатель)
+      const hw = (shipId === 'dreadnought' || shipId === 'emperor') ? 20 : 17;
+      drawPoly(ctx, [
+        [0, -29], [hw * 0.75, -16], [hw, 4], [hw * 0.75, 22], [0, 26],
+        [-hw * 0.75, 22], [-hw, 4], [-hw * 0.75, -16]
+      ], hullCol, BORDER_INK, 2.6);
+
+      // Правая теневая 3D-грань фюзеляжа (создаёт реальный объём)
+      drawPoly(ctx, [
+        [0, -29], [hw * 0.75, -16], [hw, 4], [hw * 0.75, 22], [0, 26]
+      ], hullDark, null);
+
+      // Носовой обтекатель с неоновым акцентом
+      drawPoly(ctx, [[0, -29], [hw * 0.65, -16], [0, -12], [-hw * 0.65, -16]], wingCol, BORDER_INK, 2.0);
     }
 
-    ctx.fillStyle = hullCol;
-    ctx.strokeStyle = BORDER_INK;
-    ctx.lineWidth = 2.8;
-    ctx.beginPath();
-    ctx.ellipse(0, 2, shipId === 'dreadnought' || shipId === 'emperor' ? 21 : 18, 26, 0, 0, Math.PI * 2);
-    ctx.fill(); ctx.stroke();
-
+    // Стеклянный 3D-купол кабины и мордочка Астро-Кота
     ctx.fillStyle = '#48dbfb';
-    ctx.beginPath(); ctx.arc(0, -1, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = BORDER_INK;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.ellipse(0, 1, 12, 14, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
+    // Кот Редж в кабине
     ctx.fillStyle = '#ffb703';
     ctx.beginPath();
-    ctx.moveTo(-8, -4); ctx.lineTo(-6, -11); ctx.lineTo(-2, -6);
-    ctx.moveTo(8, -4); ctx.lineTo(6, -11); ctx.lineTo(2, -6);
+    ctx.moveTo(-7, -3); ctx.lineTo(-5, -10); ctx.lineTo(-2, -5);
+    ctx.moveTo(7, -3);  ctx.lineTo(5, -10);  ctx.lineTo(2, -5);
     ctx.fill();
-    ctx.beginPath(); ctx.arc(0, 0, 8.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 1, 8, 0, Math.PI * 2); ctx.fill();
+
+    // Стеклянный блик на фонаре кабины
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    ctx.beginPath(); ctx.ellipse(-4, -5, 3.5, 6, -0.35, 0, Math.PI * 2); ctx.fill();
 
     if (p.shield) {
-      const pulse = 35 + Math.sin(globalTime * 8) * 2.5;
+      const pulse = 36 + Math.sin(globalTime * 8) * 2.5;
       ctx.strokeStyle = '#ff5964';
       ctx.fillStyle = 'rgba(255, 89, 100, 0.20)';
       ctx.lineWidth = 3.5;
@@ -1897,7 +1859,7 @@
       ctx.strokeStyle = '#06d6a0';
       ctx.lineWidth = 3.5;
       ctx.setLineDash([6, 4]);
-      ctx.beginPath(); ctx.arc(0, 0, 38, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 39, 0, Math.PI * 2); ctx.stroke();
       ctx.setLineDash([]);
     }
 
@@ -2014,40 +1976,30 @@
 
       ctx.strokeStyle = col1;
       ctx.lineWidth = 7;
-      ctx.beginPath();
-      ctx.arc(0, -6, eb.r, 0.15 * Math.PI, 0.85 * Math.PI);
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, -6, eb.r, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
 
       ctx.strokeStyle = col2;
       ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.arc(0, -2, eb.r * 0.72, 0.15 * Math.PI, 0.85 * Math.PI);
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, -2, eb.r * 0.72, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
 
     } else if (eb.kind === 'laser_flower') {
-      // Вращающийся большой лазерный цветок босса 5-го уровня
       ctx.rotate(eb.rot || 0);
       ctx.fillStyle = '#ff006e';
       ctx.strokeStyle = '#80ed99';
       ctx.lineWidth = 2.2;
       for (let k = 0; k < 6; k++) {
         ctx.rotate(Math.PI / 3);
-        ctx.beginPath();
-        ctx.ellipse(9, 0, 8, 4.5, 0, 0, Math.PI * 2);
-        ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(9, 0, 8, 4.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       }
       ctx.fillStyle = '#fee440';
       ctx.beginPath(); ctx.arc(0, 0, 5.5, 0, Math.PI * 2); ctx.fill();
 
     } else if (eb.kind === 'vine_whip') {
-      // Зелёная неоновая лиана врагов и босса 5-го уровня
       ctx.rotate((eb.ang || Math.PI / 2) - Math.PI / 2);
       ctx.strokeStyle = '#80ed99';
       ctx.lineWidth = 4.5;
       ctx.beginPath();
-      ctx.moveTo(0, -14);
-      ctx.quadraticCurveTo(6, -4, -5, 6);
-      ctx.quadraticCurveTo(5, 12, 0, 18);
+      ctx.moveTo(0, -14); ctx.quadraticCurveTo(6, -4, -5, 6); ctx.quadraticCurveTo(5, 12, 0, 18);
       ctx.stroke();
 
     } else if (eb.kind === 'enemy_laser') {
