@@ -51,7 +51,7 @@ const WEAPONS_CATALOG = [
   {
     id: 'droplet',
     name: 'Капельная Плазма',
-    desc: 'Мягкие ASMR-капли плазмы с неоновым следом.',
+    desc: 'Мягкие приглушённые капли плазмы с неоновым следом.',
     price: 0,
     dmgBonus: 1.0,
     bulletColor: '#48dbfb'
@@ -59,7 +59,7 @@ const WEAPONS_CATALOG = [
   {
     id: 'kalimba',
     name: 'Калимба-Луч',
-    desc: 'Сдвоенные кристаллы с ASMR-перезвоном (+55% урона).',
+    desc: 'Сдвоенные кристаллы с бархатным звуком (+55% урона).',
     price: 650,
     dmgBonus: 1.55,
     bulletColor: '#72efdd'
@@ -77,11 +77,11 @@ const WEAPONS_CATALOG = [
 const LEVELS = [
   {
     id: 1,
-    name: 'ЛСД-Туманность',
-    story: 'За планетами пульсируют синусоиды и фракталы! Подбирай Фрактальные сюрикены, Электрический удар, Волновую пушку и волшебные звёздочки!',
-    enemiesDesc: 'Психо-Глаза, Гриб-Крейсеры и Фрактал-Медузы',
-    bossName: 'Доктор Кракен-Бот',
-    bossWeapon: 'Психоделический веер и Мега-Луч',
+    name: 'Туманность Узоров',
+    story: 'Галлюциногенные корабли переливаются всеми цветами радуги на фоне живых синусоид! Оракул Фракталов бьёт психо-волнами изо рта и лазерами из глаз!',
+    enemiesDesc: 'Переливающиеся Психо-Глаза, Гриб-Крейсеры и Фрактал-Медузы',
+    bossName: 'Оракул Фракталов',
+    bossWeapon: 'Разноцветные психо-волны изо рта и лазеры из глаз',
     theme: 'lsd',
     enemyTypes: ['psy_eye', 'shroom_cruiser', 'fractal_medusa'],
     skyTop: '#16052b', skyMid: '#340b54', skyBot: '#5c1068',
@@ -89,15 +89,15 @@ const LEVELS = [
   },
   {
     id: 2,
-    name: 'Сектор Кошмаров',
-    story: 'Кровавый туман окутал заброшенный флот. Из темноты атакуют костяные корабли-призраки!',
-    enemiesDesc: 'Костяные Истребители, Череп-Крейсеры и Тёмные Зонды',
-    bossName: 'Кошмарный Жнец',
-    bossWeapon: 'Кровавые сгустки и костяные иглы',
+    name: 'Мрачный Сектор Кошмаров',
+    story: 'Среди планет-черепов атакуют Корабли-Скелеты с лазерами, Корабли-Летучие Мыши с ракетами и Корабли-Зомби! Впереди — Вампир-Слизняк!',
+    enemiesDesc: 'Корабли-Скелеты (лазеры), Летучие Мыши (ракеты) и Корабли-Зомби',
+    bossName: 'Вампир-Слизняк Кровожадный',
+    bossWeapon: 'Поток адского огня изо рта и кровавые лучи из глаз',
     theme: 'horror',
-    enemyTypes: ['horror_fang', 'horror_skullship', 'horror_reaper'],
-    skyTop: '#08030c', skyMid: '#17071c', skyBot: '#2b091e',
-    accent: '#ff002b', bossColor: '#590d22', hpMult: 1.18, coinReward: 500
+    enemyTypes: ['skeleton_ship', 'bat_ship', 'zombie_ship'],
+    skyTop: '#040108', skyMid: '#120309', skyBot: '#24050e',
+    accent: '#ff002b', bossColor: '#4a0e2e', hpMult: 1.22, coinReward: 520
   },
   {
     id: 3,
@@ -179,9 +179,6 @@ function drawRivets(ctx, points) {
   });
 }
 
-// =========================================================================
-// 1. ПРЕДМЕТЫ, ЗВЁЗДОЧКИ И 3 НОВЫХ ОРУЖИЯ 1-ГО УРОВНЯ (3D ВИД СВЕРХУ С НЕОНОМ)
-// =========================================================================
 function drawFoodBonus(ctx, bn) {
   ctx.save();
   ctx.translate(bn.x, bn.y);
@@ -199,7 +196,6 @@ function drawFoodBonus(ctx, bn) {
   };
   const neonCol = glowColors[bn.type] || '#ffd166';
 
-  // Неоновый ореол вокруг капсулы предмета
   ctx.fillStyle = neonCol;
   ctx.globalAlpha = 0.26;
   ctx.beginPath();
@@ -207,7 +203,6 @@ function drawFoodBonus(ctx, bn) {
   ctx.fill();
   ctx.globalAlpha = 1;
 
-  // 3D-подложка капсулы
   ctx.fillStyle = '#1b1438';
   ctx.strokeStyle = neonCol;
   ctx.lineWidth = 2.5;
@@ -217,7 +212,6 @@ function drawFoodBonus(ctx, bn) {
   ctx.stroke();
 
   if (bn.type === 'green_star' || bn.type === 'red_shield') {
-    // Волшебная 3D-звёздочка (зелёная — гигантский корабль, красная — энерго-щит)
     ctx.fillStyle = bn.type === 'green_star' ? '#06d6a0' : '#ff5964';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
@@ -234,9 +228,7 @@ function drawFoodBonus(ctx, bn) {
     }
     ctx.closePath();
     ctx.fill(); ctx.stroke();
-
   } else if (bn.type === 'fractal_shuriken') {
-    // Оружие 1: Фрактальные сюрикены
     ctx.rotate(bn.phase);
     ctx.fillStyle = '#00f5d4';
     ctx.strokeStyle = '#ffffff';
@@ -250,24 +242,15 @@ function drawFoodBonus(ctx, bn) {
     }
     ctx.closePath();
     ctx.fill(); ctx.stroke();
-
   } else if (bn.type === 'electric_shock') {
-    // Оружие 2: Электрический удар (молния)
     ctx.fillStyle = '#fee440';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.8;
     ctx.beginPath();
-    ctx.moveTo(3, -13);
-    ctx.lineTo(-9, 1);
-    ctx.lineTo(-1, 1);
-    ctx.lineTo(-5, 13);
-    ctx.lineTo(9, -2);
-    ctx.lineTo(1, -2);
+    ctx.moveTo(3, -13); ctx.lineTo(-9, 1); ctx.lineTo(-1, 1); ctx.lineTo(-5, 13); ctx.lineTo(9, -2); ctx.lineTo(1, -2);
     ctx.closePath();
     ctx.fill(); ctx.stroke();
-
   } else if (bn.type === 'wave_cannon') {
-    // Оружие 3: Волновая пушка (концентрические дуги)
     ctx.strokeStyle = '#f15bb5';
     ctx.lineWidth = 3.2;
     [-4, 2, 8].forEach((ry, idx) => {
@@ -275,9 +258,7 @@ function drawFoodBonus(ctx, bn) {
       ctx.arc(0, ry, 6 + idx * 4, Math.PI * 1.15, Math.PI * 1.85);
       ctx.stroke();
     });
-
   } else {
-    // Космическая еда (пицца / бургер / суши / пончик)
     ctx.fillStyle = '#ffd166';
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.2;
@@ -290,9 +271,6 @@ function drawFoodBonus(ctx, bn) {
   ctx.restore();
 }
 
-// =========================================================================
-// 2. СНАРЯДЫ ИГРОКА (С НЕОНОВЫМ СВЕЧЕНИЕМ)
-// =========================================================================
 function drawPlayerBullet(ctx, b) {
   ctx.save();
   ctx.translate(b.x, b.y);
@@ -316,7 +294,6 @@ function drawPlayerBullet(ctx, b) {
     }
     ctx.closePath();
     ctx.fill(); ctx.stroke();
-
   } else if (b.kind === 'electric_bolt') {
     ctx.fillStyle = 'rgba(254, 228, 64, 0.35)';
     ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.fill();
@@ -329,7 +306,6 @@ function drawPlayerBullet(ctx, b) {
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.6;
     ctx.stroke();
-
   } else if (b.kind === 'wave_pulse') {
     ctx.strokeStyle = '#f15bb5';
     ctx.lineWidth = 6;
@@ -340,28 +316,6 @@ function drawPlayerBullet(ctx, b) {
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2.5;
     ctx.stroke();
-
-  } else if (b.kind === 'shuriken') {
-    ctx.rotate(b.rot || 0);
-    ctx.fillStyle = '#06d6a0';
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i = 0; i < 8; i++) {
-      const a = (Math.PI * i) / 4;
-      const rad = i % 2 === 0 ? 11 : 4.5;
-      if (i === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
-      else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
-    }
-    ctx.closePath(); ctx.fill(); ctx.stroke();
-
-  } else if (b.kind === 'burger_rocket') {
-    ctx.fillStyle = '#ff9f1c';
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    roundRectPath(ctx, -6, -12, 12, 24, 6);
-    ctx.fill(); ctx.stroke();
-
   } else {
     ctx.fillStyle = b.color || '#48dbfb';
     ctx.strokeStyle = '#ffffff';
@@ -373,9 +327,6 @@ function drawPlayerBullet(ctx, b) {
   ctx.restore();
 }
 
-// =========================================================================
-// 3. ЗАМЕТНЫЕ МЕТАЛЛИЧЕСКИЕ ПРЕПЯТСТВИЯ РАЗНЫХ ФОРМ С НЕОНОВЫМ СВЕЧЕНИЕМ
-// =========================================================================
 function drawObstacle(ctx, ob) {
   ctx.save();
   ctx.translate(ob.x, ob.y);
@@ -384,7 +335,6 @@ function drawObstacle(ctx, ob) {
 
   const neonCol = ob.neonColor || '#00f5d4';
 
-  // Внешнее неоновое свечение вокруг металлического объекта
   ctx.fillStyle = neonCol;
   ctx.globalAlpha = 0.24;
   ctx.beginPath();
@@ -392,15 +342,9 @@ function drawObstacle(ctx, ob) {
   ctx.fill();
   ctx.globalAlpha = 1;
 
-  // 3D-толщина (нижний тёмный металлический ярус)
-  ctx.fillStyle = '#141b29';
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 3;
-
   ctx.rotate(ob.rot || 0);
 
   if (ob.shape === 'hex_reactor') {
-    // 1. Шестигранный металлический реактор с неоновым ядром
     for (let layer = 1; layer >= 0; layer--) {
       const oy = layer * 5;
       ctx.fillStyle = layer === 1 ? '#1b263b' : '#415a77';
@@ -418,9 +362,7 @@ function drawObstacle(ctx, ob) {
       ctx.fill(); ctx.stroke();
     }
     drawRivets(ctx, [[-14, -8], [14, -8], [-14, 8], [14, 8], [0, -16], [0, 16]]);
-
   } else if (ob.shape === 'cog_turret') {
-    // 2. Зубчатая металлическая шестерня-турель
     ctx.fillStyle = '#33415c';
     ctx.strokeStyle = neonCol;
     ctx.lineWidth = 2.4;
@@ -438,9 +380,7 @@ function drawObstacle(ctx, ob) {
     ctx.fillStyle = '#5c677d';
     ctx.beginPath(); ctx.arc(0, 0, ob.r * 0.62, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     drawRivets(ctx, [[-10, 0], [10, 0], [0, -10], [0, 10]]);
-
   } else if (ob.shape === 'tri_pylon') {
-    // 3. Треугольный бронированный пилон с силовыми шинами
     for (let layer = 1; layer >= 0; layer--) {
       const oy = layer * 5;
       ctx.fillStyle = layer === 1 ? '#1d2d44' : '#3e5c76';
@@ -458,9 +398,7 @@ function drawObstacle(ctx, ob) {
       ctx.fill(); ctx.stroke();
     }
     drawRivets(ctx, [[0, -14], [-12, 8], [12, 8]]);
-
   } else {
-    // 4. Крестообразный генератор щита с металлической оковкой
     ctx.fillStyle = '#415a77';
     ctx.strokeStyle = neonCol;
     ctx.lineWidth = 2.5;
@@ -471,30 +409,25 @@ function drawObstacle(ctx, ob) {
     drawRivets(ctx, [[-ob.r + 7, 0], [ob.r - 7, 0], [0, -ob.r + 7], [0, ob.r - 7]]);
   }
 
-  // Яркое неоновое энергетическое ядро в центре каждого препятствия
   ctx.fillStyle = neonCol;
-  ctx.beginPath();
-  ctx.arc(0, 0, 8, 0, Math.PI * 2);
-  ctx.fill();
-
+  ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(-2, -2, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-
+  ctx.beginPath(); ctx.arc(-2, -2, 3.5, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
 // =========================================================================
-// 4. 3D-КОРАБЛИ ВРАГОВ ВИД СВЕРХУ С НЕОНОВЫМ СВЕЧЕНИЕМ И ДЕТАЛЯМИ
+// 4. ОТРИСОВКА ВРАГОВ:
+//    - Уровень 1: Живые галлюциногенные HSL-переливы
+//    - Уровень 2: Корабль-Скелет (лазеры), Корабль-Летучая Мышь (ракеты), Корабль-Зомби
 // =========================================================================
 const SHIP_PALETTES = {
   psy_eye:          ['#ff006e', '#9b5de5', '#00f5d4', true,  '#ffd166'],
   shroom_cruiser:   ['#e0aaff', '#7209b7', '#f72585', true,  '#4cc9f0'],
   fractal_medusa:   ['#4cc9f0', '#3a0ca3', '#48dbfb', true,  '#ffafcc'],
-  horror_fang:      ['#2b2d42', '#8d99ae', '#ff002b', true,  '#590d22'],
-  horror_skullship: ['#e2ece9', '#590d22', '#ff002b', true,  '#800f2f'],
-  horror_reaper:    ['#1a1423', '#590d22', '#ff002b', false, '#ff002b'],
+  skeleton_ship:    ['#e2ece9', '#4a4e69', '#ff002b', false, '#ffffff'],
+  bat_ship:         ['#1b1026', '#590d22', '#ff0054', false, '#ff758f'],
+  zombie_ship:      ['#386641', '#6a994e', '#a7c957', true,  '#bc4749'],
   rainbow_delta:    ['#ff5964', '#ffd166', '#48dbfb', false, '#ffffff'],
   rainbow_shuttle:  ['#06d6a0', '#bdb2ff', '#ff9f1c', false, '#ffffff'],
   rainbow_orbiter:  ['#48dbfb', '#ff8fab', '#ffd166', false, '#ffffff'],
@@ -512,41 +445,138 @@ function drawUniqueEnemy(ctx, e) {
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   const flash = e.hitFlash > 0;
-  const pal = SHIP_PALETTES[e.kind] || ['#9b5de5', '#ff006e', '#00f5d4', true, '#ffd166'];
-  const [bodyCol, wingCol, domeCol, hasWarts, wartCol] = pal;
 
-  // Сохраняем цвета на объекте врага, чтобы при взрыве разлетались обломки именно его цвета
+  // --- СПЕЦИАЛЬНЫЕ КОРАБЛИ 2-ГО УРОВНЯ (СКЕЛЕТ, ЛЕТУЧАЯ МЫШЬ, ЗОМБИ) ---
+  if (e.kind === 'skeleton_ship') {
+    e.wingCol = '#d8e2dc';
+    e.bodyCol = '#4a4e69';
+    // Костяные крылья-рёбра
+    ctx.strokeStyle = flash ? '#ffffff' : '#d8e2dc';
+    ctx.lineWidth = 4;
+    [-10, -2, 6].forEach(ry => {
+      ctx.beginPath();
+      ctx.moveTo(-25, ry - 4);
+      ctx.quadraticCurveTo(0, ry + 6, 25, ry - 4);
+      ctx.stroke();
+    });
+    // Позвоночник и череп-корпус
+    ctx.fillStyle = flash ? '#ffffff' : '#e2ece9';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 14, 18, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    roundRectPath(ctx, -8, 12, 16, 10, 4);
+    ctx.fill(); ctx.stroke();
+    // Горящие лазерные глазницы
+    ctx.fillStyle = '#ff002b';
+    ctx.beginPath();
+    ctx.arc(-5, 3, 3.6, 0, Math.PI * 2);
+    ctx.arc(5, 3, 3.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (e.kind === 'bat_ship') {
+    e.wingCol = '#590d22';
+    e.bodyCol = '#1b1026';
+    const flap = Math.sin(e.phase * 2.2) * 5;
+    // Перепончатые крылья летучей мыши
+    ctx.fillStyle = flash ? '#ffffff' : '#590d22';
+    ctx.strokeStyle = '#ff0054';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(0, -6);
+    ctx.lineTo(-30, -14 + flap);
+    ctx.lineTo(-22, 12 + flap);
+    ctx.lineTo(-10, 6);
+    ctx.lineTo(0, 20);
+    ctx.lineTo(10, 6);
+    ctx.lineTo(22, 12 + flap);
+    ctx.lineTo(30, -14 + flap);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Корпус с ушами вампира и ракетными подвесками
+    ctx.fillStyle = flash ? '#ffffff' : '#1b1026';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 12, 18, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+
+    // Острые уши и белые клыки спереди
+    ctx.fillStyle = '#ff0054';
+    ctx.beginPath();
+    ctx.moveTo(-9, -6); ctx.lineTo(-13, -20); ctx.lineTo(-3, -12);
+    ctx.moveTo(9, -6); ctx.lineTo(13, -20); ctx.lineTo(3, -12);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(-5, 18); ctx.lineTo(-3, 25); ctx.lineTo(-1, 18);
+    ctx.moveTo(5, 18); ctx.lineTo(3, 25); ctx.lineTo(1, 18);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (e.kind === 'zombie_ship') {
+    e.wingCol = '#6a994e';
+    e.bodyCol = '#386641';
+    // Асимметричные изъеденные крылья корабля-зомби
+    ctx.fillStyle = flash ? '#ffffff' : '#6a994e';
+    ctx.strokeStyle = '#a7c957';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(0, 6); ctx.lineTo(-26, -10); ctx.lineTo(-18, 16); ctx.lineTo(0, 22); ctx.lineTo(20, 14); ctx.lineTo(24, -12);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = flash ? '#ffffff' : '#386641';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 15, 21, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+
+    // Открытый токсичный мозг/реактор и гнойные мозоли
+    drawWarts(ctx, [[-14, 0, 3.8], [13, 4, 3.5], [-6, -10, 3.2], [7, 11, 3.6]], '#bc4749', '#f2e8cf');
+    ctx.restore();
+    return;
+  }
+
+  // --- ГАЛЛЮЦИНОГЕННЫЕ ПЕРЕЛИВАЮЩИЕСЯ КОРАБЛИ 1-ГО УРОВНЯ («Туманность Узоров») ---
+  const isLsd = e.kind === 'psy_eye' || e.kind === 'shroom_cruiser' || e.kind === 'fractal_medusa';
+  const pal = SHIP_PALETTES[e.kind] || ['#9b5de5', '#ff006e', '#00f5d4', true, '#ffd166'];
+  let [bodyCol, wingCol, domeCol, hasWarts, wartCol] = pal;
+
+  if (isLsd) {
+    const hue1 = Math.floor((e.phase * 85) % 360);
+    const hue2 = (hue1 + 110) % 360;
+    const hue3 = (hue1 + 220) % 360;
+    bodyCol = `hsl(${hue1}, 92%, 56%)`;
+    wingCol = `hsl(${hue2}, 95%, 60%)`;
+    domeCol = `hsl(${hue3}, 95%, 68%)`;
+    wartCol = `hsl(${(hue1 + 160) % 360}, 95%, 65%)`;
+  }
+
   e.wingCol = wingCol;
   e.bodyCol = bodyCol;
 
-  // 1. Неоновое свечение двигателей и контура (3D Top-Down Glow)
   ctx.fillStyle = domeCol;
-  ctx.globalAlpha = 0.22;
+  ctx.globalAlpha = 0.25;
   ctx.beginPath();
-  ctx.arc(0, 0, e.r + 8, 0, Math.PI * 2);
+  ctx.arc(0, 0, e.r + 9, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
 
-  // 2. Две реактивные турбины сверху (вид сверху)
-  ctx.fillStyle = '#2b2d42';
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 2.5;
-  [-11, 11].forEach(tx => {
-    roundRectPath(ctx, tx - 4, -22, 8, 12, 3);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#00f5d4';
-    ctx.beginPath(); ctx.arc(tx, -22, 3.5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#2b2d42';
-  });
-
-  // 3. Нижний 3D-ярус крыльев (создаёт эффект толщины корпуса сверху)
   ctx.fillStyle = '#140c29';
   ctx.beginPath();
   ctx.moveTo(0, 11); ctx.lineTo(-27, -7); ctx.lineTo(-19, 19); ctx.lineTo(0, 26); ctx.lineTo(19, 19); ctx.lineTo(27, -7);
   ctx.closePath();
   ctx.fill();
 
-  // 4. Верхний 3D-ярус крыльев с неоновой кромкой
   ctx.fillStyle = flash ? '#ffffff' : wingCol;
   ctx.strokeStyle = domeCol;
   ctx.lineWidth = 2.2;
@@ -555,7 +585,6 @@ function drawUniqueEnemy(ctx, e) {
   ctx.closePath();
   ctx.fill(); ctx.stroke();
 
-  // 5. Выпуклый центральный фюзеляж (вид сверху)
   ctx.fillStyle = flash ? '#ffffff' : bodyCol;
   ctx.strokeStyle = INK;
   ctx.lineWidth = 2.8;
@@ -563,7 +592,6 @@ function drawUniqueEnemy(ctx, e) {
   ctx.ellipse(0, 2, 14, 21, 0, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
 
-  // 6. Стеклянная 3D-кабина пилота с бликом
   ctx.fillStyle = flash ? '#ffffff' : domeCol;
   ctx.beginPath();
   ctx.ellipse(0, 3, 7.5, 10, 0, 0, Math.PI * 2);
@@ -591,22 +619,52 @@ function drawUniqueEnemy(ctx, e) {
   ctx.restore();
 }
 
+// =========================================================================
+// 5. БОССЫ:
+//    - Уровень 1: Оракул Фракталов (галлюциногенные переливы + лазеры из глаз + психо-волны изо рта)
+//    - Уровень 2: Страшный Вампир-Слизняк (извергает огонь изо рта + кровавые лучи из глаз)
+// =========================================================================
 function drawUniqueBoss(ctx, b, lvl, player, H) {
+  // ДВОЙНЫЕ ЛАЗЕРЫ ИЗ ГЛАЗ БОССА (Уровень 1 — неоново-радужные, Уровень 2 — кроваво-багровые)
   if (b.laserState === 'charge') {
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 0, 110, 0.75)';
-    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = lvl.id === 2 ? 'rgba(255, 0, 43, 0.85)' : 'rgba(0, 245, 212, 0.85)';
+    ctx.lineWidth = 3;
     ctx.setLineDash([10, 8]);
-    ctx.beginPath(); ctx.moveTo(b.laserX, b.y + 40); ctx.lineTo(b.laserX, H); ctx.stroke();
+    [-20, 20].forEach(ex => {
+      ctx.beginPath();
+      ctx.moveTo(b.x + ex, b.y - 2);
+      ctx.lineTo(b.laserX + ex * 0.6, H);
+      ctx.stroke();
+    });
     ctx.restore();
   } else if (b.laserState === 'fire') {
     ctx.save();
-    ctx.fillStyle = 'rgba(255, 0, 110, 0.35)';
-    ctx.fillRect(b.laserX - 32, b.y + 35, 64, H - b.y);
-    ctx.fillStyle = '#ffbe0b';
-    ctx.fillRect(b.laserX - 15, b.y + 35, 30, H - b.y);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(b.laserX - 5, b.y + 35, 10, H - b.y);
+    ctx.globalCompositeOperation = 'lighter';
+    [-20, 20].forEach((ex, idx) => {
+      const startX = b.x + ex;
+      const startY = b.y - 2;
+      const endX = b.laserX + ex * 0.6;
+      const beamCol = lvl.id === 2
+        ? '#ff002b'
+        : `hsl(${(b.time * 180 + idx * 120) % 360}, 100%, 60%)`;
+
+      ctx.strokeStyle = beamCol;
+      ctx.lineWidth = 22;
+      ctx.globalAlpha = 0.42;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, H);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 6;
+      ctx.globalAlpha = 0.95;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, H);
+      ctx.stroke();
+    });
     ctx.restore();
   }
 
@@ -618,11 +676,94 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   const flash = b.hitFlash > 0;
   const lookX = player ? Math.max(-4, Math.min(4, (player.x - b.x) * 0.02)) : 0;
 
-  // Неоновый ореол вокруг босса
-  ctx.fillStyle = lvl.accent;
-  ctx.globalAlpha = 0.22;
+  // --- БОСС УРОВНЯ 2: СТРАШНЫЙ ВАМПИР-СЛИЗНЯК ---
+  if (lvl.id === 2) {
+    // Тёмно-багровый воротник/плащ вампира позади слизняка
+    ctx.fillStyle = '#2b0514';
+    ctx.strokeStyle = '#ff002b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-68, -28);
+    ctx.lineTo(-42, -66);
+    ctx.lineTo(0, -44);
+    ctx.lineTo(42, -66);
+    ctx.lineTo(68, -28);
+    ctx.lineTo(52, 24);
+    ctx.lineTo(-52, 24);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Волнистое мясистое тело слизняка в кровавых прожилках и мозолях
+    const squish = Math.sin(b.time * 4) * 5;
+    ctx.fillStyle = flash ? '#ffffff' : '#590d22';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, -6, 54 + squish * 0.4, Math.PI, 0);
+    ctx.bezierCurveTo(66, 28, 45, 52, 0, 48 + squish);
+    ctx.bezierCurveTo(-45, 52, -66, 28, -54 - squish * 0.4, -6);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    drawWarts(
+      ctx,
+      [[-36, -18, 6.5], [36, -18, 6.5], [-42, 8, 5.5], [42, 8, 5.5], [0, -34, 5.8]],
+      '#800f2f',
+      '#ff4d6d'
+    );
+
+    // Огромная огненная пасть Вампира-Слизняка с длинными клыками
+    ctx.fillStyle = '#090206';
+    ctx.strokeStyle = '#ff002b';
+    ctx.lineWidth = 3;
+    roundRectPath(ctx, -28, 12, 56, 26, 12);
+    ctx.fill(); ctx.stroke();
+
+    // Внутреннее пламя в глотке
+    ctx.fillStyle = '#ff6b35';
+    ctx.beginPath();
+    ctx.arc(0, 26, 12 + Math.sin(b.time * 18) * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Клыки вампира
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2;
+    [[-18, 12, -13, 28, -8, 12], [8, 12, 13, 28, 18, 12]].forEach(([x1, y1, x2, y2, x3, y3]) => {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    });
+
+    // Налитые кровью глаза вампира
+    [-20, 20].forEach(ex => {
+      ctx.fillStyle = '#ffccd5';
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.arc(ex, -6, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = '#ff002b';
+      ctx.beginPath(); ctx.arc(ex + lookX, -4, 7, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(ex + lookX - 2, -6, 2.5, 0, Math.PI * 2); ctx.fill();
+    });
+
+    ctx.restore();
+    return;
+  }
+
+  // --- БОСС УРОВНЯ 1 («Туманность Узоров») И ОСТАЛЬНЫХ СЕКТОРОВ ---
+  const isLsdBoss = lvl.id === 1;
+  const bossHue = Math.floor((b.time * 65) % 360);
+  const dynamicBossCol = isLsdBoss ? `hsl(${bossHue}, 88%, 54%)` : lvl.bossColor;
+  const dynamicAccent = isLsdBoss ? `hsl(${(bossHue + 120) % 360}, 95%, 65%)` : lvl.accent;
+
+  ctx.fillStyle = dynamicAccent;
+  ctx.globalAlpha = 0.25;
   ctx.beginPath();
-  ctx.arc(0, 8, 72, 0, Math.PI * 2);
+  ctx.arc(0, 8, 76, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
 
@@ -637,7 +778,7 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.lineWidth = 14;
     ctx.beginPath(); ctx.moveTo(baseX, 24); ctx.quadraticCurveTo(baseX + waveX, 52, tipX, 74); ctx.stroke();
 
-    ctx.strokeStyle = lvl.accent;
+    ctx.strokeStyle = isLsdBoss ? `hsl(${(bossHue + i * 55) % 360}, 95%, 62%)` : lvl.accent;
     ctx.lineWidth = 8;
     ctx.stroke();
 
@@ -653,8 +794,8 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     });
   }
 
-  ctx.fillStyle = flash ? '#ffffff' : lvl.bossColor;
-  ctx.strokeStyle = lvl.accent;
+  ctx.fillStyle = flash ? '#ffffff' : dynamicBossCol;
+  ctx.strokeStyle = dynamicAccent;
   ctx.lineWidth = 3.5;
   ctx.beginPath();
   ctx.arc(0, 0, 56, Math.PI, 0);
@@ -667,7 +808,7 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx,
     [[-38, -18, 5.5], [38, -18, 5.5], [-42, 6, 4.8], [42, 6, 4.8], [-18, -38, 4.5], [18, -38, 4.5]],
     '#3c096c',
-    lvl.accent
+    dynamicAccent
   );
 
   ctx.fillStyle = '#ffd166';
@@ -682,18 +823,22 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.lineWidth = 3.5;
     ctx.beginPath(); ctx.arc(ex, -4, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-    ctx.fillStyle = b.phase === 3 ? '#d90429' : INK;
+    ctx.fillStyle = b.phase >= 2 ? '#ff006e' : INK;
     ctx.beginPath(); ctx.arc(ex + lookX, -2, flash ? 4 : 6, 0, Math.PI * 2); ctx.fill();
 
     ctx.fillStyle = '#ffffff';
     ctx.beginPath(); ctx.arc(ex + lookX - 2, -4, 2.2, 0, Math.PI * 2); ctx.fill();
   });
 
+  // Открытый рот босса, из которого вылетают психоделические волны
   ctx.fillStyle = INK;
-  roundRectPath(ctx, -20, 14, 40, 11, 5);
+  roundRectPath(ctx, -22, 13, 44, 14, 7);
   ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(-13, 14, 6, 5); ctx.fillRect(7, 14, 6, 5);
+  if (isLsdBoss) {
+    ctx.strokeStyle = `hsl(${(bossHue + 180) % 360}, 100%, 65%)`;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+  }
 
   ctx.restore();
 }
