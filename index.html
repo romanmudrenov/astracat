@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>ASTRACAT • Астро-Кот</title>
-  <link rel="stylesheet" href="css/style.css?v=15" />
+  <title>ASTRACAT • Космическая Одиссея</title>
+  <link rel="stylesheet" href="css/style.css?v=20" />
 </head>
 <body>
   <div id="game-wrap">
@@ -27,7 +27,7 @@
     <div id="splash-overlay" class="overlay splash-screen">
       <img id="splash-bg-img" class="overlay-bg-img" alt="ASTRACAT" />
       <div class="splash-fallback-title" id="splash-fallback-title">
-        <div class="neon-badge">Космическая Одиссея</div>
+        <div class="neon-badge">128-Voice Cozy Cosmic ASMR</div>
         <h1>ASTRACAT</h1>
       </div>
       <div class="splash-bottom-bar">
@@ -42,19 +42,20 @@
         <img id="menu-inner-bg" class="card-inner-bg-img" alt="" />
         <div class="card-content">
           <div class="top-wallet-row">
-            <span class="neon-badge" style="margin-bottom:0;">Котовия-17</span>
-            <span class="wallet-pill" id="menu-coins">🪙 0</span>
+            <span class="neon-badge" style="margin-bottom:0;">Провизия Котовии-17</span>
+            <span class="wallet-pill" id="menu-coins">🐟 0</span>
           </div>
           <h1>ASTRACAT</h1>
 
-          <div class="section-label">Уровень сложности</div>
-          <div class="diff-row" id="diff-row">
+          <div class="section-label">Уровень сложности (4 режима)</div>
+          <div class="diff-row four-cols" id="diff-row">
             <button class="pill-3d" data-diff="easy">Курсант</button>
             <button class="pill-3d active" data-diff="normal">Пилот</button>
             <button class="pill-3d" data-diff="hard">Ас</button>
+            <button class="pill-3d nightmare-pill" data-diff="nightmare">💀 Безумие</button>
           </div>
 
-          <div class="section-label">Выбор уровня (1–5)</div>
+          <div class="section-label">Выбор сектора (1–5)</div>
           <div class="levels-grid five-cols" id="levels-grid"></div>
           
           <div class="selected-level-box" id="selected-level-info">
@@ -69,7 +70,7 @@
 
           <div class="btn-row">
             <button id="lore-open-btn" class="btn-3d lav">📖 Комикс</button>
-            <button id="menu-sound-btn" class="btn-3d pink">🎛 Звук</button>
+            <button id="menu-sound-btn" class="btn-3d pink">🎛 Звук ASMR</button>
           </div>
 
           <div class="best-line" id="start-best">Рекорд: 0 • Пройдено: 0/5</div>
@@ -77,22 +78,22 @@
       </div>
     </div>
 
-    <!-- 3. МЕНЮ ПРОКАЧКИ: АНГАР -->
+    <!-- 3. МЕНЮ ПРОКАЧКИ: АНГАР (5 КОРАБЛЕЙ И 5 ВИДОВ ОРУЖИЯ ЗА КОШАЧЬЮ ЕДУ) -->
     <div id="hangar-overlay" class="overlay hidden">
       <img id="hangar-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d hangar-card">
         <img id="hangar-inner-bg" class="card-inner-bg-img" alt="" />
         <div class="card-content">
           <div class="top-wallet-row">
-            <span class="neon-badge" style="margin-bottom:0;">Космоверфь</span>
-            <span class="wallet-pill" id="hangar-coins">🪙 0</span>
+            <span class="neon-badge" style="margin-bottom:0;">Космоверфь Котовии</span>
+            <span class="wallet-pill" id="hangar-coins">🐟 0</span>
           </div>
           <h2>АНГАР И ПРОКАЧКА</h2>
 
-          <div class="section-label">1. Космические корабли (3D Top-Down)</div>
+          <div class="section-label">1. Космические корабли (5 поколений)</div>
           <div class="shop-list" id="ships-list"></div>
 
-          <div class="section-label">2. Базовое оружие (3 типа)</div>
+          <div class="section-label">2. Базовое вооружение (5 классов по урону)</div>
           <div class="shop-list" id="weapons-list"></div>
 
           <div class="btn-row" style="margin-top:12px;">
@@ -120,7 +121,7 @@
 
           <h2 id="lore-title">ПЛАНЕТА КОТОВИЯ-17</h2>
           <p class="intro-story" id="lore-text">
-            На родной планете Котовия-17 у кота по имени Редж заканчивается еда. Еда выдаётся только по талонам, а миски пустеют!
+            На родной планете Котовия-17 у кота по имени Редж заканчивается еда. Рыбка, колбаска и сметана выдаются только по талонам!
           </p>
 
           <div class="btn-row">
@@ -151,50 +152,79 @@
       </div>
     </div>
 
-    <!-- 6. МЕНЮ НАСТРОЕК (Музыка: 60%, Эффекты: 40% по умолчанию) -->
+    <!-- 6. МЕНЮ НАСТРОЕК ЗВУКА (128-VOICE COZY COSMIC ASMR SYNTH) -->
     <div id="settings-overlay" class="overlay hidden">
       <img id="settings-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d">
         <img id="settings-inner-bg" class="card-inner-bg-img" alt="" />
         <div class="card-content">
-          <h2>НАСТРОЙКИ ЗВУКА</h2>
+          <div class="top-wallet-row">
+            <span class="neon-badge" style="margin-bottom:0;">Zero-Harshness WebAudio</span>
+            <span class="wallet-pill" id="voice-pool-badge">Голоса: 0 / 128</span>
+          </div>
+          <h2>НАСТРОЙКИ ASMR-СИНТЕЗАТОРА</h2>
 
+          <!-- Музыка MP3 + Космический Эмбиент -->
           <div class="setting-row">
             <div class="setting-head">
-              <span>🎵 Фоновая музыка (60%)</span>
+              <span>🎵 Фоновая музыка MP3: <b id="val-music-vol">60%</b></span>
               <button id="toggle-music" class="toggle-chip">ВКЛ</button>
             </div>
             <input id="music-vol" type="range" min="0" max="100" value="60" />
-            <div class="setting-head" style="margin-top:8px; margin-bottom:0;">
-              <span style="font-size:12px;">Трек уровня:</span>
+            <div class="setting-head" style="margin-top:6px; margin-bottom:0;">
+              <span style="font-size:11.5px;">Трек уровня:</span>
               <select id="track-select" class="neon-select">
                 <option value="auto">🎲 Авто (все треки из music/)</option>
               </select>
             </div>
-            <div class="setting-hint" id="tracks-found-hint">Боссы: boss.mp3, boss2.mp3, boss3.mp3...</div>
+            <div class="setting-hint" id="tracks-found-hint">Заставка: intro.mp3 • Боссы: boss.mp3, boss2.mp3...</div>
           </div>
 
+          <!-- Громкость 128-голосного ASMR-синтезатора -->
           <div class="setting-row">
             <div class="setting-head">
-              <span>✨ Мягкие спецэффекты и выстрелы (40%)</span>
+              <span>✨ Громкость ASMR-эффектов: <b id="val-sfx-vol">40%</b></span>
               <button id="toggle-sfx" class="toggle-chip">ВКЛ</button>
             </div>
             <input id="sfx-vol" type="range" min="0" max="100" value="40" />
           </div>
 
+          <!-- Базовые показатели AstraCatSynth: Бархатность LPF, Эхо, Психо-дрейф -->
           <div class="setting-row">
             <div class="setting-head">
-              <span>🎹 Тембр приглушённых выстрелов</span>
+              <span>🌙 Бархатность / Приглушённость (LPF)</span>
+              <strong id="val-warmth" style="color:#80ffdb; font-size:12px;">2400 Hz</strong>
+            </div>
+            <input id="ctrl-warmth" type="range" min="650" max="4200" value="2400" />
+
+            <div class="setting-head" style="margin-top:7px;">
+              <span>🌌 Космическое стерео-эхо (Space)</span>
+              <strong id="val-space" style="color:#80ffdb; font-size:12px;">42%</strong>
+            </div>
+            <input id="ctrl-space" type="range" min="0" max="80" value="42" />
+
+            <div class="setting-head" style="margin-top:7px;">
+              <span>🌀 Психоделическое плавание (LFO Drift)</span>
+              <strong id="val-psy" style="color:#80ffdb; font-size:12px;">55%</strong>
+            </div>
+            <input id="ctrl-psy" type="range" min="0" max="100" value="55" />
+          </div>
+
+          <!-- Фирменные пресеты ASMR-тембра + Генеративный эмбиент -->
+          <div class="setting-row">
+            <div class="setting-head" style="margin-bottom:5px;">
+              <span>🎹 Пресеты ASMR-мастера</span>
+              <button id="ambient-toggle-btn" class="toggle-chip off" title="Генеративный ASMR-эмбиент">Эмбиент: ВЫКЛ</button>
             </div>
             <div class="diff-row" id="timbre-row" style="margin-bottom:0;">
-              <button class="pill-3d active" data-timbre="space">Тёплый Бас</button>
-              <button class="pill-3d" data-timbre="classic">Бархат</button>
-              <button class="pill-3d" data-timbre="chiptune">Мягкий Импульс</button>
+              <button class="pill-3d active" data-preset="velvet">Бархат</button>
+              <button class="pill-3d" data-preset="nebula">Туманность</button>
+              <button class="pill-3d" data-preset="purr">Мур-Космос</button>
             </div>
           </div>
 
-          <div class="btn-row" style="margin-top:14px;">
-            <button id="test-chord-btn" class="btn-3d lav">🎶 Тест звука</button>
+          <div class="btn-row" style="margin-top:10px;">
+            <button id="test-chord-btn" class="btn-3d lav">🐱 Тест «Мрр-мяу»</button>
             <button id="settings-close-btn" class="btn-3d mint">ГОТОВО ✔</button>
           </div>
         </div>
@@ -206,7 +236,7 @@
       <div class="card-3d">
         <div class="card-content">
           <h2>ПОЛЁТ ПРИОСТАНОВЛЕН</h2>
-          <p class="subtitle">ПК: <b>WASD / Стрелки</b> + <b>Пробел</b><br>Смартфон: <b>удерживай палец на экране</b></p>
+          <p class="subtitle">Музыка на паузе ⏸<br>ПК: <b>WASD / Стрелки</b> + <b>Пробел</b> • Смартфон: <b>палец на экране</b></p>
           <div class="btn-row">
             <button id="resume-btn" class="btn-3d mint">ПРОДОЛЖИТЬ ▶</button>
             <button id="pause-menu-btn" class="btn-3d pink">В МЕНЮ</button>
@@ -227,7 +257,7 @@
           </div>
 
           <h1 id="end-title">ПОБЕДА!</h1>
-          <p class="subtitle" id="end-subtitle">Пожиратель повержен!</p>
+          <p class="subtitle" id="end-subtitle">Пожиратель повержен! Вкусная еда отправлена на Котовию-17!</p>
 
           <div class="stats-box">
             <div class="stat-col">
@@ -235,8 +265,8 @@
               <strong id="final-score">0</strong>
             </div>
             <div class="stat-col">
-              <span>Заработано</span>
-              <strong id="final-coins">+0 🪙</strong>
+              <span>Добыто еды</span>
+              <strong id="final-coins">+0 🐟</strong>
             </div>
             <div class="stat-col">
               <span>Сбито</span>
@@ -253,10 +283,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=15"></script>
-  <script src="js/vfx.js?v=15"></script>
-  <script src="js/world3d.js?v=15"></script>
-  <script src="js/entities.js?v=15"></script>
-  <script src="js/game.js?v=15"></script>
+  <script src="js/synth.js?v=20"></script>
+  <script src="js/vfx.js?v=20"></script>
+  <script src="js/world3d.js?v=20"></script>
+  <script src="js/entities.js?v=20"></script>
+  <script src="js/game.js?v=20"></script>
 </body>
 </html>
