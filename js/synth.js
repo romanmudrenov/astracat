@@ -14,13 +14,17 @@ class PolySynth {
     this.muted = false;
     this.musicEnabled = true;
     this.sfxEnabled = true;
-    this.musicVolume = 0.50;
-    this.sfxVolume = 1.10;
+
+    // Стандартная громкость при первом запуске: Музыка 60%, Эффекты 40%
+    this.musicVolume = 0.60;
+    this.sfxVolume = 0.40;
     this.timbre = 'space';
 
     this.availableTracks = ['level1.mp3', 'level2.mp3', 'level3.mp3', 'level4.mp3'];
+    this.bossTracks = ['boss.mp3'];
     this.selectedTrack = 'auto';
     this.recentTracks = [];
+    this.currentTrackIndex = 0;
 
     this.bgmAudio = null;
     this.currentTrackPath = '';
@@ -31,7 +35,6 @@ class PolySynth {
     this.setupAutoUnlock();
   }
 
-  // Автоматическая разблокировка музыки заставки при открытии страницы или первом касании
   setupAutoUnlock() {
     const unlock = () => {
       this.init();
@@ -48,19 +51,24 @@ class PolySynth {
   }
 
   scanMusicFolder() {
-    const candidates = [];
+    const levelCandidates = [];
+    const bossCandidates = ['boss.mp3'];
     for (let i = 1; i <= 15; i++) {
-      candidates.push(`level${i}.mp3`);
-      candidates.push(`track${i}.mp3`);
-      candidates.push(`${i}.mp3`);
+      levelCandidates.push(`level${i}.mp3`);
+      levelCandidates.push(`track${i}.mp3`);
+      levelCandidates.push(`${i}.mp3`);
+      bossCandidates.push(`boss${i}.mp3`);
     }
 
-    const found = new Set(this.availableTracks);
-    let pending = candidates.length;
+    const foundLevels = new Set(this.availableTracks);
+    const foundBosses = new Set(this.bossTracks);
+    let pending = levelCandidates.length + bossCandidates.length;
 
     const refreshSelectUI = () => {
-      const list = Array.from(found);
+      const list = Array.from(foundLevels);
       this.availableTracks = list;
+      this.bossTracks = Array.from(foundBosses);
+
       const sel = document.getElementById('track-select');
       const hint = document.getElementById('tracks-found-hint');
       if (sel) {
@@ -75,13 +83,23 @@ class PolySynth {
         sel.value = curVal;
       }
       if (hint) {
-        hint.textContent = `Заставка: intro.mp3 • Босс: boss.mp3 • Уровней: ${list.length}`;
+        hint.textContent = `Уровней: ${list.length} • Треков боссов: ${this.bossTracks.length}`;
       }
     };
 
-    candidates.forEach(fname => {
+    levelCandidates.forEach(fname => {
       fetch(`music/${fname}`, { method: 'HEAD' })
-        .then(res => { if (res.ok) found.add(fname); })
+        .then(res => { if (res.ok) foundLevels.add(fname); })
+        .catch(() => {})
+        .finally(() => {
+          pending--;
+          if (pending <= 0) refreshSelectUI();
+        });
+    });
+
+    bossCandidates.forEach(fname => {
+      fetch(`music/${fname}`, { method: 'HEAD' })
+        .then(res => { if (res.ok) foundBosses.add(fname); })
         .catch(() => {})
         .finally(() => {
           pending--;
@@ -97,19 +115,19 @@ class PolySynth {
       this.ctx = new AudioCtx();
 
       this.compressor = this.ctx.createDynamicsCompressor();
-      this.compressor.threshold.setValueAtTime(-15, this.ctx.currentTime);
-      this.compressor.knee.setValueAtTime(22, this.ctx.currentTime);
-      this.compressor.ratio.setValueAtTime(3.5, this.ctx.currentTime);
+      this.compressor.threshold.setValueAtTime(-16, this.ctx.currentTime);
+      this.compressor.knee.setValueAtTime(24, this.ctx.currentTime);
+      this.compressor.ratio.setValueAtTime(4.0, this.ctx.currentTime);
       this.compressor.attack.setValueAtTime(0.01, this.ctx.currentTime);
       this.compressor.release.setValueAtTime(0.2, this.ctx.currentTime);
 
       this.delayNode = this.ctx.createDelay(1.0);
-      this.delayNode.delayTime.setValueAtTime(0.24, this.ctx.currentTime);
+      this.delayNode.delayTime.setValueAtTime(0.22, this.ctx.currentTime);
       const delayFilter = this.ctx.createBiquadFilter();
       delayFilter.type = 'lowpass';
-      delayFilter.frequency.setValueAtTime(1400, this.ctx.currentTime);
+      delayFilter.frequency.setValueAtTime(900, this.ctx.currentTime);
       const delayFeedback = this.ctx.createGain();
-      delayFeedback.gain.setValueAtTime(0.28, this.ctx.currentTime);
+      delayFeedback.gain.setValueAtTime(0.22, this.ctx.currentTime);
 
       this.delayNode.connect(delayFilter);
       delayFilter.connect(delayFeedback);
@@ -117,7 +135,7 @@ class PolySynth {
       delayFilter.connect(this.compressor);
 
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(this.muted ? 0.0001 : 1.35, this.ctx.currentTime);
+      this.masterGain.gain.setValueAtTime(this.muted ? 0.0001 : 1.0, this.ctx.currentTime);
 
       this.compressor.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
@@ -132,7 +150,7 @@ class PolySynth {
         b1 = 0.985 * b1 + white * 0.032;
         b2 = 0.950 * b2 + white * 0.048;
         b3 = 0.850 * b3 + white * 0.080;
-        data[i] = (b0 + b1 + b2 + b3 + white * 0.14) * 0.52;
+        data[i] = (b0 + b1 + b2 + b3 + white * 0.12) * 0.50;
       }
     }
 
@@ -149,11 +167,31 @@ class PolySynth {
     const pool = candidates.length > 0 ? candidates : this.availableTracks;
     const chosen = pool[Math.floor(Math.random() * pool.length)];
 
+    this.currentTrackIndex = Math.max(0, this.availableTracks.indexOf(chosen));
     this.recentTracks.push(chosen);
     if (this.recentTracks.length >= 4) {
       this.recentTracks.shift();
     }
     return chosen;
+  }
+
+  // Переключение треков кнопками мини-плеера (вперёд / назад)
+  nextTrack() {
+    if (!this.availableTracks.length) return;
+    this.currentTrackIndex = (this.currentTrackIndex + 1) % this.availableTracks.length;
+    const fname = this.availableTracks[this.currentTrackIndex];
+    this.playTrack(fname);
+    const sel = document.getElementById('track-select');
+    if (sel) sel.value = fname;
+  }
+
+  prevTrack() {
+    if (!this.availableTracks.length) return;
+    this.currentTrackIndex = (this.currentTrackIndex - 1 + this.availableTracks.length) % this.availableTracks.length;
+    const fname = this.availableTracks[this.currentTrackIndex];
+    this.playTrack(fname);
+    const sel = document.getElementById('track-select');
+    if (sel) sel.value = fname;
   }
 
   getEffectiveMusicVol() {
@@ -176,14 +214,13 @@ class PolySynth {
 
       audio.onerror = () => {
         if (fallbackTrack && filename !== fallbackTrack) {
-          this.playTrack(fallbackTrack, null);
+          this.playTrack(fallbackTrack, 'boss.mp3');
         }
       };
 
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(() => {
-          // Если браузер ждёт первого клика по странице — запоминаем трек и включаем при касании
           this.pendingTrack = { file: filename, fallback: fallbackTrack };
         });
       }
@@ -191,27 +228,30 @@ class PolySynth {
     } catch (e) {}
   }
 
-  // Музыка заставки и меню: пытается запустить music/intro.mp3 (если его ещё нет — включает level1.mp3)
   startIntroMusic() {
     this.playTrack('intro.mp3', 'level1.mp3');
   }
 
-  startMusic(mode = 'normal') {
+  // Запуск музыки уровня или индивидуального трека босса (boss.mp3, boss2.mp3, boss3.mp3...)
+  startMusic(mode = 'normal', levelId = 1) {
     if (mode === 'intro') {
       this.startIntroMusic();
       return;
     }
     if (mode === 'boss') {
-      const prevTrack = this.recentTracks[this.recentTracks.length - 1] || 'level1.mp3';
-      this.playTrack('boss.mp3', prevTrack);
+      const specificBoss = levelId === 1 ? 'boss.mp3' : `boss${levelId}.mp3`;
+      const fallbackBoss = this.bossTracks.length > 0
+        ? this.bossTracks[(levelId - 1) % this.bossTracks.length]
+        : 'boss.mp3';
+      this.playTrack(specificBoss, fallbackBoss);
       return;
     }
     const chosen = this.pickNextTrack();
     this.playTrack(chosen);
   }
 
-  setMusicMode(mode) {
-    if (mode === 'boss') this.startMusic('boss');
+  setMusicMode(mode, levelId = 1) {
+    if (mode === 'boss') this.startMusic('boss', levelId);
   }
 
   stopMusic() {
@@ -237,7 +277,7 @@ class PolySynth {
     if (this.masterGain && this.ctx) {
       const now = this.ctx.currentTime;
       this.masterGain.gain.cancelScheduledValues(now);
-      this.masterGain.gain.setTargetAtTime(this.muted ? 0.0001 : 1.35, now, 0.02);
+      this.masterGain.gain.setTargetAtTime(this.muted ? 0.0001 : 1.0, now, 0.02);
     }
     this.updateMusicVolume();
     return this.muted;
@@ -268,19 +308,19 @@ class PolySynth {
   }
 
   playVoice({
-    freq = 440,
+    freq = 220,
     slideTo = null,
     type = 'sine',
     detune = 0,
     time = null,
-    duration = 0.22,
+    duration = 0.14,
     attack = 0.016,
-    decay = 0.08,
-    sustain = 0.35,
-    release = 0.14,
-    gain = 0.11,
-    filterFreq = 1450,
-    sendDelay = true,
+    decay = 0.06,
+    sustain = 0.25,
+    release = 0.10,
+    gain = 0.08,
+    filterFreq = 650,
+    sendDelay = false,
     pan = 0
   }) {
     if (!this.ctx || this.muted) return;
@@ -299,13 +339,12 @@ class PolySynth {
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.Q.setValueAtTime(0.85, t0);
-    const maxCut = this.timbre === 'space' ? 1400 : (this.timbre === 'classic' ? 1800 : 2100);
-    filter.frequency.setValueAtTime(Math.min(filterFreq, maxCut), t0);
+    filter.Q.setValueAtTime(0.7, t0);
+    filter.frequency.setValueAtTime(Math.min(filterFreq, 950), t0);
 
     const env = this.ctx.createGain();
-    const peak = Math.max(0.001, gain * this.sfxVolume);
-    const sustLevel = Math.max(0.0005, peak * sustain);
+    const peak = Math.max(0.0008, gain * this.sfxVolume);
+    const sustLevel = Math.max(0.0004, peak * sustain);
 
     env.gain.setValueAtTime(0.0001, t0);
     env.gain.linearRampToValueAtTime(peak, t0 + attack);
@@ -327,7 +366,7 @@ class PolySynth {
 
     if (sendDelay && this.delayNode) {
       const sendGain = this.ctx.createGain();
-      sendGain.gain.setValueAtTime(0.28, t0);
+      sendGain.gain.setValueAtTime(0.18, t0);
       lastNode.connect(sendGain);
       sendGain.connect(this.delayNode);
     }
@@ -347,19 +386,19 @@ class PolySynth {
       this.playVoice({
         ...opts,
         freq: this.midiToFreq(m),
-        detune: idx % 2 === 0 ? -6 : 6,
-        pan: ((idx / Math.max(1, midiNotes.length - 1)) - 0.5) * 0.55
+        detune: idx % 2 === 0 ? -4 : 4,
+        pan: ((idx / Math.max(1, midiNotes.length - 1)) - 0.5) * 0.45
       });
     });
   }
 
   playNoise({
     time = null,
-    duration = 0.22,
-    gain = 0.14,
+    duration = 0.18,
+    gain = 0.12,
     filterType = 'lowpass',
-    filterFreq = 950,
-    filterEnd = 160
+    filterFreq = 750,
+    filterEnd = 140
   }) {
     if (!this.ctx || !this.noiseBuffer || this.muted) return;
     if (!this.sfxEnabled || this.sfxVolume <= 0.01) return;
@@ -375,7 +414,7 @@ class PolySynth {
 
     const env = this.ctx.createGain();
     env.gain.setValueAtTime(0.0001, t0);
-    env.gain.linearRampToValueAtTime(Math.max(0.001, gain * this.sfxVolume), t0 + 0.016);
+    env.gain.linearRampToValueAtTime(Math.max(0.0008, gain * this.sfxVolume), t0 + 0.016);
     env.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
 
     src.connect(filter);
@@ -391,172 +430,148 @@ class PolySynth {
     };
   }
 
-  // ЧИСТЫЕ ЗВУКИ ОРУЖИЯ (включая Фрактальные сюрикены, Электрический удар и Волновую пушку)
+  // ПРИГЛУШЁННЫЕ БАРХАТНЫЕ ВЫСТРЕЛЫ (низкие частоты 140–280 Гц, без писка, не мешают музыке)
   sfxShootWeapon(pan = 0, baseWeapon = 'droplet', secondary = 'none') {
     if (!this.ctx || this.muted) return;
     const now = this.ctx.currentTime;
-    const notes = [60, 64, 67, 71, 74, 76, 79];
-    const noteMidi = notes[this.shotStep % notes.length];
-    this.shotStep++;
-    const f = this.midiToFreq(noteMidi);
 
     if (baseWeapon === 'droplet') {
+      // Мягкий приглушённый саб-импульс («тумп»)
       this.playVoice({
-        time: now, freq: f * 0.75, slideTo: f * 1.4, type: 'sine',
-        duration: 0.12, attack: 0.012, decay: 0.05, sustain: 0.2, release: 0.12,
-        gain: 0.09, filterFreq: 1400, sendDelay: true, pan
+        time: now, freq: 210, slideTo: 95, type: 'sine',
+        duration: 0.08, attack: 0.012, decay: 0.04, sustain: 0.15, release: 0.06,
+        gain: 0.065, filterFreq: 480, sendDelay: false, pan
       });
     } else if (baseWeapon === 'kalimba') {
-      this.playChord([noteMidi, noteMidi + 7], {
-        time: now, type: 'sine',
-        duration: 0.16, attack: 0.01, decay: 0.06, sustain: 0.25, release: 0.14,
-        gain: 0.08, filterFreq: 1600, sendDelay: true, pan
+      // Тёплый низкий деревянный тембр
+      this.playVoice({
+        time: now, freq: 260, slideTo: 140, type: 'sine',
+        duration: 0.09, attack: 0.012, decay: 0.04, sustain: 0.18, release: 0.07,
+        gain: 0.065, filterFreq: 540, sendDelay: false, pan
       });
     } else {
-      this.playChord([noteMidi - 12, noteMidi], {
-        time: now, type: 'sine',
-        duration: 0.15, attack: 0.014, decay: 0.06, sustain: 0.25, release: 0.13,
-        gain: 0.075, filterFreq: 1300, sendDelay: true, pan
+      // Бархатный воздушный выдох (шёлковый дробовик)
+      this.playNoise({
+        time: now, duration: 0.07, gain: 0.045,
+        filterType: 'lowpass', filterFreq: 520, filterEnd: 180
+      });
+      this.playVoice({
+        time: now, freq: 185, slideTo: 82, type: 'sine',
+        duration: 0.08, attack: 0.014, decay: 0.04, sustain: 0.15, release: 0.06,
+        gain: 0.06, filterFreq: 450, sendDelay: false, pan
       });
     }
 
-    // Озвучка спец-оружия 1-го уровня и бонусных орудий
-    if (secondary === 'fractal_shuriken' || secondary === 'sushi') {
-      // Переливающийся кристальный спин сюрикена
-      this.playVoice({
-        time: now + 0.015, freq: 1046.5, slideTo: 1567.98, type: 'sine',
-        duration: 0.09, attack: 0.006, decay: 0.04, sustain: 0.2, release: 0.08,
-        gain: 0.065, filterFreq: 2000, sendDelay: true, pan: -pan * 0.6
+    if (secondary === 'fractal_shuriken') {
+      this.playNoise({
+        time: now, duration: 0.06, gain: 0.035,
+        filterType: 'bandpass', filterFreq: 580, filterEnd: 260
       });
     } else if (secondary === 'electric_shock') {
-      // Мягкий ASMR-разряд электрической дуги
-      this.playNoise({
-        time: now, duration: 0.08, gain: 0.075,
-        filterType: 'bandpass', filterFreq: 1750, filterEnd: 620
-      });
       this.playVoice({
-        time: now, freq: 880, slideTo: 220, type: 'triangle',
-        duration: 0.08, attack: 0.005, decay: 0.04, sustain: 0.15, release: 0.05,
-        gain: 0.07, filterFreq: 1850, pan
+        time: now, freq: 240, slideTo: 110, type: 'triangle',
+        duration: 0.07, attack: 0.01, decay: 0.03, sustain: 0.15, release: 0.05,
+        gain: 0.055, filterFreq: 520, sendDelay: false, pan
       });
     } else if (secondary === 'wave_cannon') {
-      // Глубокий пульсирующий импульс волновой пушки
       this.playVoice({
-        time: now, freq: 340, slideTo: 120, type: 'sine',
-        duration: 0.16, attack: 0.01, decay: 0.06, sustain: 0.3, release: 0.1,
-        gain: 0.10, filterFreq: 950, sendDelay: true, pan
-      });
-    } else if (secondary !== 'none') {
-      this.playVoice({
-        time: now + 0.025, freq: this.midiToFreq(noteMidi + 12), type: 'sine',
-        duration: 0.12, attack: 0.012, decay: 0.05, sustain: 0.2, release: 0.12,
-        gain: 0.05, filterFreq: 1650, sendDelay: true, pan: -pan * 0.6
+        time: now, freq: 160, slideTo: 68, type: 'sine',
+        duration: 0.12, attack: 0.015, decay: 0.05, sustain: 0.2, release: 0.08,
+        gain: 0.07, filterFreq: 420, sendDelay: false, pan
       });
     }
   }
 
   sfxHit(pan = 0) {
-    const pitch = 210 + Math.random() * 45;
+    const pitch = 155 + Math.random() * 30;
     this.playVoice({
       freq: pitch, slideTo: pitch * 0.55, type: 'sine',
-      duration: 0.08, attack: 0.01, decay: 0.035, sustain: 0.15, release: 0.06,
-      gain: 0.08, filterFreq: 900, sendDelay: false, pan
+      duration: 0.065, attack: 0.01, decay: 0.03, sustain: 0.12, release: 0.05,
+      gain: 0.06, filterFreq: 480, sendDelay: false, pan
     });
   }
 
   sfxExplosion(pan = 0, big = false) {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    const dur = big ? 0.95 : 0.48;
+    const dur = big ? 0.90 : 0.45;
 
     this.playVoice({
-      time: now, freq: big ? 110 : 145, slideTo: 28, type: 'sine',
-      duration: dur, attack: 0.008, decay: dur * 0.5, sustain: 0.15, release: 0.18,
-      gain: big ? 0.36 : 0.24, filterFreq: 380, sendDelay: false, pan
+      time: now, freq: big ? 105 : 135, slideTo: 28, type: 'sine',
+      duration: dur, attack: 0.01, decay: dur * 0.5, sustain: 0.15, release: 0.16,
+      gain: big ? 0.32 : 0.20, filterFreq: 340, sendDelay: false, pan
     });
     this.playNoise({
-      time: now, duration: dur * 1.1, gain: big ? 0.36 : 0.24,
-      filterType: 'lowpass', filterFreq: big ? 1100 : 1350, filterEnd: 75
-    });
-    this.playNoise({
-      time: now + 0.055, duration: dur * 0.85, gain: big ? 0.25 : 0.16,
-      filterType: 'bandpass', filterFreq: 780, filterEnd: 190
-    });
-    this.playNoise({
-      time: now + 0.11, duration: dur * 0.65, gain: big ? 0.16 : 0.10,
-      filterType: 'bandpass', filterFreq: 1650, filterEnd: 450
+      time: now, duration: dur, gain: big ? 0.30 : 0.20,
+      filterType: 'lowpass', filterFreq: big ? 880 : 980, filterEnd: 70
     });
   }
 
   sfxIgnite(pan = 0) {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    this.playNoise({ time: now, duration: 0.38, gain: 0.22, filterType: 'bandpass', filterFreq: 1350, filterEnd: 380 });
-    this.playVoice({ time: now, freq: 130, slideTo: 340, type: 'triangle', duration: 0.28, attack: 0.025, decay: 0.1, sustain: 0.3, release: 0.14, gain: 0.14, filterFreq: 1050, pan });
+    this.playNoise({ time: now, duration: 0.35, gain: 0.18, filterType: 'bandpass', filterFreq: 780, filterEnd: 260 });
+    this.playVoice({ time: now, freq: 120, slideTo: 240, type: 'triangle', duration: 0.25, attack: 0.02, decay: 0.1, sustain: 0.25, release: 0.12, gain: 0.11, filterFreq: 650, pan });
   }
 
   sfxGravity(pan = 0) {
     if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    this.playVoice({ time: now, freq: 88, slideTo: 46, type: 'sine', duration: 0.55, attack: 0.08, decay: 0.2, sustain: 0.5, release: 0.25, gain: 0.24, filterFreq: 320, sendDelay: true, pan });
+    this.playVoice({ time: this.ctx.currentTime, freq: 85, slideTo: 44, type: 'sine', duration: 0.5, attack: 0.06, decay: 0.2, sustain: 0.4, release: 0.2, gain: 0.20, filterFreq: 300, sendDelay: true, pan });
   }
 
   sfxDisintegrate(pan = 0) {
     if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    [84, 88, 91, 96].forEach((m, idx) => {
-      this.playVoice({ time: now + idx * 0.035, freq: this.midiToFreq(m), type: 'sine', duration: 0.18, attack: 0.012, decay: 0.07, sustain: 0.2, release: 0.14, gain: 0.10, filterFreq: 1900, sendDelay: true, pan });
-    });
+    this.playVoice({ time: this.ctx.currentTime, freq: 320, slideTo: 140, type: 'sine', duration: 0.12, attack: 0.012, decay: 0.05, sustain: 0.15, release: 0.08, gain: 0.07, filterFreq: 620, pan });
   }
 
   sfxUnderwater(pan = 0) {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    [0, 0.08, 0.16].forEach((offset, idx) => {
-      const base = 310 + idx * 105 + Math.random() * 50;
-      this.playVoice({ time: now + offset, freq: base, slideTo: base * 1.8, type: 'sine', duration: 0.09, attack: 0.012, decay: 0.035, sustain: 0.2, release: 0.06, gain: 0.13, filterFreq: 1250, sendDelay: true, pan });
+    [0, 0.08].forEach((offset, idx) => {
+      const base = 220 + idx * 60;
+      this.playVoice({ time: now + offset, freq: base, slideTo: base * 1.45, type: 'sine', duration: 0.09, attack: 0.012, decay: 0.035, sustain: 0.2, release: 0.06, gain: 0.10, filterFreq: 680, pan });
     });
   }
 
   sfxCosmicHum() {
     if (!this.ctx) return;
-    this.playChord([48, 55, 60], { time: this.ctx.currentTime, type: 'sine', duration: 0.75, attack: 0.18, decay: 0.25, sustain: 0.55, release: 0.35, gain: 0.12, filterFreq: 450, sendDelay: true });
+    this.playChord([48, 55], { time: this.ctx.currentTime, type: 'sine', duration: 0.65, attack: 0.16, decay: 0.2, sustain: 0.45, release: 0.3, gain: 0.09, filterFreq: 380, sendDelay: true });
   }
 
   sfxSticky(pan = 0) {
     if (!this.ctx) return;
-    this.playVoice({ time: this.ctx.currentTime, freq: 185, slideTo: 390, type: 'sine', duration: 0.15, attack: 0.018, decay: 0.06, sustain: 0.25, release: 0.08, gain: 0.14, filterFreq: 900, pan });
+    this.playVoice({ time: this.ctx.currentTime, freq: 165, slideTo: 290, type: 'sine', duration: 0.14, attack: 0.018, decay: 0.06, sustain: 0.2, release: 0.08, gain: 0.11, filterFreq: 600, pan });
   }
 
   sfxWave() {
     if (!this.ctx) return;
-    this.playNoise({ time: this.ctx.currentTime, duration: 0.7, gain: 0.20, filterType: 'lowpass', filterFreq: 240, filterEnd: 880 });
+    this.playNoise({ time: this.ctx.currentTime, duration: 0.65, gain: 0.16, filterType: 'lowpass', filterFreq: 220, filterEnd: 680 });
   }
 
   sfxPowerup() {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    [60, 64, 67, 71, 74, 79].forEach((m, i) => {
-      this.playVoice({ freq: this.midiToFreq(m), type: 'sine', time: now + i * 0.048, duration: 0.22, attack: 0.015, decay: 0.08, sustain: 0.35, release: 0.16, gain: 0.12, filterFreq: 1850, sendDelay: true });
+    [55, 60, 64, 67].forEach((m, i) => {
+      this.playVoice({ freq: this.midiToFreq(m), type: 'sine', time: now + i * 0.05, duration: 0.18, attack: 0.015, decay: 0.07, sustain: 0.3, release: 0.12, gain: 0.09, filterFreq: 850, sendDelay: true });
     });
   }
 
   sfxShieldBlock() {
     if (!this.ctx) return;
-    this.playChord([67, 74, 79, 83], { type: 'sine', duration: 0.26, attack: 0.015, decay: 0.1, sustain: 0.25, release: 0.16, gain: 0.12, sendDelay: true });
+    this.playChord([55, 62, 67], { type: 'sine', duration: 0.22, attack: 0.015, decay: 0.1, sustain: 0.25, release: 0.14, gain: 0.10, sendDelay: true });
   }
 
   sfxHurt() {
     if (!this.ctx) return;
-    this.playVoice({ freq: 210, slideTo: 72, type: 'triangle', duration: 0.30, attack: 0.018, decay: 0.12, sustain: 0.3, release: 0.10, gain: 0.20, filterFreq: 800 });
-    this.playNoise({ duration: 0.24, gain: 0.18, filterType: 'lowpass', filterFreq: 560, filterEnd: 90 });
+    this.playVoice({ freq: 180, slideTo: 65, type: 'triangle', duration: 0.26, attack: 0.015, decay: 0.1, sustain: 0.25, release: 0.10, gain: 0.18, filterFreq: 580 });
+    this.playNoise({ duration: 0.22, gain: 0.15, filterType: 'lowpass', filterFreq: 480, filterEnd: 85 });
   }
 
   sfxBossAlarm() {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     for (let i = 0; i < 2; i++) {
-      this.playVoice({ freq: 196, slideTo: 294, type: 'sine', time: now + i * 0.36, duration: 0.28, attack: 0.03, decay: 0.1, sustain: 0.5, release: 0.12, gain: 0.15, filterFreq: 1050, sendDelay: true });
+      this.playVoice({ freq: 146, slideTo: 220, type: 'sine', time: now + i * 0.36, duration: 0.28, attack: 0.03, decay: 0.1, sustain: 0.45, release: 0.12, gain: 0.14, filterFreq: 680, sendDelay: true });
     }
   }
 
@@ -564,12 +579,11 @@ class PolySynth {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     [
-      { notes: [60, 64, 67], t: 0.00, d: 0.18 },
-      { notes: [65, 69, 72], t: 0.22, d: 0.26 },
-      { notes: [67, 71, 74], t: 0.52, d: 0.24 },
-      { notes: [72, 76, 79, 83], t: 0.80, d: 0.65 }
+      { notes: [55, 60, 64], t: 0.00, d: 0.18 },
+      { notes: [57, 62, 65], t: 0.22, d: 0.24 },
+      { notes: [60, 64, 67, 72], t: 0.50, d: 0.55 }
     ].forEach(step => {
-      this.playChord(step.notes, { time: now + step.t, type: 'sine', duration: step.d, attack: 0.02, decay: 0.1, sustain: 0.6, release: 0.22, gain: 0.14, filterFreq: 1950, sendDelay: true });
+      this.playChord(step.notes, { time: now + step.t, type: 'sine', duration: step.d, attack: 0.02, decay: 0.1, sustain: 0.5, release: 0.2, gain: 0.11, filterFreq: 900, sendDelay: true });
     });
   }
 
@@ -577,12 +591,12 @@ class PolySynth {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     [
-      { m: 64, t: 0.00, d: 0.25 },
-      { m: 62, t: 0.28, d: 0.25 },
-      { m: 60, t: 0.56, d: 0.28 },
-      { m: 55, t: 0.88, d: 0.55 }
+      { m: 60, t: 0.00, d: 0.24 },
+      { m: 58, t: 0.26, d: 0.24 },
+      { m: 55, t: 0.52, d: 0.26 },
+      { m: 48, t: 0.82, d: 0.50 }
     ].forEach(s => {
-      this.playVoice({ freq: this.midiToFreq(s.m), slideTo: s.m === 55 ? this.midiToFreq(52) : null, type: 'sine', time: now + s.t, duration: s.d, attack: 0.025, decay: 0.12, sustain: 0.5, release: 0.18, gain: 0.16, filterFreq: 1450, sendDelay: true });
+      this.playVoice({ freq: this.midiToFreq(s.m), type: 'sine', time: now + s.t, duration: s.d, attack: 0.025, decay: 0.1, sustain: 0.45, release: 0.16, gain: 0.13, filterFreq: 750, sendDelay: true });
     });
   }
 }
