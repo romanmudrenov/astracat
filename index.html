@@ -4,20 +4,26 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ASTRACAT • Астро-Кот</title>
-  <link rel="stylesheet" href="css/style.css?v=14" />
+  <link rel="stylesheet" href="css/style.css?v=15" />
 </head>
 <body>
   <div id="game-wrap">
     <canvas id="game"></canvas>
 
-    <!-- Верхняя 3D-панель управления -->
-    <div class="hud-top-right">
-      <button id="pause-btn" class="btn-3d-icon hidden" title="Пауза (P)">⏸</button>
-      <button id="settings-open-btn" class="btn-3d-icon" title="Настройки звука">⚙️</button>
-      <button id="mute-btn" class="btn-3d-icon" title="Звук (M)">🔊</button>
+    <!-- Верхняя панель управления + плоские тонкие кнопки плеера под ней -->
+    <div class="hud-top-right-wrap">
+      <div class="hud-top-right">
+        <button id="pause-btn" class="btn-3d-icon hidden" title="Пауза (P)">⏸</button>
+        <button id="settings-open-btn" class="btn-3d-icon" title="Настройки звука">⚙️</button>
+        <button id="mute-btn" class="btn-3d-icon" title="Звук (M)">🔊</button>
+      </div>
+      <div class="hud-player-strip">
+        <button id="prev-track-btn" class="flat-player-btn" title="Предыдущий трек">⏮ Трек</button>
+        <button id="next-track-btn" class="flat-player-btn" title="Следующий трек">Трек ⏭</button>
+      </div>
     </div>
 
-    <!-- 1. СТАРТОВАЯ ЗАСТАВКА (только кнопка ИГРАТЬ, музыка intro.mp3 играет сразу) -->
+    <!-- 1. СТАРТОВАЯ ЗАСТАВКА -->
     <div id="splash-overlay" class="overlay splash-screen">
       <img id="splash-bg-img" class="overlay-bg-img" alt="ASTRACAT" />
       <div class="splash-fallback-title" id="splash-fallback-title">
@@ -29,7 +35,7 @@
       </div>
     </div>
 
-    <!-- 2. ГЛАВНОЕ МЕНЮ (Большой фон: menu_bg.jpg, Окно с информацией: card_bg.jpg) -->
+    <!-- 2. ГЛАВНОЕ МЕНЮ -->
     <div id="start-overlay" class="overlay hidden">
       <img id="menu-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d">
@@ -52,8 +58,8 @@
           <div class="levels-grid five-cols" id="levels-grid"></div>
           
           <div class="selected-level-box" id="selected-level-info">
-            <strong>Уровень 1: ЛСД-Туманность</strong><br>
-            <span>Босс: Доктор Кракен-Бот</span>
+            <strong>Уровень 1: Туманность Узоров</strong><br>
+            <span>Босс: Оракул Фракталов</span>
           </div>
 
           <div class="btn-row" style="margin-bottom:10px;">
@@ -134,7 +140,7 @@
             <img id="intro-stage-img" alt="Вход в уровень" />
             <div class="intro-sector-tag" id="intro-sector-tag">УРОВЕНЬ 1</div>
           </div>
-          <h2 id="intro-title">ЛСД-ТУМАННОСТЬ</h2>
+          <h2 id="intro-title">ТУМАННОСТЬ УЗОРОВ</h2>
           <p class="intro-story" id="intro-story"></p>
           <div class="intro-intel" id="intro-intel"></div>
           <div class="btn-row">
@@ -145,7 +151,7 @@
       </div>
     </div>
 
-    <!-- 6. МЕНЮ НАСТРОЕК (со своим фоновым изображением settings_bg.jpg / transition_in.jpg) -->
+    <!-- 6. МЕНЮ НАСТРОЕК (Музыка: 60%, Эффекты: 40% по умолчанию) -->
     <div id="settings-overlay" class="overlay hidden">
       <img id="settings-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d">
@@ -155,35 +161,35 @@
 
           <div class="setting-row">
             <div class="setting-head">
-              <span>🎵 Фоновая музыка (папка music/)</span>
+              <span>🎵 Фоновая музыка (60%)</span>
               <button id="toggle-music" class="toggle-chip">ВКЛ</button>
             </div>
-            <input id="music-vol" type="range" min="0" max="100" value="50" />
+            <input id="music-vol" type="range" min="0" max="100" value="60" />
             <div class="setting-head" style="margin-top:8px; margin-bottom:0;">
               <span style="font-size:12px;">Трек уровня:</span>
               <select id="track-select" class="neon-select">
                 <option value="auto">🎲 Авто (все треки из music/)</option>
               </select>
             </div>
-            <div class="setting-hint" id="tracks-found-hint">Заставка: music/intro.mp3 • Босс: music/boss.mp3</div>
+            <div class="setting-hint" id="tracks-found-hint">Боссы: boss.mp3, boss2.mp3, boss3.mp3...</div>
           </div>
 
           <div class="setting-row">
             <div class="setting-head">
-              <span>✨ Спецэффекты и взрывы (SFX)</span>
+              <span>✨ Мягкие спецэффекты и выстрелы (40%)</span>
               <button id="toggle-sfx" class="toggle-chip">ВКЛ</button>
             </div>
-            <input id="sfx-vol" type="range" min="0" max="150" value="110" />
+            <input id="sfx-vol" type="range" min="0" max="100" value="40" />
           </div>
 
           <div class="setting-row">
             <div class="setting-head">
-              <span>🎹 Тембр синтезатора</span>
+              <span>🎹 Тембр приглушённых выстрелов</span>
             </div>
             <div class="diff-row" id="timbre-row" style="margin-bottom:0;">
-              <button class="pill-3d active" data-timbre="space">Арфа</button>
-              <button class="pill-3d" data-timbre="classic">Калимба</button>
-              <button class="pill-3d" data-timbre="chiptune">Хрусталь</button>
+              <button class="pill-3d active" data-timbre="space">Тёплый Бас</button>
+              <button class="pill-3d" data-timbre="classic">Бархат</button>
+              <button class="pill-3d" data-timbre="chiptune">Мягкий Импульс</button>
             </div>
           </div>
 
@@ -247,10 +253,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=14"></script>
-  <script src="js/vfx.js?v=14"></script>
-  <script src="js/world3d.js?v=14"></script>
-  <script src="js/entities.js?v=14"></script>
-  <script src="js/game.js?v=14"></script>
+  <script src="js/synth.js?v=15"></script>
+  <script src="js/vfx.js?v=15"></script>
+  <script src="js/world3d.js?v=15"></script>
+  <script src="js/entities.js?v=15"></script>
+  <script src="js/game.js?v=15"></script>
 </body>
 </html>
