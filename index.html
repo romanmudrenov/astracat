@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ASTRACAT • Космическая Одиссея</title>
-  <link rel="stylesheet" href="css/style.css?v=20" />
+  <link rel="stylesheet" href="css/style.css?v=21" />
 </head>
 <body>
   <div id="game-wrap">
     <canvas id="game"></canvas>
 
-    <!-- Верхняя панель управления + плоские тонкие кнопки плеера под ней -->
+    <!-- Верхняя 3D-панель управления + кнопки плеера под ней -->
     <div class="hud-top-right-wrap">
       <div class="hud-top-right">
         <button id="pause-btn" class="btn-3d-icon hidden" title="Пауза (P)">⏸</button>
@@ -78,7 +78,7 @@
       </div>
     </div>
 
-    <!-- 3. МЕНЮ ПРОКАЧКИ: АНГАР (5 КОРАБЛЕЙ И 5 ВИДОВ ОРУЖИЯ ЗА КОШАЧЬЮ ЕДУ) -->
+    <!-- 3. МЕНЮ ПРОКАЧКИ: АНГАР -->
     <div id="hangar-overlay" class="overlay hidden">
       <img id="hangar-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d hangar-card">
@@ -152,7 +152,7 @@
       </div>
     </div>
 
-    <!-- 6. МЕНЮ НАСТРОЕК ЗВУКА (128-VOICE COZY COSMIC ASMR SYNTH) -->
+    <!-- 6. МЕНЮ НАСТРОЕК ЗВУКА (Без блока пресетов) -->
     <div id="settings-overlay" class="overlay hidden">
       <img id="settings-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d">
@@ -162,16 +162,16 @@
             <span class="neon-badge" style="margin-bottom:0;">Zero-Harshness WebAudio</span>
             <span class="wallet-pill" id="voice-pool-badge">Голоса: 0 / 128</span>
           </div>
-          <h2>НАСТРОЙКИ ASMR-СИНТЕЗАТОРА</h2>
+          <h2>НАСТРОЙКИ ЗВУКА ASMR</h2>
 
-          <!-- Музыка MP3 + Космический Эмбиент -->
+          <!-- Музыка MP3 -->
           <div class="setting-row">
             <div class="setting-head">
               <span>🎵 Фоновая музыка MP3: <b id="val-music-vol">60%</b></span>
               <button id="toggle-music" class="toggle-chip">ВКЛ</button>
             </div>
             <input id="music-vol" type="range" min="0" max="100" value="60" />
-            <div class="setting-head" style="margin-top:6px; margin-bottom:0;">
+            <div class="setting-head" style="margin-top:8px; margin-bottom:0;">
               <span style="font-size:11.5px;">Трек уровня:</span>
               <select id="track-select" class="neon-select">
                 <option value="auto">🎲 Авто (все треки из music/)</option>
@@ -197,33 +197,20 @@
             </div>
             <input id="ctrl-warmth" type="range" min="650" max="4200" value="2400" />
 
-            <div class="setting-head" style="margin-top:7px;">
+            <div class="setting-head" style="margin-top:8px;">
               <span>🌌 Космическое стерео-эхо (Space)</span>
               <strong id="val-space" style="color:#80ffdb; font-size:12px;">42%</strong>
             </div>
             <input id="ctrl-space" type="range" min="0" max="80" value="42" />
 
-            <div class="setting-head" style="margin-top:7px;">
+            <div class="setting-head" style="margin-top:8px;">
               <span>🌀 Психоделическое плавание (LFO Drift)</span>
               <strong id="val-psy" style="color:#80ffdb; font-size:12px;">55%</strong>
             </div>
             <input id="ctrl-psy" type="range" min="0" max="100" value="55" />
           </div>
 
-          <!-- Фирменные пресеты ASMR-тембра + Генеративный эмбиент -->
-          <div class="setting-row">
-            <div class="setting-head" style="margin-bottom:5px;">
-              <span>🎹 Пресеты ASMR-мастера</span>
-              <button id="ambient-toggle-btn" class="toggle-chip off" title="Генеративный ASMR-эмбиент">Эмбиент: ВЫКЛ</button>
-            </div>
-            <div class="diff-row" id="timbre-row" style="margin-bottom:0;">
-              <button class="pill-3d active" data-preset="velvet">Бархат</button>
-              <button class="pill-3d" data-preset="nebula">Туманность</button>
-              <button class="pill-3d" data-preset="purr">Мур-Космос</button>
-            </div>
-          </div>
-
-          <div class="btn-row" style="margin-top:10px;">
+          <div class="btn-row" style="margin-top:12px;">
             <button id="test-chord-btn" class="btn-3d lav">🐱 Тест «Мрр-мяу»</button>
             <button id="settings-close-btn" class="btn-3d mint">ГОТОВО ✔</button>
           </div>
@@ -283,10 +270,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=20"></script>
-  <script src="js/vfx.js?v=20"></script>
-  <script src="js/world3d.js?v=20"></script>
-  <script src="js/entities.js?v=20"></script>
-  <script src="js/game.js?v=20"></script>
+  <script src="js/synth.js?v=21"></script>
+  <script src="js/vfx.js?v=21"></script>
+  <script src="js/world3d.js?v=21"></script>
+  <script src="js/entities.js?v=21"></script>
+  <script src="js/game.js?v=21"></script>
 </body>
 </html>
