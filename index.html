@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ASTRACAT • Космическая Одиссея</title>
-  <link rel="stylesheet" href="css/style.css?v=25" />
+  <link rel="stylesheet" href="css/style.css?v=26" />
 </head>
 <body>
   <div id="game-wrap">
@@ -92,14 +92,12 @@
             </div>
             <h2>АНГАР КОТОВИИ</h2>
 
-            <!-- Переключатель разделов: Корабли / Оружие -->
             <div class="hangar-tabs-row">
               <button id="tab-ships-btn" class="tab-pill active">🚀 КОРАБЛИ (5)</button>
               <button id="tab-weapons-btn" class="tab-pill">🔫 ОРУЖИЕ (5)</button>
             </div>
           </div>
 
-          <!-- РАЗДЕЛ 1: КОРАБЛИ -->
           <div id="hangar-section-ships" class="hangar-section">
             <div class="carousel-header">
               <span class="section-label" style="margin:0;">Выбор корабля</span>
@@ -112,7 +110,6 @@
             <div class="media-carousel" id="ships-carousel"></div>
           </div>
 
-          <!-- РАЗДЕЛ 2: ОРУЖИЕ -->
           <div id="hangar-section-weapons" class="hangar-section hidden">
             <div class="carousel-header">
               <span class="section-label" style="margin:0;">Выбор вооружения</span>
@@ -181,24 +178,24 @@
       </div>
     </div>
 
-    <!-- 6. МЕНЮ НАСТРОЕК ЗВУКА -->
+    <!-- 6. МЕНЮ НАСТРОЕК ЗВУКА (БАЗОВАЯ ГРОМКОСТЬ ASMR +30% -> 70%) -->
     <div id="settings-overlay" class="overlay hidden">
       <img id="settings-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d scrollable-card" id="settings-scroll-box">
         <img id="settings-inner-bg" class="card-inner-bg-img" alt="" />
         <div class="card-content">
           <div class="top-wallet-row">
-            <span class="neon-badge" style="margin-bottom:0;">Anti-Clip ASMR Engine</span>
-            <span class="wallet-pill" id="voice-pool-badge">Голоса: 0 / 128</span>
+            <span class="neon-badge" style="margin-bottom:0;">Boosted Anti-Clip ASMR</span>
+            <span class="wallet-pill" id="voice-pool-badge">Голоса: 0 / 32</span>
           </div>
           <h2>НАСТРОЙКИ ЗВУКА ASMR</h2>
 
           <div class="setting-row">
             <div class="setting-head">
-              <span>🎵 Фоновая музыка MP3: <b id="val-music-vol">60%</b></span>
+              <span>🎵 Фоновая музыка MP3: <b id="val-music-vol">55%</b></span>
               <button id="toggle-music" class="toggle-chip">ВКЛ</button>
             </div>
-            <input id="music-vol" type="range" min="0" max="100" value="60" />
+            <input id="music-vol" type="range" min="0" max="100" value="55" />
             <div class="setting-head" style="margin-top:8px; margin-bottom:0;">
               <span style="font-size:11.5px;">Трек уровня:</span>
               <select id="track-select" class="neon-select">
@@ -210,10 +207,10 @@
 
           <div class="setting-row">
             <div class="setting-head">
-              <span>✨ Громкость ASMR-эффектов: <b id="val-sfx-vol">40%</b></span>
+              <span>✨ Громкость ASMR-эффектов (+30%): <b id="val-sfx-vol">70%</b></span>
               <button id="toggle-sfx" class="toggle-chip">ВКЛ</button>
             </div>
-            <input id="sfx-vol" type="range" min="0" max="100" value="40" />
+            <input id="sfx-vol" type="range" min="0" max="100" value="70" />
           </div>
 
           <div class="setting-row">
@@ -225,9 +222,9 @@
 
             <div class="setting-head" style="margin-top:8px;">
               <span>🌌 Космическое стерео-эхо (Space)</span>
-              <strong id="val-space" style="color:#90e0ef; font-size:12px;">42%</strong>
+              <strong id="val-space" style="color:#90e0ef; font-size:12px;">38%</strong>
             </div>
-            <input id="ctrl-space" type="range" min="0" max="80" value="42" />
+            <input id="ctrl-space" type="range" min="0" max="80" value="38" />
 
             <div class="setting-head" style="margin-top:8px;">
               <span>🌀 Психоделическое плавание (LFO Drift)</span>
@@ -296,10 +293,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=25"></script>
-  <script src="js/vfx.js?v=25"></script>
-  <script src="js/world3d.js?v=25"></script>
-  <script src="js/entities.js?v=25"></script>
-  <script src="js/game.js?v=25"></script>
+  <script src="js/synth.js?v=26"></script>
+  <script src="js/vfx.js?v=26"></script>
+  <script src="js/world3d.js?v=26"></script>
+  <script src="js/entities.js?v=26"></script>
+  <script src="js/game.js?v=26"></script>
 </body>
 </html>
