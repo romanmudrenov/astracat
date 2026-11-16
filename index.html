@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ASTRACAT • Космическая Одиссея</title>
-  <link rel="stylesheet" href="css/style.css?v=22" />
+  <link rel="stylesheet" href="css/style.css?v=23" />
 </head>
 <body>
   <div id="game-wrap">
     <canvas id="game"></canvas>
 
-    <!-- Верхняя панель управления (скрывается в окнах Ангара/Настроек, чтобы ничего не перекрывать) -->
+    <!-- Верхняя панель управления -->
     <div id="hud-top-bar" class="hud-top-right-wrap">
       <div class="hud-top-right">
         <button id="pause-btn" class="btn-3d-icon hidden" title="Пауза (P)">⏸</button>
@@ -65,7 +65,7 @@
 
           <div class="btn-row" style="margin-bottom:10px;">
             <button id="start-btn" class="btn-3d mint">В ПОЛЁТ! 🚀</button>
-            <button id="hangar-open-btn" class="btn-3d peach">🛠 АНГАР</button>
+            <button id="hangar-open-btn" class="btn-3d peach">🛠 АНГАР 3D</button>
           </div>
 
           <div class="btn-row">
@@ -78,27 +78,42 @@
       </div>
     </div>
 
-    <!-- 3. МЕНЮ ПРОКАЧКИ: АНГАР (с плавным ASMR-скроллом) -->
+    <!-- 3. МУЛЬТИМЕДИЙНЫЙ 3D-ГАРАЖ (КАРУСЕЛЬ КОРАБЛЕЙ И ОРУЖИЯ С ЖИВЫМ ВРАЩЕНИЕМ) -->
     <div id="hangar-overlay" class="overlay hidden">
       <img id="hangar-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d hangar-card scrollable-card" id="hangar-scroll-box">
         <img id="hangar-inner-bg" class="card-inner-bg-img" alt="" />
         <div class="card-content">
           <div class="top-wallet-row">
-            <span class="neon-badge" style="margin-bottom:0;">Космоверфь Котовии</span>
+            <span class="neon-badge" style="margin-bottom:0;">3D Космоверфь</span>
             <span class="wallet-pill" id="hangar-coins">🐟 0</span>
           </div>
-          <h2>АНГАР И ПРОКАЧКА</h2>
-          <p class="subtitle" style="margin-bottom:6px;">Листай вниз ⬇ чтобы выбрать корабль и оружие</p>
+          <h2>МУЛЬТИМЕДИА АНГАР</h2>
 
-          <div class="section-label">1. Космические корабли (5 поколений)</div>
-          <div class="shop-list" id="ships-list"></div>
+          <!-- СЕКЦИЯ 1: КАРУСЕЛЬ КОРАБЛЕЙ -->
+          <div class="carousel-header">
+            <span class="section-label" style="margin:0;">1. Корабли (листай ◀ ▶)</span>
+            <div class="carousel-nav">
+              <button id="ship-prev-btn" class="nav-arrow-btn">◀</button>
+              <span id="ship-counter" class="nav-counter">1 / 5</span>
+              <button id="ship-next-btn" class="nav-arrow-btn">▶</button>
+            </div>
+          </div>
+          <div class="media-carousel" id="ships-carousel"></div>
 
-          <div class="section-label">2. Базовое вооружение (5 классов по урону)</div>
-          <div class="shop-list" id="weapons-list"></div>
+          <!-- СЕКЦИЯ 2: КАРУСЕЛЬ ОРУЖИЯ -->
+          <div class="carousel-header" style="margin-top:8px;">
+            <span class="section-label" style="margin:0;">2. Вооружение (листай ◀ ▶)</span>
+            <div class="carousel-nav">
+              <button id="weapon-prev-btn" class="nav-arrow-btn">◀</button>
+              <span id="weapon-counter" class="nav-counter">1 / 5</span>
+              <button id="weapon-next-btn" class="nav-arrow-btn">▶</button>
+            </div>
+          </div>
+          <div class="media-carousel" id="weapons-carousel"></div>
 
-          <div class="btn-row" style="margin-top:12px; position:sticky; bottom:0; padding-top:6px;">
-            <button id="hangar-close-btn" class="btn-3d mint">ГОТОВО ✔</button>
+          <div class="btn-row" style="margin-top:12px;">
+            <button id="hangar-close-btn" class="btn-3d mint">В МЕНЮ ✔</button>
           </div>
         </div>
       </div>
@@ -268,10 +283,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=22"></script>
-  <script src="js/vfx.js?v=22"></script>
-  <script src="js/world3d.js?v=22"></script>
-  <script src="js/entities.js?v=22"></script>
-  <script src="js/game.js?v=22"></script>
+  <script src="js/synth.js?v=23"></script>
+  <script src="js/vfx.js?v=23"></script>
+  <script src="js/world3d.js?v=23"></script>
+  <script src="js/entities.js?v=23"></script>
+  <script src="js/game.js?v=23"></script>
 </body>
 </html>
