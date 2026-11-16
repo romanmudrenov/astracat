@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ASTRACAT • Космическая Одиссея</title>
-  <link rel="stylesheet" href="css/style.css?v=21" />
+  <link rel="stylesheet" href="css/style.css?v=22" />
 </head>
 <body>
   <div id="game-wrap">
     <canvas id="game"></canvas>
 
-    <!-- Верхняя 3D-панель управления + кнопки плеера под ней -->
-    <div class="hud-top-right-wrap">
+    <!-- Верхняя панель управления (скрывается в окнах Ангара/Настроек, чтобы ничего не перекрывать) -->
+    <div id="hud-top-bar" class="hud-top-right-wrap">
       <div class="hud-top-right">
         <button id="pause-btn" class="btn-3d-icon hidden" title="Пауза (P)">⏸</button>
         <button id="settings-open-btn" class="btn-3d-icon" title="Настройки звука">⚙️</button>
@@ -38,7 +38,7 @@
     <!-- 2. ГЛАВНОЕ МЕНЮ -->
     <div id="start-overlay" class="overlay hidden">
       <img id="menu-outer-bg" class="overlay-bg-img" alt="" />
-      <div class="card-3d">
+      <div class="card-3d scrollable-card">
         <img id="menu-inner-bg" class="card-inner-bg-img" alt="" />
         <div class="card-content">
           <div class="top-wallet-row">
@@ -60,7 +60,7 @@
           
           <div class="selected-level-box" id="selected-level-info">
             <strong>Уровень 1: Туманность Узоров</strong><br>
-            <span>Босс: Оракул Фракталов</span>
+            <span>Босс: Психоделическая Марка</span>
           </div>
 
           <div class="btn-row" style="margin-bottom:10px;">
@@ -78,10 +78,10 @@
       </div>
     </div>
 
-    <!-- 3. МЕНЮ ПРОКАЧКИ: АНГАР -->
+    <!-- 3. МЕНЮ ПРОКАЧКИ: АНГАР (с плавным ASMR-скроллом) -->
     <div id="hangar-overlay" class="overlay hidden">
       <img id="hangar-outer-bg" class="overlay-bg-img" alt="" />
-      <div class="card-3d hangar-card">
+      <div class="card-3d hangar-card scrollable-card" id="hangar-scroll-box">
         <img id="hangar-inner-bg" class="card-inner-bg-img" alt="" />
         <div class="card-content">
           <div class="top-wallet-row">
@@ -89,6 +89,7 @@
             <span class="wallet-pill" id="hangar-coins">🐟 0</span>
           </div>
           <h2>АНГАР И ПРОКАЧКА</h2>
+          <p class="subtitle" style="margin-bottom:6px;">Листай вниз ⬇ чтобы выбрать корабль и оружие</p>
 
           <div class="section-label">1. Космические корабли (5 поколений)</div>
           <div class="shop-list" id="ships-list"></div>
@@ -96,7 +97,7 @@
           <div class="section-label">2. Базовое вооружение (5 классов по урону)</div>
           <div class="shop-list" id="weapons-list"></div>
 
-          <div class="btn-row" style="margin-top:12px;">
+          <div class="btn-row" style="margin-top:12px; position:sticky; bottom:0; padding-top:6px;">
             <button id="hangar-close-btn" class="btn-3d mint">ГОТОВО ✔</button>
           </div>
         </div>
@@ -106,7 +107,7 @@
     <!-- 4. КОМИКС ПРЕДЫСТОРИИ -->
     <div id="lore-overlay" class="overlay hidden">
       <img id="lore-outer-bg" class="overlay-bg-img" alt="" />
-      <div class="card-3d lore-card">
+      <div class="card-3d lore-card scrollable-card">
         <div class="card-content">
           <div class="lore-dots" id="lore-dots">
             <span class="dot active"></span>
@@ -135,7 +136,7 @@
     <!-- 5. ВХОДНАЯ ЗАСТАВКА ПЕРЕД УРОВНЕМ -->
     <div id="intro-overlay" class="overlay hidden">
       <img id="intro-outer-bg" class="overlay-bg-img" alt="" />
-      <div class="card-3d intro-card">
+      <div class="card-3d intro-card scrollable-card">
         <div class="card-content">
           <div class="stage-art-box" id="intro-art-box">
             <img id="intro-stage-img" alt="Вход в уровень" />
@@ -152,10 +153,10 @@
       </div>
     </div>
 
-    <!-- 6. МЕНЮ НАСТРОЕК ЗВУКА (Без блока пресетов) -->
+    <!-- 6. МЕНЮ НАСТРОЕК ЗВУКА -->
     <div id="settings-overlay" class="overlay hidden">
       <img id="settings-outer-bg" class="overlay-bg-img" alt="" />
-      <div class="card-3d">
+      <div class="card-3d scrollable-card" id="settings-scroll-box">
         <img id="settings-inner-bg" class="card-inner-bg-img" alt="" />
         <div class="card-content">
           <div class="top-wallet-row">
@@ -164,7 +165,6 @@
           </div>
           <h2>НАСТРОЙКИ ЗВУКА ASMR</h2>
 
-          <!-- Музыка MP3 -->
           <div class="setting-row">
             <div class="setting-head">
               <span>🎵 Фоновая музыка MP3: <b id="val-music-vol">60%</b></span>
@@ -180,7 +180,6 @@
             <div class="setting-hint" id="tracks-found-hint">Заставка: intro.mp3 • Боссы: boss.mp3, boss2.mp3...</div>
           </div>
 
-          <!-- Громкость 128-голосного ASMR-синтезатора -->
           <div class="setting-row">
             <div class="setting-head">
               <span>✨ Громкость ASMR-эффектов: <b id="val-sfx-vol">40%</b></span>
@@ -189,7 +188,6 @@
             <input id="sfx-vol" type="range" min="0" max="100" value="40" />
           </div>
 
-          <!-- Базовые показатели AstraCatSynth: Бархатность LPF, Эхо, Психо-дрейф -->
           <div class="setting-row">
             <div class="setting-head">
               <span>🌙 Бархатность / Приглушённость (LPF)</span>
@@ -223,7 +221,7 @@
       <div class="card-3d">
         <div class="card-content">
           <h2>ПОЛЁТ ПРИОСТАНОВЛЕН</h2>
-          <p class="subtitle">Музыка на паузе ⏸<br>ПК: <b>WASD / Стрелки</b> + <b>Пробел</b> • Смартфон: <b>палец на экране</b></p>
+          <p class="subtitle">Музыка выключена на время паузы 🔇<br>ПК: <b>WASD / Стрелки</b> + <b>Пробел</b> • Смартфон: <b>палец на экране</b></p>
           <div class="btn-row">
             <button id="resume-btn" class="btn-3d mint">ПРОДОЛЖИТЬ ▶</button>
             <button id="pause-menu-btn" class="btn-3d pink">В МЕНЮ</button>
@@ -235,7 +233,7 @@
     <!-- 8. ВЫХОДНАЯ ЗАСТАВКА ПОСЛЕ УРОВНЯ -->
     <div id="end-overlay" class="overlay hidden">
       <img id="end-outer-bg" class="overlay-bg-img" alt="" />
-      <div class="card-3d">
+      <div class="card-3d scrollable-card">
         <div class="card-content">
           <div class="neon-badge" id="end-badge">Уровень пройден</div>
 
@@ -270,10 +268,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=21"></script>
-  <script src="js/vfx.js?v=21"></script>
-  <script src="js/world3d.js?v=21"></script>
-  <script src="js/entities.js?v=21"></script>
-  <script src="js/game.js?v=21"></script>
+  <script src="js/synth.js?v=22"></script>
+  <script src="js/vfx.js?v=22"></script>
+  <script src="js/world3d.js?v=22"></script>
+  <script src="js/entities.js?v=22"></script>
+  <script src="js/game.js?v=22"></script>
 </body>
 </html>
