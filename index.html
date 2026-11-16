@@ -4,11 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ASTRACAT • Космическая Одиссея</title>
-  <link rel="stylesheet" href="css/style.css?v=23" />
+  <link rel="stylesheet" href="css/style.css?v=24" />
 </head>
 <body>
   <div id="game-wrap">
     <canvas id="game"></canvas>
+
+    <!-- Холст парящих частиц в меню: рыбки, мордочки котиков и пончики с розовой глазурью -->
+    <canvas id="menu-particles-canvas"></canvas>
 
     <!-- Верхняя панель управления -->
     <div id="hud-top-bar" class="hud-top-right-wrap">
@@ -35,7 +38,7 @@
       </div>
     </div>
 
-    <!-- 2. ГЛАВНОЕ МЕНЮ -->
+    <!-- 2. ГЛАВНОЕ МЕНЮ (ПАСТЕЛЬНО-МЕТАЛЛИЧЕСКИЙ ПЛЮШЕВЫЙ СТИЛЬ) -->
     <div id="start-overlay" class="overlay hidden">
       <img id="menu-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d scrollable-card">
@@ -60,12 +63,12 @@
           
           <div class="selected-level-box" id="selected-level-info">
             <strong>Уровень 1: Туманность Узоров</strong><br>
-            <span>Босс: Психоделическая Марка</span>
+            <span>Босс: Психо-Марка Оракула</span>
           </div>
 
           <div class="btn-row" style="margin-bottom:10px;">
             <button id="start-btn" class="btn-3d mint">В ПОЛЁТ! 🚀</button>
-            <button id="hangar-open-btn" class="btn-3d peach">🛠 АНГАР 3D</button>
+            <button id="hangar-open-btn" class="btn-3d peach">🛠 АНГАР</button>
           </div>
 
           <div class="btn-row">
@@ -78,17 +81,17 @@
       </div>
     </div>
 
-    <!-- 3. МУЛЬТИМЕДИЙНЫЙ 3D-ГАРАЖ (КАРУСЕЛЬ КОРАБЛЕЙ И ОРУЖИЯ С ЖИВЫМ ВРАЩЕНИЕМ) -->
-    <div id="hangar-overlay" class="overlay hidden">
+    <!-- 3. ПОЛНОЭКРАННЫЙ МУЛЬТИМЕДИЙНЫЙ АНГАР (БЕЗ 3D-ЛАГОВ, С ПЛАВНЫМИ АНИМАЦИЯМИ) -->
+    <div id="hangar-overlay" class="overlay fullscreen-overlay hidden">
       <img id="hangar-outer-bg" class="overlay-bg-img" alt="" />
-      <div class="card-3d hangar-card scrollable-card" id="hangar-scroll-box">
+      <div class="card-3d hangar-card fullscreen-hangar scrollable-card" id="hangar-scroll-box">
         <img id="hangar-inner-bg" class="card-inner-bg-img" alt="" />
-        <div class="card-content">
+        <div class="card-content fullscreen-hangar-content">
           <div class="top-wallet-row">
-            <span class="neon-badge" style="margin-bottom:0;">3D Космоверфь</span>
+            <span class="neon-badge" style="margin-bottom:0;">Космоверфь Котовии</span>
             <span class="wallet-pill" id="hangar-coins">🐟 0</span>
           </div>
-          <h2>МУЛЬТИМЕДИА АНГАР</h2>
+          <h2>АНГАР КОРАБЛЕЙ И ОРУЖИЯ</h2>
 
           <!-- СЕКЦИЯ 1: КАРУСЕЛЬ КОРАБЛЕЙ -->
           <div class="carousel-header">
@@ -206,19 +209,19 @@
           <div class="setting-row">
             <div class="setting-head">
               <span>🌙 Бархатность / Приглушённость (LPF)</span>
-              <strong id="val-warmth" style="color:#80ffdb; font-size:12px;">2400 Hz</strong>
+              <strong id="val-warmth" style="color:#4cc9f0; font-size:12px;">2400 Hz</strong>
             </div>
             <input id="ctrl-warmth" type="range" min="650" max="4200" value="2400" />
 
             <div class="setting-head" style="margin-top:8px;">
               <span>🌌 Космическое стерео-эхо (Space)</span>
-              <strong id="val-space" style="color:#80ffdb; font-size:12px;">42%</strong>
+              <strong id="val-space" style="color:#4cc9f0; font-size:12px;">42%</strong>
             </div>
             <input id="ctrl-space" type="range" min="0" max="80" value="42" />
 
             <div class="setting-head" style="margin-top:8px;">
               <span>🌀 Психоделическое плавание (LFO Drift)</span>
-              <strong id="val-psy" style="color:#80ffdb; font-size:12px;">55%</strong>
+              <strong id="val-psy" style="color:#4cc9f0; font-size:12px;">55%</strong>
             </div>
             <input id="ctrl-psy" type="range" min="0" max="100" value="55" />
           </div>
@@ -283,10 +286,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=23"></script>
-  <script src="js/vfx.js?v=23"></script>
-  <script src="js/world3d.js?v=23"></script>
-  <script src="js/entities.js?v=23"></script>
-  <script src="js/game.js?v=23"></script>
+  <script src="js/synth.js?v=24"></script>
+  <script src="js/vfx.js?v=24"></script>
+  <script src="js/world3d.js?v=24"></script>
+  <script src="js/entities.js?v=24"></script>
+  <script src="js/game.js?v=24"></script>
 </body>
 </html>
