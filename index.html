@@ -4,13 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ASTRACAT • Космическая Одиссея</title>
-  <link rel="stylesheet" href="css/style.css?v=24" />
+  <link rel="stylesheet" href="css/style.css?v=25" />
 </head>
 <body>
   <div id="game-wrap">
     <canvas id="game"></canvas>
-
-    <!-- Холст парящих частиц в меню: рыбки, мордочки котиков и пончики с розовой глазурью -->
     <canvas id="menu-particles-canvas"></canvas>
 
     <!-- Верхняя панель управления -->
@@ -38,7 +36,7 @@
       </div>
     </div>
 
-    <!-- 2. ГЛАВНОЕ МЕНЮ (ПАСТЕЛЬНО-МЕТАЛЛИЧЕСКИЙ ПЛЮШЕВЫЙ СТИЛЬ) -->
+    <!-- 2. ГЛАВНОЕ МЕНЮ -->
     <div id="start-overlay" class="overlay hidden">
       <img id="menu-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d scrollable-card">
@@ -58,8 +56,8 @@
             <button class="pill-3d nightmare-pill" data-diff="nightmare">💀 Безумие</button>
           </div>
 
-          <div class="section-label">Выбор сектора (1–5)</div>
-          <div class="levels-grid five-cols" id="levels-grid"></div>
+          <div class="section-label">Выбор сектора (1–6)</div>
+          <div class="levels-grid six-cols" id="levels-grid"></div>
           
           <div class="selected-level-box" id="selected-level-info">
             <strong>Уровень 1: Туманность Узоров</strong><br>
@@ -76,47 +74,59 @@
             <button id="menu-sound-btn" class="btn-3d pink">🎛 Звук ASMR</button>
           </div>
 
-          <div class="best-line" id="start-best">Рекорд: 0 • Пройдено: 0/5</div>
+          <div class="best-line" id="start-best">Рекорд: 0 • Пройдено: 0/6</div>
         </div>
       </div>
     </div>
 
-    <!-- 3. ПОЛНОЭКРАННЫЙ МУЛЬТИМЕДИЙНЫЙ АНГАР (БЕЗ 3D-ЛАГОВ, С ПЛАВНЫМИ АНИМАЦИЯМИ) -->
+    <!-- 3. ПОЛНОЭКРАННЫЙ АНГАР С ОТДЕЛЬНЫМИ ВКЛАДКАМИ ДЛЯ КОРАБЛЕЙ И ОРУЖИЯ -->
     <div id="hangar-overlay" class="overlay fullscreen-overlay hidden">
       <img id="hangar-outer-bg" class="overlay-bg-img" alt="" />
-      <div class="card-3d hangar-card fullscreen-hangar scrollable-card" id="hangar-scroll-box">
+      <div class="card-3d hangar-card fullscreen-hangar">
         <img id="hangar-inner-bg" class="card-inner-bg-img" alt="" />
         <div class="card-content fullscreen-hangar-content">
-          <div class="top-wallet-row">
-            <span class="neon-badge" style="margin-bottom:0;">Космоверфь Котовии</span>
-            <span class="wallet-pill" id="hangar-coins">🐟 0</span>
-          </div>
-          <h2>АНГАР КОРАБЛЕЙ И ОРУЖИЯ</h2>
+          <div>
+            <div class="top-wallet-row">
+              <span class="neon-badge" style="margin-bottom:0;">Космоверфь Котовии</span>
+              <span class="wallet-pill" id="hangar-coins">🐟 0</span>
+            </div>
+            <h2>АНГАР КОТОВИИ</h2>
 
-          <!-- СЕКЦИЯ 1: КАРУСЕЛЬ КОРАБЛЕЙ -->
-          <div class="carousel-header">
-            <span class="section-label" style="margin:0;">1. Корабли (листай ◀ ▶)</span>
-            <div class="carousel-nav">
-              <button id="ship-prev-btn" class="nav-arrow-btn">◀</button>
-              <span id="ship-counter" class="nav-counter">1 / 5</span>
-              <button id="ship-next-btn" class="nav-arrow-btn">▶</button>
+            <!-- Переключатель разделов: Корабли / Оружие -->
+            <div class="hangar-tabs-row">
+              <button id="tab-ships-btn" class="tab-pill active">🚀 КОРАБЛИ (5)</button>
+              <button id="tab-weapons-btn" class="tab-pill">🔫 ОРУЖИЕ (5)</button>
             </div>
           </div>
-          <div class="media-carousel" id="ships-carousel"></div>
 
-          <!-- СЕКЦИЯ 2: КАРУСЕЛЬ ОРУЖИЯ -->
-          <div class="carousel-header" style="margin-top:8px;">
-            <span class="section-label" style="margin:0;">2. Вооружение (листай ◀ ▶)</span>
-            <div class="carousel-nav">
-              <button id="weapon-prev-btn" class="nav-arrow-btn">◀</button>
-              <span id="weapon-counter" class="nav-counter">1 / 5</span>
-              <button id="weapon-next-btn" class="nav-arrow-btn">▶</button>
+          <!-- РАЗДЕЛ 1: КОРАБЛИ -->
+          <div id="hangar-section-ships" class="hangar-section">
+            <div class="carousel-header">
+              <span class="section-label" style="margin:0;">Выбор корабля</span>
+              <div class="carousel-nav">
+                <button id="ship-prev-btn" class="nav-arrow-btn">◀</button>
+                <span id="ship-counter" class="nav-counter">1 / 5</span>
+                <button id="ship-next-btn" class="nav-arrow-btn">▶</button>
+              </div>
             </div>
+            <div class="media-carousel" id="ships-carousel"></div>
           </div>
-          <div class="media-carousel" id="weapons-carousel"></div>
 
-          <div class="btn-row" style="margin-top:12px;">
-            <button id="hangar-close-btn" class="btn-3d mint">В МЕНЮ ✔</button>
+          <!-- РАЗДЕЛ 2: ОРУЖИЕ -->
+          <div id="hangar-section-weapons" class="hangar-section hidden">
+            <div class="carousel-header">
+              <span class="section-label" style="margin:0;">Выбор вооружения</span>
+              <div class="carousel-nav">
+                <button id="weapon-prev-btn" class="nav-arrow-btn">◀</button>
+                <span id="weapon-counter" class="nav-counter">1 / 5</span>
+                <button id="weapon-next-btn" class="nav-arrow-btn">▶</button>
+              </div>
+            </div>
+            <div class="media-carousel" id="weapons-carousel"></div>
+          </div>
+
+          <div class="btn-row" style="margin-top:8px;">
+            <button id="hangar-close-btn" class="btn-3d mint">⬅ В ГЛАВНОЕ МЕНЮ</button>
           </div>
         </div>
       </div>
@@ -178,7 +188,7 @@
         <img id="settings-inner-bg" class="card-inner-bg-img" alt="" />
         <div class="card-content">
           <div class="top-wallet-row">
-            <span class="neon-badge" style="margin-bottom:0;">Zero-Harshness WebAudio</span>
+            <span class="neon-badge" style="margin-bottom:0;">Anti-Clip ASMR Engine</span>
             <span class="wallet-pill" id="voice-pool-badge">Голоса: 0 / 128</span>
           </div>
           <h2>НАСТРОЙКИ ЗВУКА ASMR</h2>
@@ -209,19 +219,19 @@
           <div class="setting-row">
             <div class="setting-head">
               <span>🌙 Бархатность / Приглушённость (LPF)</span>
-              <strong id="val-warmth" style="color:#4cc9f0; font-size:12px;">2400 Hz</strong>
+              <strong id="val-warmth" style="color:#90e0ef; font-size:12px;">2400 Hz</strong>
             </div>
             <input id="ctrl-warmth" type="range" min="650" max="4200" value="2400" />
 
             <div class="setting-head" style="margin-top:8px;">
               <span>🌌 Космическое стерео-эхо (Space)</span>
-              <strong id="val-space" style="color:#4cc9f0; font-size:12px;">42%</strong>
+              <strong id="val-space" style="color:#90e0ef; font-size:12px;">42%</strong>
             </div>
             <input id="ctrl-space" type="range" min="0" max="80" value="42" />
 
             <div class="setting-head" style="margin-top:8px;">
               <span>🌀 Психоделическое плавание (LFO Drift)</span>
-              <strong id="val-psy" style="color:#4cc9f0; font-size:12px;">55%</strong>
+              <strong id="val-psy" style="color:#90e0ef; font-size:12px;">55%</strong>
             </div>
             <input id="ctrl-psy" type="range" min="0" max="100" value="55" />
           </div>
@@ -286,10 +296,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=24"></script>
-  <script src="js/vfx.js?v=24"></script>
-  <script src="js/world3d.js?v=24"></script>
-  <script src="js/entities.js?v=24"></script>
-  <script src="js/game.js?v=24"></script>
+  <script src="js/synth.js?v=25"></script>
+  <script src="js/vfx.js?v=25"></script>
+  <script src="js/world3d.js?v=25"></script>
+  <script src="js/entities.js?v=25"></script>
+  <script src="js/game.js?v=25"></script>
 </body>
 </html>
