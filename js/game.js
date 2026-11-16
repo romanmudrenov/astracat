@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'astro_cat_hangar_v10';
+  const STORAGE_KEY = 'astro_cat_hangar_v11';
   const BORDER_INK = typeof INK !== 'undefined' ? INK : '#100824';
 
   function loadProgress() {
@@ -41,6 +41,7 @@
   const world3d = typeof World3DEngine !== 'undefined' ? new World3DEngine() : null;
   const vfx = typeof VFXEngine !== 'undefined' ? new VFXEngine() : null;
 
+  const hudTopBar = document.getElementById('hud-top-bar');
   const splashOverlay = document.getElementById('splash-overlay');
   const startOverlay = document.getElementById('start-overlay');
   const hangarOverlay = document.getElementById('hangar-overlay');
@@ -62,15 +63,36 @@
 
   function resize() {
     const rect = canvas.parentElement.getBoundingClientRect();
-    W = Math.max(320, rect.width || window.innerWidth);
+    W = Math.max(320, Math.min(520, rect.width || window.innerWidth));
     H = Math.max(480, rect.height || window.innerHeight);
-    dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     canvas.width = Math.floor(W * dpr);
     canvas.height = Math.floor(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   window.addEventListener('resize', resize);
   resize();
+
+  function syncTopHudVisibility() {
+    if (!hudTopBar) return;
+    const hideInMenus =
+      !splashOverlay.classList.contains('hidden') ||
+      !hangarOverlay.classList.contains('hidden') ||
+      !settingsOverlay.classList.contains('hidden') ||
+      !loreOverlay.classList.contains('hidden') ||
+      !introOverlay.classList.contains('hidden');
+    hudTopBar.classList.toggle('hidden-hud', hideInMenus);
+  }
+
+  document.querySelectorAll('.scrollable-card').forEach(cardEl => {
+    let lastScrollTop = 0;
+    cardEl.addEventListener('scroll', () => {
+      if (Math.abs(cardEl.scrollTop - lastScrollTop) >= 18) {
+        lastScrollTop = cardEl.scrollTop;
+        if (synth) synth.sfxScrollTick();
+      }
+    }, { passive: true });
+  });
 
   function resolveImageToElement(imgEl, candidates, onFail = null) {
     if (!imgEl) return;
@@ -119,6 +141,7 @@
     resolveImageToElement(document.getElementById('settings-inner-bg'), innerCardCandidates);
   }
   setupMenuBackgrounds();
+  syncTopHudVisibility();
 
   if (synth) {
     synth.startIntroMusic();
@@ -160,6 +183,7 @@
       splashOverlay.classList.add('hidden');
       renderLevelGrid();
       startOverlay.classList.remove('hidden');
+      syncTopHudVisibility();
     });
   }
 
@@ -287,6 +311,7 @@
     renderHangar();
     startOverlay.classList.add('hidden');
     hangarOverlay.classList.remove('hidden');
+    syncTopHudVisibility();
   });
 
   document.getElementById('hangar-close-btn').addEventListener('click', (e) => {
@@ -295,6 +320,7 @@
     hangarOverlay.classList.add('hidden');
     renderLevelGrid();
     startOverlay.classList.remove('hidden');
+    syncTopHudVisibility();
   });
 
   const LORE_SLIDES = [
@@ -351,6 +377,7 @@
     startOverlay.classList.add('hidden');
     loreOverlay.classList.remove('hidden');
     renderLoreSlide();
+    syncTopHudVisibility();
   }
 
   document.getElementById('lore-open-btn').addEventListener('click', (e) => {
@@ -381,6 +408,7 @@
     loreOverlay.classList.add('hidden');
     renderLevelGrid();
     startOverlay.classList.remove('hidden');
+    syncTopHudVisibility();
   }
 
   const levelsGrid = document.getElementById('levels-grid');
@@ -452,6 +480,7 @@
     startOverlay.classList.add('hidden');
     endOverlay.classList.add('hidden');
     introOverlay.classList.remove('hidden');
+    syncTopHudVisibility();
   }
 
   document.getElementById('start-btn').addEventListener('click', (e) => {
@@ -470,11 +499,9 @@
     if (synth) synth.sfxMenuTap();
     introOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
+    syncTopHudVisibility();
   });
 
-  // =========================================================================
-  // НАСТРОЙКИ ЗВУКА ASMR
-  // =========================================================================
   let state = 'START';
   let prevStateBeforeSettings = 'START';
 
@@ -486,6 +513,7 @@
       if (synth) synth.pauseMusic();
     }
     settingsOverlay.classList.remove('hidden');
+    syncTopHudVisibility();
   }
 
   function closeSettings() {
@@ -495,6 +523,7 @@
       state = 'PLAYING';
       if (synth) synth.resumeMusic();
     }
+    syncTopHudVisibility();
   }
 
   document.getElementById('settings-open-btn').addEventListener('click', (e) => { e.stopPropagation(); openSettings(); });
@@ -605,9 +634,6 @@
     muteBtn.textContent = muted ? '🔇' : '🔊';
   });
 
-  // =========================================================================
-  // ИГРОВОЙ ПРОЦЕСС
-  // =========================================================================
   let score = 0;
   let runCoins = 0;
   let kills = 0;
@@ -641,10 +667,12 @@
       pointer.active = false;
       if (synth) { synth.sfxMenuTap(); synth.pauseMusic(); }
       pauseOverlay.classList.remove('hidden');
+      syncTopHudVisibility();
     } else if (state === 'PAUSED' && settingsOverlay.classList.contains('hidden')) {
       state = 'PLAYING';
       if (synth) { synth.sfxMenuSelect(); synth.resumeMusic(); }
       pauseOverlay.classList.add('hidden');
+      syncTopHudVisibility();
     }
   }
 
@@ -675,6 +703,7 @@
 
     renderLevelGrid();
     startOverlay.classList.remove('hidden');
+    syncTopHudVisibility();
   }
 
   ['pause-menu-btn', 'end-menu-btn'].forEach(id => {
@@ -791,6 +820,7 @@
     settingsOverlay.classList.add('hidden');
     splashOverlay.classList.add('hidden');
     pauseBtn.classList.remove('hidden');
+    syncTopHudVisibility();
 
     if (world3d) world3d.setCameraFromPlayer(player.x, W);
     if (vfx) vfx.addPopup(W / 2, H * 0.36, `УРОВЕНЬ ${lvl.id}: ${lvl.name.toUpperCase()}`, lvl.accent, 1.15);
@@ -811,8 +841,10 @@
     const margin = 56;
     const x = margin + Math.random() * (W - margin * 2);
 
-    let shape = 'hex_reactor';
-    if (lvl.theme === 'horror') {
+    let shape = 'om_fractal';
+    if (lvl.theme === 'lsd') {
+      shape = Math.random() < 0.55 ? 'om_fractal' : 'neon_star_obstacle';
+    } else if (lvl.theme === 'horror') {
       shape = Math.random() < 0.65 ? 'skull_bones' : 'blood_pentagram';
     } else if (lvl.theme === 'rainbow') {
       const rShapes = ['rainbow_donut', 'dream_bubble', 'rainbow_cloud'];
@@ -831,7 +863,7 @@
       r: 26,
       vy: 96,
       rot: 0,
-      vrot: (shape === 'skull_bones' || shape === 'blood_pentagram' || shape === 'rainbow_donut' || shape === 'thorn_pod') ? 1.4 : 0,
+      vrot: 1.5,
       phase: Math.random() * Math.PI * 2
     });
   }
@@ -1050,7 +1082,68 @@
     const spd = 225 * diff.bulletSpeed;
     const toPlayer = player ? Math.atan2(player.y - b.y, player.x - b.x) : Math.PI / 2;
 
-    if (lvl.id === 1 || lvl.id === 3) {
+    if (lvl.id === 1) {
+      if (synth) synth.sfxWave();
+      b.shootTimer = b.phase === 3 ? 0.92 : 1.18;
+
+      [-22, 22].forEach(ex => {
+        const eyeAng = Math.atan2(player.y - (b.y - 14), player.x - (b.x + ex));
+        enemyBullets.push({
+          kind: 'green_spin_star',
+          rot: 0,
+          x: b.x + ex,
+          y: b.y - 14,
+          vx: Math.cos(eyeAng) * (spd * 1.05),
+          vy: Math.sin(eyeAng) * (spd * 1.05),
+          r: 12,
+          color: '#06d6a0'
+        });
+      });
+
+      [-0.28, 0, 0.28].forEach((offsetAng, idx) => {
+        const ang = Math.PI / 2 + offsetAng + Math.sin(b.time * 3) * 0.15;
+        enemyBullets.push({
+          kind: 'psy_wave',
+          hue: (b.time * 180 + idx * 110) % 360,
+          x: b.x,
+          y: b.y + 24,
+          vx: Math.cos(ang) * (spd * 0.95),
+          vy: Math.sin(ang) * (spd * 0.95),
+          ang,
+          r: 20,
+          color: '#ff006e'
+        });
+      });
+
+    } else if (lvl.id === 2) {
+      if (synth) synth.sfxIgnite();
+      b.shootTimer = b.phase === 3 ? 0.68 : 0.92;
+
+      [-0.22, 0.22].forEach(offsetAng => {
+        const ang = toPlayer + offsetAng;
+        enemyBullets.push({
+          kind: 'fireball',
+          x: b.x,
+          y: b.y + 30,
+          vx: Math.cos(ang) * (spd * 1.12),
+          vy: Math.sin(ang) * (spd * 1.12),
+          r: 12,
+          color: '#ffbe0b'
+        });
+      });
+
+      enemyBullets.push({
+        kind: 'laser_shuriken',
+        rot: 0,
+        x: b.x,
+        y: b.y + 24,
+        vx: Math.cos(toPlayer) * (spd * 1.22),
+        vy: Math.sin(toPlayer) * (spd * 1.22),
+        r: 14,
+        color: '#ff002b'
+      });
+
+    } else if (lvl.id === 3) {
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 1.05 : 1.32;
       [-0.36, 0, 0.36].forEach((offsetAng, idx) => {
@@ -1064,19 +1157,6 @@
           ang, r: 22, color: '#00f5d4'
         });
       });
-    } else if (lvl.id === 2) {
-      if (synth) synth.sfxIgnite();
-      b.shootTimer = b.phase === 3 ? 0.65 : 0.88;
-      for (let k = -1; k <= 1; k++) {
-        const ang = toPlayer + k * 0.22;
-        enemyBullets.push({
-          kind: 'fireball',
-          x: b.x + k * 14, y: b.y + 26,
-          vx: Math.cos(ang) * (spd * 1.12),
-          vy: Math.sin(ang) * (spd * 1.12),
-          r: 12, color: '#ff6b35'
-        });
-      }
     } else if (lvl.id === 4) {
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.95 : 1.22;
@@ -1368,8 +1448,8 @@
         const ang = Math.atan2(p.y - e.y, p.x - e.x);
         const spd = 225 * diff.bulletSpeed;
 
-        if (e.kind === 'skeleton_ship' || e.kind === 'unicorn_lancer' || e.kind === 'fish_ship' || e.kind === 'plant_flytrap') {
-          const lCol = e.kind === 'plant_flytrap' ? '#80ed99' : (e.kind === 'fish_ship' ? '#9bf6ff' : '#ff002b');
+        if (e.kind === 'skeleton_ship' || e.kind === 'cookie_eye' || e.kind === 'fish_ship' || e.kind === 'starfish_ship') {
+          const lCol = e.kind === 'starfish_ship' ? '#80ed99' : (e.kind === 'cookie_eye' ? '#ffd166' : (e.kind === 'fish_ship' ? '#9bf6ff' : '#ff002b'));
           enemyBullets.push({
             kind: 'enemy_laser',
             x: e.x, y: e.y + 18,
@@ -1377,8 +1457,8 @@
             vy: Math.sin(ang) * (spd * 1.42),
             ang, r: 6.5, color: lCol
           });
-        } else if (e.kind === 'bat_ship' || e.kind === 'iris_mutant' || e.kind === 'octopus_ship' || e.kind === 'plant_thorn') {
-          const mCol = e.kind === 'plant_thorn' ? '#70e000' : (e.kind === 'octopus_ship' ? '#9bf6ff' : '#ff758f');
+        } else if (e.kind === 'bat_ship' || e.kind === 'spider_ship' || e.kind === 'octopus_ship' || e.kind === 'octopus_bio' || e.kind === 'pegasus_bomber') {
+          const mCol = e.kind === 'octopus_bio' ? '#70e000' : (e.kind === 'octopus_ship' ? '#9bf6ff' : '#ff5964');
           enemyBullets.push({
             kind: 'enemy_missile',
             homing: true, life: 2.7,
@@ -1387,19 +1467,13 @@
             vy: Math.sin(ang) * (spd * 0.88),
             r: 8.5, color: mCol
           });
-        } else if (e.kind === 'manta_wave') {
+        } else if (e.kind === 'rainbow_spiral' || e.kind === 'manta_wave' || e.kind === 'jellyfish_ship') {
+          const wHue = e.kind === 'jellyfish_ship' ? 135 : (e.kind === 'manta_wave' ? 185 : Math.floor((e.phase * 120) % 360));
           enemyBullets.push({
-            kind: 'psy_wave', hue: 185,
+            kind: 'psy_wave', hue: wHue,
             x: e.x, y: e.y + 18,
             vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
-            ang, r: 18, color: '#9bf6ff'
-          });
-        } else if (e.kind === 'plant_vine') {
-          enemyBullets.push({
-            kind: 'vine_whip',
-            x: e.x, y: e.y + 18,
-            vx: Math.cos(ang) * (spd * 1.15), vy: Math.sin(ang) * (spd * 1.15),
-            ang, r: 10, color: '#80ed99'
+            ang, r: 18, color: lvl.accent
           });
         } else {
           enemyBullets.push({
@@ -1490,8 +1564,8 @@
       if (eb.kind === 'psy_wave') {
         eb.hue = (eb.hue + dt * 220) % 360;
         eb.r = Math.min(36, eb.r + dt * 12);
-      } else if (eb.kind === 'laser_flower') {
-        eb.rot = (eb.rot || 0) + dt * 8;
+      } else if (eb.kind === 'laser_flower' || eb.kind === 'green_spin_star' || eb.kind === 'laser_shuriken') {
+        eb.rot = (eb.rot || 0) + dt * 9;
       }
 
       eb.x += eb.vx * dt;
@@ -1733,9 +1807,6 @@
     ctx.restore();
   }
 
-  // =========================================================================
-  // ВЫСОКОДЕТАЛИЗИРОВАННАЯ ОБТЕКАЕМАЯ 3D-ОТРИСОВКА КОРАБЛЯ ИГРОКА (МНОГО ПОЛИГОНОВ)
-  // =========================================================================
   function drawPlayer(p) {
     if (p.invuln > 0 && Math.floor(p.invuln * 16) % 2 === 0) return;
 
@@ -1752,90 +1823,92 @@
 
     const shipId = p.ship.id;
     const hullCol = p.ship.hullColor || '#e0fbfc';
-    const hullDark = p.ship.hullDark || '#98c1d9';
     const wingCol = p.ship.wingColor || '#ff5964';
     const neonCol = p.ship.neonColor || '#48dbfb';
 
-    // Неоновое поле вокруг 3D-корабля
     ctx.fillStyle = neonCol;
     ctx.globalAlpha = 0.24;
     ctx.beginPath(); ctx.arc(0, 2, 36, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1;
 
-    // Плазменное кольцо для флагмана «Кото-Император»
     if (shipId === 'emperor') {
       ctx.strokeStyle = '#fee440';
       ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.arc(0, 2, 37, globalTime * 3, globalTime * 3 + Math.PI * 1.4); ctx.stroke();
     }
 
-    // Двойные реактивные сопла с 3D-окантовкой и пламенем
     const flameH = 19 + Math.sin(globalTime * 42) * 6;
     [-11, 11].forEach(ox => {
       ctx.fillStyle = '#2b2d42';
-      ctx.strokeStyle = BORDER_INK;
-      ctx.lineWidth = 2;
-      roundRectPath(ctx, ox - 5, 14, 10, 7, 2);
-      ctx.fill(); ctx.stroke();
+      roundRectPath(ctx, ox - 5, 14, 10, 7, 3);
+      ctx.fill();
 
       ctx.fillStyle = '#ff9f1c';
-      ctx.beginPath(); ctx.moveTo(ox - 5, 20); ctx.lineTo(ox, 20 + flameH); ctx.lineTo(ox + 5, 20); ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(ox - 5, 20);
+      ctx.quadraticCurveTo(ox, 20 + flameH * 1.25, ox + 5, 20);
+      ctx.closePath(); ctx.fill();
+
       ctx.fillStyle = '#ffffff';
-      ctx.beginPath(); ctx.moveTo(ox - 2.5, 20); ctx.lineTo(ox, 20 + flameH * 0.55); ctx.lineTo(ox + 2.5, 20); ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(ox - 2.5, 20);
+      ctx.quadraticCurveTo(ox, 20 + flameH * 0.65, ox + 2.5, 20);
+      ctx.closePath(); ctx.fill();
     });
 
-    // Многополигональные обтекаемые крылья со световыми и теневыми гранями
-    if (typeof drawPoly === 'function') {
-      if (shipId === 'interceptor') {
-        // Стреловидные 3D-крылья Перехватчика (8 полигонов)
-        drawPoly(ctx, [[0, -10], [-38, 12], [-34, 19], [-12, 16]], wingCol, neonCol, 2.2);
-        drawPoly(ctx, [[0, -10], [38, 12], [34, 19], [12, 16]], wingCol, neonCol, 2.2);
-        drawPoly(ctx, [[0, -10], [-38, 12], [-22, 14], [0, -2]], 'rgba(255,255,255,0.28)', null);
-      } else if (shipId === 'dreadnought') {
-        // Тяжёлые бронированные 3D-крылья Линкора
-        drawPoly(ctx, [[-12, -12], [-38, -2], [-35, 18], [-12, 20]], wingCol, neonCol, 2.4);
-        drawPoly(ctx, [[12, -12], [38, -2], [35, 18], [12, 20]], wingCol, neonCol, 2.4);
-        drawPoly(ctx, [[-12, -12], [-38, -2], [-25, 8], [-12, 4]], 'rgba(255,255,255,0.25)', null);
-      } else if (shipId === 'valkyrie') {
-        // Обтекаемые серповидные био-крылья «Валькирии»
-        drawPoly(ctx, [[0, -14], [-42, -6], [-32, 18], [-14, 14]], wingCol, neonCol, 2.2);
-        drawPoly(ctx, [[0, -14], [42, -6], [32, 18], [14, 14]], wingCol, neonCol, 2.2);
-        drawPoly(ctx, [[0, -14], [-42, -6], [-24, 4]], 'rgba(255,255,255,0.28)', null);
-      } else if (shipId === 'emperor') {
-        // 4-лучевые крылья флагмана «Кото-Император»
-        drawPoly(ctx, [[0, -16], [-44, -12], [-28, 3], [-40, 21], [-12, 16]], wingCol, neonCol, 2.2);
-        drawPoly(ctx, [[0, -16], [44, -12], [28, 3], [40, 21], [12, 16]], wingCol, neonCol, 2.2);
-        drawPoly(ctx, [[0, -16], [-44, -12], [-20, -2]], 'rgba(255,255,255,0.32)', null);
-      } else {
-        // Базовый обтекаемый 3D-шаттл МК-1
-        drawPoly(ctx, [[-10, -8], [-35, 12], [-30, 19], [-10, 19]], wingCol, neonCol, 2.2);
-        drawPoly(ctx, [[10, -8], [35, 12], [30, 19], [10, 19]], wingCol, neonCol, 2.2);
-        drawPoly(ctx, [[-10, -8], [-35, 12], [-20, 14]], 'rgba(255,255,255,0.26)', null);
-      }
+    ctx.fillStyle = wingCol;
+    ctx.strokeStyle = neonCol;
+    ctx.lineWidth = 2.4;
 
-      // Многогранный обтекаемый 3D-фюзеляж (левая светлая грань, правая теневая грань, носовой обтекатель)
-      const hw = (shipId === 'dreadnought' || shipId === 'emperor') ? 20 : 17;
-      drawPoly(ctx, [
-        [0, -29], [hw * 0.75, -16], [hw, 4], [hw * 0.75, 22], [0, 26],
-        [-hw * 0.75, 22], [-hw, 4], [-hw * 0.75, -16]
-      ], hullCol, BORDER_INK, 2.6);
-
-      // Правая теневая 3D-грань фюзеляжа (создаёт реальный объём)
-      drawPoly(ctx, [
-        [0, -29], [hw * 0.75, -16], [hw, 4], [hw * 0.75, 22], [0, 26]
-      ], hullDark, null);
-
-      // Носовой обтекатель с неоновым акцентом
-      drawPoly(ctx, [[0, -29], [hw * 0.65, -16], [0, -12], [-hw * 0.65, -16]], wingCol, BORDER_INK, 2.0);
+    if (shipId === 'interceptor' || shipId === 'valkyrie' || shipId === 'emperor') {
+      const span = shipId === 'emperor' ? 43 : (shipId === 'valkyrie' ? 40 : 37);
+      ctx.beginPath();
+      ctx.moveTo(0, -14);
+      ctx.bezierCurveTo(-span * 0.6, -12, -span, 2, -span * 0.82, 18);
+      ctx.quadraticCurveTo(-span * 0.35, 13, 0, 17);
+      ctx.quadraticCurveTo(span * 0.35, 13, span * 0.82, 18);
+      ctx.bezierCurveTo(span, 2, span * 0.6, -12, 0, -14);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(0, -10);
+      ctx.bezierCurveTo(-22, -6, -36, 6, -32, 19);
+      ctx.quadraticCurveTo(-15, 16, 0, 19);
+      ctx.quadraticCurveTo(15, 16, 32, 19);
+      ctx.bezierCurveTo(36, 6, 22, -6, 0, -10);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
     }
 
-    // Стеклянный 3D-купол кабины и мордочка Астро-Кота
-    ctx.fillStyle = '#48dbfb';
+    const hw = (shipId === 'dreadnought' || shipId === 'emperor') ? 20 : 17;
+    ctx.fillStyle = hullCol;
     ctx.strokeStyle = BORDER_INK;
-    ctx.lineWidth = 2.4;
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(0, -29);
+    ctx.bezierCurveTo(hw * 1.15, -18, hw * 1.15, 14, 0, 26);
+    ctx.bezierCurveTo(-hw * 1.15, 14, -hw * 1.15, -18, 0, -29);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(-hw * 0.42, -2, hw * 0.28, 15, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = wingCol;
+    ctx.beginPath();
+    ctx.moveTo(0, -29);
+    ctx.quadraticCurveTo(hw * 0.72, -19, hw * 0.68, -13);
+    ctx.quadraticCurveTo(0, -17, -hw * 0.68, -13);
+    ctx.quadraticCurveTo(-hw * 0.72, -19, 0, -29);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = '#48dbfb';
     ctx.beginPath(); ctx.ellipse(0, 1, 12, 14, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-    // Кот Редж в кабине
     ctx.fillStyle = '#ffb703';
     ctx.beginPath();
     ctx.moveTo(-7, -3); ctx.lineTo(-5, -10); ctx.lineTo(-2, -5);
@@ -1843,7 +1916,6 @@
     ctx.fill();
     ctx.beginPath(); ctx.arc(0, 1, 8, 0, Math.PI * 2); ctx.fill();
 
-    // Стеклянный блик на фонаре кабины
     ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
     ctx.beginPath(); ctx.ellipse(-4, -5, 3.5, 6, -0.35, 0, Math.PI * 2); ctx.fill();
 
@@ -1929,7 +2001,7 @@
     ctx.fillText(subHud, 18, 78);
 
     if (boss) {
-      const bw = Math.min(250, W - 210);
+      const bw = Math.min(240, W - 210);
       const bx = (W - bw) / 2 - 18;
       const by = 18;
 
@@ -1969,7 +2041,42 @@
     ctx.save();
     ctx.translate(eb.x, eb.y);
 
-    if (eb.kind === 'psy_wave') {
+    if (eb.kind === 'green_spin_star') {
+      ctx.rotate(eb.rot || 0);
+      ctx.fillStyle = 'rgba(6, 214, 160, 0.35)';
+      ctx.beginPath(); ctx.arc(0, 0, eb.r + 5, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#06d6a0';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+        ctx.lineTo(Math.cos(a) * (eb.r + 2), Math.sin(a) * (eb.r + 2));
+        ctx.lineTo(Math.cos(a + Math.PI / 5) * (eb.r * 0.45), Math.sin(a + Math.PI / 5) * (eb.r * 0.45));
+      }
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+
+    } else if (eb.kind === 'laser_shuriken') {
+      ctx.rotate(eb.rot || 0);
+      ctx.fillStyle = 'rgba(255, 0, 43, 0.35)';
+      ctx.beginPath(); ctx.arc(0, 0, eb.r + 6, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#ff002b';
+      ctx.strokeStyle = '#ffbe0b';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const a = (Math.PI * i) / 4;
+        const rad = i % 2 === 0 ? eb.r + 2 : eb.r * 0.42;
+        if (i === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
+        else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+      }
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+
+    } else if (eb.kind === 'psy_wave') {
       ctx.rotate((eb.ang || Math.PI / 2) - Math.PI / 2);
       const col1 = `hsl(${eb.hue || 0}, 100%, 62%)`;
       const col2 = `hsl(${((eb.hue || 0) + 90) % 360}, 100%, 72%)`;
@@ -2015,7 +2122,7 @@
       ctx.fillStyle = '#4a4e69';
       ctx.strokeStyle = eb.color || '#ff0054';
       ctx.lineWidth = 2;
-      roundRectPath(ctx, -5, -10, 10, 20, 4);
+      roundRectPath(ctx, -5, -10, 10, 20, 5);
       ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#ffbe0b';
       ctx.beginPath(); ctx.arc(0, -10, 4, 0, Math.PI * 2); ctx.fill();
