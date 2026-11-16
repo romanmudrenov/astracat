@@ -4,15 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ASTRACAT • Космическая Одиссея</title>
-  <link rel="stylesheet" href="css/style.css?v=27" />
+  <link rel="stylesheet" href="css/style.css?v=26" />
 </head>
 <body>
   <div id="game-wrap">
     <canvas id="game"></canvas>
     <canvas id="menu-particles-canvas"></canvas>
-
-    <!-- Кнопка Супер-удара «Кошачья Ярость» во время боя -->
-    <button id="ult-btn" class="ult-trigger-btn hidden">⚡ КОШАЧЬЯ ЯРОСТЬ!</button>
 
     <!-- Верхняя панель управления -->
     <div id="hud-top-bar" class="hud-top-right-wrap">
@@ -31,7 +28,7 @@
     <div id="splash-overlay" class="overlay splash-screen">
       <img id="splash-bg-img" class="overlay-bg-img" alt="ASTRACAT" />
       <div class="splash-fallback-title" id="splash-fallback-title">
-        <div class="neon-badge">Cozy Cosmic ASMR • v27</div>
+        <div class="neon-badge">128-Voice Cozy Cosmic ASMR</div>
         <h1>ASTRACAT</h1>
       </div>
       <div class="splash-bottom-bar">
@@ -67,13 +64,9 @@
             <span>Босс: Психо-Марка Оракула</span>
           </div>
 
-          <div class="btn-row" style="margin-bottom:9px;">
+          <div class="btn-row" style="margin-bottom:10px;">
             <button id="start-btn" class="btn-3d mint">В ПОЛЁТ! 🚀</button>
             <button id="hangar-open-btn" class="btn-3d peach">🛠 АНГАР</button>
-          </div>
-
-          <div class="btn-row" style="margin-bottom:9px;">
-            <button id="endless-btn" class="btn-3d endless-pill">♾ БЕСКОНЕЧНЫЙ КОСМОС</button>
           </div>
 
           <div class="btn-row">
@@ -86,7 +79,7 @@
       </div>
     </div>
 
-    <!-- 3. ПОЛНОЭКРАННЫЙ АНГАР (3 РАЗДЕЛА: КОРАБЛИ / ОРУЖИЕ / ДРОНЫ) -->
+    <!-- 3. ПОЛНОЭКРАННЫЙ АНГАР С ОТДЕЛЬНЫМИ ВКЛАДКАМИ ДЛЯ КОРАБЛЕЙ И ОРУЖИЯ -->
     <div id="hangar-overlay" class="overlay fullscreen-overlay hidden">
       <img id="hangar-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d hangar-card fullscreen-hangar">
@@ -99,10 +92,9 @@
             </div>
             <h2>АНГАР КОТОВИИ</h2>
 
-            <div class="hangar-tabs-row three-tabs">
-              <button id="tab-ships-btn" class="tab-pill active">🚀 КОРАБЛИ</button>
-              <button id="tab-weapons-btn" class="tab-pill">🔫 ОРУЖИЕ</button>
-              <button id="tab-drones-btn" class="tab-pill">🤖 ДРОНЫ</button>
+            <div class="hangar-tabs-row">
+              <button id="tab-ships-btn" class="tab-pill active">🚀 КОРАБЛИ (5)</button>
+              <button id="tab-weapons-btn" class="tab-pill">🔫 ОРУЖИЕ (5)</button>
             </div>
           </div>
 
@@ -128,18 +120,6 @@
               </div>
             </div>
             <div class="media-carousel" id="weapons-carousel"></div>
-          </div>
-
-          <div id="hangar-section-drones" class="hangar-section hidden">
-            <div class="carousel-header">
-              <span class="section-label" style="margin:0;">Дрон-компаньон</span>
-              <div class="carousel-nav">
-                <button id="drone-prev-btn" class="nav-arrow-btn">◀</button>
-                <span id="drone-counter" class="nav-counter">1 / 4</span>
-                <button id="drone-next-btn" class="nav-arrow-btn">▶</button>
-              </div>
-            </div>
-            <div class="media-carousel" id="drones-carousel"></div>
           </div>
 
           <div class="btn-row" style="margin-top:8px;">
@@ -198,24 +178,24 @@
       </div>
     </div>
 
-    <!-- 6. МЕНЮ НАСТРОЕК ЗВУКА (БАЗОВАЯ ГРОМКОСТЬ ASMR 85%) -->
+    <!-- 6. МЕНЮ НАСТРОЕК ЗВУКА (БАЗОВАЯ ГРОМКОСТЬ ASMR +30% -> 70%) -->
     <div id="settings-overlay" class="overlay hidden">
       <img id="settings-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d scrollable-card" id="settings-scroll-box">
         <img id="settings-inner-bg" class="card-inner-bg-img" alt="" />
         <div class="card-content">
           <div class="top-wallet-row">
-            <span class="neon-badge" style="margin-bottom:0;">High-Gain ASMR Synth</span>
-            <span class="wallet-pill" id="voice-pool-badge">Голоса: 0 / 36</span>
+            <span class="neon-badge" style="margin-bottom:0;">Boosted Anti-Clip ASMR</span>
+            <span class="wallet-pill" id="voice-pool-badge">Голоса: 0 / 32</span>
           </div>
           <h2>НАСТРОЙКИ ЗВУКА ASMR</h2>
 
           <div class="setting-row">
             <div class="setting-head">
-              <span>🎵 Фоновая музыка MP3: <b id="val-music-vol">50%</b></span>
+              <span>🎵 Фоновая музыка MP3: <b id="val-music-vol">55%</b></span>
               <button id="toggle-music" class="toggle-chip">ВКЛ</button>
             </div>
-            <input id="music-vol" type="range" min="0" max="100" value="50" />
+            <input id="music-vol" type="range" min="0" max="100" value="55" />
             <div class="setting-head" style="margin-top:8px; margin-bottom:0;">
               <span style="font-size:11.5px;">Трек уровня:</span>
               <select id="track-select" class="neon-select">
@@ -227,18 +207,18 @@
 
           <div class="setting-row">
             <div class="setting-head">
-              <span>✨ Громкость ASMR-эффектов (Усилено): <b id="val-sfx-vol">85%</b></span>
+              <span>✨ Громкость ASMR-эффектов (+30%): <b id="val-sfx-vol">70%</b></span>
               <button id="toggle-sfx" class="toggle-chip">ВКЛ</button>
             </div>
-            <input id="sfx-vol" type="range" min="0" max="100" value="85" />
+            <input id="sfx-vol" type="range" min="0" max="100" value="70" />
           </div>
 
           <div class="setting-row">
             <div class="setting-head">
               <span>🌙 Бархатность / Приглушённость (LPF)</span>
-              <strong id="val-warmth" style="color:#90e0ef; font-size:12px;">2600 Hz</strong>
+              <strong id="val-warmth" style="color:#90e0ef; font-size:12px;">2400 Hz</strong>
             </div>
-            <input id="ctrl-warmth" type="range" min="650" max="4200" value="2600" />
+            <input id="ctrl-warmth" type="range" min="650" max="4200" value="2400" />
 
             <div class="setting-head" style="margin-top:8px;">
               <span>🌌 Космическое стерео-эхо (Space)</span>
@@ -266,7 +246,7 @@
       <div class="card-3d">
         <div class="card-content">
           <h2>ПОЛЁТ ПРИОСТАНОВЛЕН</h2>
-          <p class="subtitle">Музыка выключена на время паузы 🔇<br>ПК: <b>WASD / Стрелки</b>, <b>Пробел</b>, <b>Shift</b> (Ульта) • Телефон: <b>палец на экране</b></p>
+          <p class="subtitle">Музыка выключена на время паузы 🔇<br>ПК: <b>WASD / Стрелки</b> + <b>Пробел</b> • Смартфон: <b>палец на экране</b></p>
           <div class="btn-row">
             <button id="resume-btn" class="btn-3d mint">ПРОДОЛЖИТЬ ▶</button>
             <button id="pause-menu-btn" class="btn-3d pink">В МЕНЮ</button>
@@ -313,10 +293,10 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=27"></script>
-  <script src="js/vfx.js?v=27"></script>
-  <script src="js/world3d.js?v=27"></script>
-  <script src="js/entities.js?v=27"></script>
-  <script src="js/game.js?v=27"></script>
+  <script src="js/synth.js?v=26"></script>
+  <script src="js/vfx.js?v=26"></script>
+  <script src="js/world3d.js?v=26"></script>
+  <script src="js/entities.js?v=26"></script>
+  <script src="js/game.js?v=26"></script>
 </body>
 </html>
