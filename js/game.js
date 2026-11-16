@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'astro_cat_hangar_v14';
+  const STORAGE_KEY = 'astro_cat_hangar_v15';
   const BORDER_INK = typeof INK !== 'undefined' ? INK : '#120826';
 
   function loadProgress() {
@@ -77,7 +77,6 @@
   window.addEventListener('resize', resize);
   resize();
 
-  // Всего 8 редких ненавязчивых частиц в меню (рыбки, котики и розовые пончики)
   const menuFloats = Array.from({ length: 8 }, (_, i) => ({
     x: (i + 0.5) / 8,
     y: Math.random(),
@@ -103,7 +102,6 @@
     if (!isMenuVisible) return;
 
     mpCtx.clearRect(0, 0, W, H);
-
     for (const p of menuFloats) {
       p.y -= (p.vy * dt) / H;
       p.x += (p.vx * dt) / W;
@@ -126,15 +124,11 @@
       mpCtx.lineCap = 'round';
 
       if (p.kind === 'fish') {
-        mpCtx.fillStyle = '#90e0ef';
-        mpCtx.strokeStyle = '#ffffff';
-        mpCtx.lineWidth = 1.4;
+        mpCtx.fillStyle = '#90e0ef'; mpCtx.strokeStyle = '#ffffff'; mpCtx.lineWidth = 1.4;
         mpCtx.beginPath(); mpCtx.ellipse(0, 0, r, r * 0.55, 0, 0, Math.PI * 2); mpCtx.fill(); mpCtx.stroke();
-        mpCtx.beginPath(); mpCtx.moveTo(-r * 0.85, 0); mpCtx.lineTo(-r * 1.45, -r * 0.5); mpCtx.lineTo(-r * 1.45, r * 0.5); ctx.closePath(); mpCtx.fill();
+        mpCtx.beginPath(); mpCtx.moveTo(-r * 0.85, 0); mpCtx.lineTo(-r * 1.45, -r * 0.5); mpCtx.lineTo(-r * 1.45, r * 0.5); mpCtx.closePath(); mpCtx.fill();
       } else if (p.kind === 'cat') {
-        mpCtx.fillStyle = '#ffd166';
-        mpCtx.strokeStyle = '#ffffff';
-        mpCtx.lineWidth = 1.4;
+        mpCtx.fillStyle = '#ffd166'; mpCtx.strokeStyle = '#ffffff'; mpCtx.lineWidth = 1.4;
         mpCtx.beginPath();
         mpCtx.moveTo(-r * 0.75, -r * 0.2); mpCtx.lineTo(-r * 0.85, -r * 1.05); mpCtx.lineTo(-r * 0.2, -r * 0.65);
         mpCtx.moveTo(r * 0.75, -r * 0.2);  mpCtx.lineTo(r * 0.85, -r * 1.05);  mpCtx.lineTo(r * 0.2, -r * 0.65);
@@ -142,12 +136,9 @@
         mpCtx.beginPath(); mpCtx.arc(0, 0, r * 0.82, 0, Math.PI * 2); mpCtx.fill(); mpCtx.stroke();
       } else {
         mpCtx.rotate(p.rot);
-        mpCtx.fillStyle = '#f4a261';
-        mpCtx.beginPath(); mpCtx.arc(0, 0, r * 0.9, 0, Math.PI * 2); mpCtx.fill();
-        mpCtx.fillStyle = '#ff85a1';
-        mpCtx.beginPath(); mpCtx.arc(0, 0, r * 0.72, 0, Math.PI * 2); mpCtx.fill();
-        mpCtx.fillStyle = '#3d216e';
-        mpCtx.beginPath(); mpCtx.arc(0, 0, r * 0.28, 0, Math.PI * 2); mpCtx.fill();
+        mpCtx.fillStyle = '#f4a261'; mpCtx.beginPath(); mpCtx.arc(0, 0, r * 0.9, 0, Math.PI * 2); mpCtx.fill();
+        mpCtx.fillStyle = '#ff85a1'; mpCtx.beginPath(); mpCtx.arc(0, 0, r * 0.72, 0, Math.PI * 2); mpCtx.fill();
+        mpCtx.fillStyle = '#3d216e'; mpCtx.beginPath(); mpCtx.arc(0, 0, r * 0.28, 0, Math.PI * 2); mpCtx.fill();
       }
       mpCtx.restore();
     }
@@ -247,7 +238,7 @@
   }
 
   // =========================================================================
-  // ПОЛНОЭКРАННЫЙ АНГАР С ОТДЕЛЬНЫМИ РАЗДЕЛАМИ (КОРАБЛИ / ОРУЖИЕ)
+  // АНГАР (ВКЛАДКИ КОРАБЛИ / ОРУЖИЕ + ПЛАВНАЯ 2D-ВИЗУАЛИЗАЦИЯ)
   // =========================================================================
   let hangarShipCanvases = [];
   let hangarWeaponCanvases = [];
@@ -267,15 +258,10 @@
   }
 
   tabShipsBtn?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (synth) synth.sfxMenuSelect();
-    switchHangarTab('ships');
+    e.stopPropagation(); if (synth) synth.sfxMenuSelect(); switchHangarTab('ships');
   });
-
   tabWeaponsBtn?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (synth) synth.sfxMenuSelect();
-    switchHangarTab('weapons');
+    e.stopPropagation(); if (synth) synth.sfxMenuSelect(); switchHangarTab('weapons');
   });
 
   function scrollCarouselToIdx(carouselEl, idx) {
@@ -321,20 +307,12 @@
         if (synth) synth.init();
         if (equipped) { if (synth) synth.sfxMenuTap(); return; }
         if (owned) {
-          progress.equippedShip = ship.id;
-          saveProgress(progress);
-          if (synth) synth.sfxMenuSelect();
-          renderHangar();
+          progress.equippedShip = ship.id; saveProgress(progress);
+          if (synth) synth.sfxMenuSelect(); renderHangar();
         } else if (progress.coins >= ship.price) {
-          progress.coins -= ship.price;
-          progress.unlockedShips.push(ship.id);
-          progress.equippedShip = ship.id;
-          saveProgress(progress);
-          if (synth) synth.sfxBuyItem();
-          renderHangar();
-        } else {
-          if (synth) synth.sfxHurt();
-        }
+          progress.coins -= ship.price; progress.unlockedShips.push(ship.id); progress.equippedShip = ship.id;
+          saveProgress(progress); if (synth) synth.sfxBuyItem(); renderHangar();
+        } else if (synth) synth.sfxHurt();
       });
       shipsCarousel.appendChild(card);
     });
@@ -368,20 +346,12 @@
         if (synth) synth.init();
         if (equipped) { if (synth) synth.sfxMenuTap(); return; }
         if (owned) {
-          progress.equippedWeapon = wp.id;
-          saveProgress(progress);
-          if (synth) synth.sfxMenuSelect();
-          renderHangar();
+          progress.equippedWeapon = wp.id; saveProgress(progress);
+          if (synth) synth.sfxMenuSelect(); renderHangar();
         } else if (progress.coins >= wp.price) {
-          progress.coins -= wp.price;
-          progress.unlockedWeapons.push(wp.id);
-          progress.equippedWeapon = wp.id;
-          saveProgress(progress);
-          if (synth) synth.sfxBuyItem();
-          renderHangar();
-        } else {
-          if (synth) synth.sfxHurt();
-        }
+          progress.coins -= wp.price; progress.unlockedWeapons.push(wp.id); progress.equippedWeapon = wp.id;
+          saveProgress(progress); if (synth) synth.sfxBuyItem(); renderHangar();
+        } else if (synth) synth.sfxHurt();
       });
       weaponsCarousel.appendChild(card);
     });
@@ -413,15 +383,13 @@
     }, { passive: true });
 
     document.getElementById(prevBtnId)?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (synth) synth.sfxMenuTap();
+      e.stopPropagation(); if (synth) synth.sfxMenuTap();
       currentIdx = (currentIdx - 1 + totalCount) % totalCount;
       scrollCarouselToIdx(el, currentIdx);
     });
 
     document.getElementById(nextBtnId)?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (synth) synth.sfxMenuTap();
+      e.stopPropagation(); if (synth) synth.sfxMenuTap();
       currentIdx = (currentIdx + 1) % totalCount;
       scrollCarouselToIdx(el, currentIdx);
     });
@@ -712,15 +680,39 @@
   muteBtn?.addEventListener('click', (e) => { e.stopPropagation(); if (!synth) return; muteBtn.textContent = synth.toggleMute() ? '🔇' : '🔊'; });
 
   // =========================================================================
-  // ИГРОВОЙ ПРОЦЕСС
+  // ИГРОВОЙ ПРОЦЕСС: РЕЖИССУРА ВОЛН, «РЫБНЫЙ ДОЖДЬ», КВЕСТЫ И 6 ИНТЕРАКТИВОВ
   // =========================================================================
   let score = 0, runCoins = 0, kills = 0, combo = 1, comboTimer = 0, wave = 1, waveTimer = 0;
-  let spawnTimer = 0, obstacleTimer = 4.0, eventTimer = 14.0, activeEvent = null;
+  let spawnTimer = 0, obstacleTimer = 4.0, propTimer = 6.5, eventTimer = 15.0, activeEvent = null;
   let screenShake = 0, warningBannerTimer = 0, globalTime = 0, midBossDefeated = false;
-  let player = null, bullets = [], enemyBullets = [], enemies = [], obstacles = [], bonuses = [], boss = null;
+  let psySlowTimer = 0, fishRainTimer = 0, fishRainSpawnTimer = 0, formationCounter = 0;
+  let activeQuest = null;
+
+  let player = null, bullets = [], enemyBullets = [], enemies = [], obstacles = [], bonuses = [], interactiveProps = [], fishRainItems = [], boss = null;
 
   const keys = {};
   const pointer = { active: false, x: 0, y: 0, isTouch: false };
+
+  function initLevelQuest(lvl) {
+    const quests = [
+      { id: 'kills', label: 'Сбить 8 кораблей', target: 8, cur: 0, reward: 250, done: false },
+      { id: 'props', label: 'Активировать 2 объекта сектора', target: 2, cur: 0, reward: 250, done: false },
+      { id: 'rain',  label: 'Собрать 5 рыбок в дожде', target: 5, cur: 0, reward: 250, done: false }
+    ];
+    activeQuest = quests[lvl.id % quests.length];
+  }
+
+  function advanceQuest(type, amount = 1) {
+    if (!activeQuest || activeQuest.done || activeQuest.id !== type) return;
+    activeQuest.cur = Math.min(activeQuest.target, activeQuest.cur + amount);
+    if (activeQuest.cur >= activeQuest.target) {
+      activeQuest.done = true;
+      runCoins += activeQuest.reward;
+      score += 500;
+      if (synth) synth.sfxVictory();
+      if (vfx) vfx.addPopup(W / 2, H * 0.28, `🎯 ЗАДАНИЕ ВЫПОЛНЕНО! +${activeQuest.reward} 🐟`, '#ffd166', 1.25);
+    }
+  }
 
   function togglePause() {
     if (state === 'PLAYING') {
@@ -738,7 +730,7 @@
   document.getElementById('resume-btn')?.addEventListener('click', (e) => { e.stopPropagation(); togglePause(); });
 
   function returnToMenu() {
-    state = 'START'; pointer.active = false; boss = null; enemies = []; obstacles = []; bullets = []; enemyBullets = []; bonuses = []; activeEvent = null;
+    state = 'START'; pointer.active = false; boss = null; enemies = []; obstacles = []; bullets = []; enemyBullets = []; bonuses = []; interactiveProps = []; fishRainItems = []; activeEvent = null;
     if (vfx) vfx.clear(); if (synth) { synth.sfxMenuTap(); synth.startIntroMusic(); }
     [pauseOverlay, endOverlay, settingsOverlay, introOverlay, loreOverlay, hangarOverlay, splashOverlay, pauseBtn].forEach(el => el.classList.add('hidden'));
     renderLevelGrid(); startOverlay.classList.remove('hidden'); syncTopHudVisibility();
@@ -782,7 +774,10 @@
     if (synth) { synth.init(); synth.startMusic('normal', lvl.id); synth.sfxCosmicHum(); }
 
     score = 0; runCoins = 0; kills = 0; combo = 1; comboTimer = 0; wave = 1; waveTimer = 0;
-    spawnTimer = 0.45; obstacleTimer = 3.2; eventTimer = 12.0; activeEvent = null; screenShake = 0; warningBannerTimer = 0; midBossDefeated = false;
+    spawnTimer = 0.5; obstacleTimer = 3.5; propTimer = 5.0; eventTimer = 14.0; activeEvent = null;
+    screenShake = 0; warningBannerTimer = 0; midBossDefeated = false; psySlowTimer = 0; fishRainTimer = 0; formationCounter = 0;
+
+    initLevelQuest(lvl);
 
     const totalHp = diff.playerHp + (ship.hpBonus || 0);
     player = {
@@ -791,7 +786,7 @@
       shield: false, turboTimer: 0, stickyTimer: 0, squashX: 1, squashY: 1, shotCycle: 0
     };
 
-    bullets = []; enemyBullets = []; enemies = []; obstacles = []; bonuses = []; boss = null;
+    bullets = []; enemyBullets = []; enemies = []; obstacles = []; bonuses = []; interactiveProps = []; fishRainItems = []; boss = null;
     if (vfx) vfx.clear();
 
     state = 'PLAYING';
@@ -800,7 +795,7 @@
     syncTopHudVisibility();
 
     if (world3d) world3d.setCameraFromPlayer(player.x, W);
-    if (vfx) vfx.addPopup(W / 2, H * 0.36, `УРОВЕНЬ ${lvl.id}: ${lvl.name.toUpperCase()}`, lvl.accent, 1.15);
+    if (vfx) vfx.addPopup(W / 2, H * 0.34, `УРОВЕНЬ ${lvl.id}: ${lvl.name.toUpperCase()}`, lvl.accent, 1.15);
   }
 
   document.getElementById('next-level-btn')?.addEventListener('click', (e) => {
@@ -808,6 +803,26 @@
     if (state === 'VICTORY') showIntro((selectedLevelIdx + 1) % LEVELS.length);
     else startLevel(selectedLevelIdx);
   });
+
+  // Спавн уникального интерактивного объекта для текущего сектора
+  function spawnSectorInteractiveProp() {
+    const lvl = LEVELS[selectedLevelIdx];
+    const pType = lvl.interactiveType || 'mirror_portal';
+
+    if (pType === 'mirror_portal') {
+      // Парные зеркальные порталы (левый и правый)
+      const yPos = 140 + Math.random() * 140;
+      const p1 = { id: Math.random(), pairIdx: 0, type: 'mirror_portal', x: W * 0.22, y: yPos, r: 24, vy: 28, phase: 0, cooldown: 0 };
+      const p2 = { id: Math.random(), pairIdx: 1, type: 'mirror_portal', x: W * 0.78, y: yPos, r: 24, vy: 28, phase: 1.5, cooldown: 0 };
+      p1.partner = p2; p2.partner = p1;
+      interactiveProps.push(p1, p2);
+    } else {
+      const x = 60 + Math.random() * (W - 120);
+      interactiveProps.push({
+        type: pType, x, y: -40, r: 24, vy: 78, phase: Math.random() * Math.PI * 2, hp: 2
+      });
+    }
+  }
 
   function spawnObstacle() {
     const lvl = LEVELS[selectedLevelIdx];
@@ -826,53 +841,53 @@
     });
   }
 
-  function triggerRandomAnomaly(lvl) {
-    const pool = ['gravity', 'wave', 'sticky', 'ignite'];
-    const type = pool[Math.floor(Math.random() * pool.length)];
-    if (type === 'gravity') {
-      activeEvent = { type: 'gravity', timer: 6.5, x: W * (0.25 + Math.random() * 0.5), y: H * 0.42 };
-      if (synth) synth.sfxGravity();
-      if (vfx) vfx.addPopup(W / 2, H * 0.30, '🌀 ГРАВИТАЦИОННАЯ ВОРОНКА!', '#bdb2ff', 1.15);
-    } else if (type === 'wave') {
-      activeEvent = { type: 'wave', timer: 5.5, dir: Math.random() > 0.5 ? 1 : -1 };
-      if (synth) synth.sfxWave();
-      if (vfx) vfx.addPopup(W / 2, H * 0.30, '🌊 ЭНЕРГЕТИЧЕСКАЯ ВОЛНА!', '#48dbfb', 1.15);
-    } else if (type === 'sticky') {
-      activeEvent = { type: 'sticky', timer: 6.5, x: W * (0.2 + Math.random() * 0.6), y: H * 0.65, r: 72 };
-      if (synth) synth.sfxSticky();
-      if (vfx) vfx.addPopup(W / 2, H * 0.30, '🍯 ЛИПКАЯ АНОМАЛИЯ!', '#ffafcc', 1.15);
-    } else {
-      activeEvent = { type: 'ignite', timer: 5.0 };
-      if (synth) synth.sfxIgnite();
-      if (vfx) { vfx.triggerFlash('#ff6b35', 0.22); vfx.addPopup(W / 2, H * 0.30, '🔥 ВСПЫШКА ВОЗГОРАНИЯ!', '#ff9f1c', 1.15); }
-      for (let k = 0; k < 4; k++) {
-        enemyBullets.push({ kind: 'fireball', x: 45 + ((W - 90) * k) / 3, y: -20 - k * 35, vx: 0, vy: 260, r: 10, color: '#ff6b35' });
-      }
-    }
-  }
-
-  function spawnEnemy() {
+  // Строевой спавн врагов (клин / синусоида / элитные лидеры в коронах)
+  function spawnEnemyFormation() {
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
     const hpScale = lvl.hpMult * diff.enemyHp;
-    const x = 44 + Math.random() * (W - 88);
     const types = lvl.enemyTypes || ['fractal_ship', 'mini_stamp', 'rubik_cube'];
-    const typeIdx = Math.floor(Math.random() * types.length);
-    const kind = types[typeIdx];
-    const isMiniBoss = kind.startsWith('mini_');
-    const hp = Math.max(1, Math.round((isMiniBoss ? 5 : 2.5) * hpScale));
-    const patterns = ['zigzag', 'dash', 'figure8', 'erratic'];
 
-    enemies.push({
-      kind, movePattern: patterns[Math.floor(Math.random() * patterns.length)],
-      x, y: -38, r: isMiniBoss ? 24 : 20, hp, maxHp: hp,
-      baseVy: (isMiniBoss ? 105 : 135) * diff.bulletSpeed,
-      vy: (isMiniBoss ? 105 : 135) * diff.bulletSpeed,
-      vx: (Math.random() - 0.5) * 140, rot: 0, vrot: (Math.random() - 0.5) * 4.2,
-      phase: Math.random() * Math.PI * 2, freq: 2.2 + Math.random() * 2.4, amp: 65 + Math.random() * 60,
-      turnTimer: 0.5 + Math.random() * 1.1, shootTimer: (isMiniBoss ? 1.25 : 1.65) + Math.random() * 0.7,
-      hitFlash: 0, points: isMiniBoss ? 220 : 120, coinValue: isMiniBoss ? 36 : 18
-    });
+    formationCounter++;
+    const isVFormation = (wave === 1 && formationCounter % 2 === 0);
+    const count = isVFormation ? 3 : 1;
+    const baseX = 75 + Math.random() * (W - 150);
+
+    for (let k = 0; k < count; k++) {
+      const offsetX = isVFormation ? (k - 1) * 58 : 0;
+      const offsetY = isVFormation ? -Math.abs(k - 1) * 32 : 0;
+      const typeIdx = Math.floor(Math.random() * types.length);
+      const kind = types[typeIdx];
+      const isMiniBoss = kind.startsWith('mini_');
+      const isElite = (wave >= 2 && k === 0 && Math.random() < 0.28);
+
+      const baseHp = (isMiniBoss ? 5 : 2.6) * (isElite ? 1.8 : 1.0);
+      const hp = Math.max(1, Math.round(baseHp * hpScale));
+      const patterns = ['zigzag', 'dash', 'figure8', 'erratic'];
+
+      enemies.push({
+        kind,
+        isElite,
+        stunTimer: 0,
+        movePattern: isVFormation ? 'figure8' : patterns[Math.floor(Math.random() * patterns.length)],
+        x: Math.max(40, Math.min(W - 40, baseX + offsetX)),
+        y: -38 + offsetY,
+        r: isElite ? 25 : (isMiniBoss ? 24 : 20),
+        hp, maxHp: hp,
+        baseVy: (isMiniBoss ? 102 : 132) * diff.bulletSpeed,
+        vy: (isMiniBoss ? 102 : 132) * diff.bulletSpeed,
+        vx: (Math.random() - 0.5) * 130,
+        rot: 0, vrot: (Math.random() - 0.5) * 4.0,
+        phase: Math.random() * Math.PI * 2,
+        freq: 2.2 + Math.random() * 2.2,
+        amp: 60 + Math.random() * 55,
+        turnTimer: 0.5 + Math.random() * 1.1,
+        shootTimer: (isMiniBoss ? 1.25 : 1.65) + Math.random() * 0.7,
+        hitFlash: 0,
+        points: isElite ? 350 : (isMiniBoss ? 220 : 120),
+        coinValue: isElite ? 100 : (isMiniBoss ? 36 : 18)
+      });
+    }
   }
 
   function spawnBoss(isMidBoss = false) {
@@ -906,7 +921,7 @@
     const hp = getShipHardpoints(shipId);
     const dmgScale = (p.ship.dmgMult || 1) * (p.baseWeapon.dmgBonus || 1);
 
-    if (synth) synth.sfxShootWeapon(pan, baseId, p.secondaryWeapon);
+    if (synth) synth.sfxShootWeapon(pan, baseId);
 
     if (baseId === 'droplet') {
       bullets.push({ kind: 'plasma', x: p.x, y: p.y + hp.noseY, vx: 0, vy: -780, r: 6.5, dmg: 1.05 * dmgScale, color: '#48dbfb' });
@@ -923,6 +938,13 @@
     } else if (baseId === 'electric_arc') {
       [-hp.pairX, hp.pairX].forEach(ox => {
         bullets.push({ kind: 'electric_bolt', chainLightning: true, x: p.x + ox, y: p.y + hp.pairY, vx: 0, vy: -900, r: 7.5, dmg: 1.35 * dmgScale, color: '#fee440' });
+      });
+    }
+
+    // Веерный психо-залп при сборе Золотой Психо-Споры на 6-м уровне!
+    if (psySlowTimer > 0) {
+      [-0.35, 0.35].forEach(ang => {
+        bullets.push({ kind: 'plasma', x: p.x, y: p.y - 20, vx: Math.sin(ang) * 760, vy: -Math.cos(ang) * 760, r: 7, dmg: 1.1 * dmgScale, color: '#ffd166' });
       });
     }
 
@@ -990,7 +1012,6 @@
       });
       enemyBullets.push({ kind: 'laser_shuriken', rot: 0, x: b.x, y: b.y + 24, vx: Math.cos(toPlayer) * (spd * 1.22), vy: Math.sin(toPlayer) * (spd * 1.22), r: 14, color: '#ff002b' });
     } else if (lvl.id === 3) {
-      // Босс 3-го уровня: бросает руками пончики + волны радуги!
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.95 : 1.22;
       [-85, 85].forEach(hx => {
@@ -1015,13 +1036,114 @@
       });
       enemyBullets.push({ kind: 'vine_whip', x: b.x, y: b.y + 30, vx: Math.cos(toPlayer) * (spd * 1.18), vy: Math.sin(toPlayer) * (spd * 1.18), ang: toPlayer, r: 11, color: '#80ed99' });
     } else {
-      // Босс 6-го уровня («Мега-Мухомор»): выплёвывает изо рта маленькие мухоморчики + радужные волны!
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.85 : 1.10;
       [-0.25, 0, 0.25].forEach((offsetAng, idx) => {
         const ang = toPlayer + offsetAng;
         enemyBullets.push({ kind: 'mini_mushroom_shot', hue: (b.time * 160 + idx * 90) % 360, rot: 0, x: b.x, y: b.y + 38, vx: Math.cos(ang) * (spd * 1.08), vy: Math.sin(ang) * (spd * 1.08), r: 12, color: '#ff006e' });
       });
+    }
+  }
+
+  // Обработка физики 6 уникальных интерактивных объектов сектора
+  function updateInteractiveProps(dt) {
+    for (let i = interactiveProps.length - 1; i >= 0; i--) {
+      const pr = interactiveProps[i];
+      pr.y += pr.vy * dt;
+      pr.phase += dt * 2.5;
+      if (pr.cooldown > 0) pr.cooldown = Math.max(0, pr.cooldown - dt);
+
+      // 1. Взаимодействие с пулями игрока (Порталы, Пиньяты, Цветки-Батуты)
+      for (let j = bullets.length - 1; j >= 0; j--) {
+        const b = bullets[j];
+        if (b.propCooldown > 0) continue;
+        if (Math.hypot(b.x - pr.x, b.y - pr.y) < pr.r + b.r) {
+          if (pr.type === 'mirror_portal' && pr.partner) {
+            // Телепортация пули во второй портал и наведение в спину врагу
+            b.x = pr.partner.x;
+            b.y = pr.partner.y;
+            b.propCooldown = 0.45;
+            if (synth) synth.sfxGravity();
+            if (vfx) vfx.addShockwave(pr.partner.x, pr.partner.y, '#00f5d4', 45, 0.25);
+            advanceQuest('props', 1);
+          } else if (pr.type === 'pinata_skull') {
+            // Взрыв черепа-пиньяты: конфетти, оглушение врагов и рыбка!
+            bullets.splice(j, 1);
+            if (synth) synth.sfxVictory();
+            if (vfx) {
+              vfx.addRealisticExplosion(pr.x, pr.y, '#ffbe0b', 1.4, '#ff006e', '#06d6a0');
+              vfx.addPopup(pr.x, pr.y, '🎉 ПИНЬЯТА! ОГЛУШЕНИЕ +80 🐟', '#ffd166', 1.15);
+            }
+            runCoins += 80;
+            enemies.forEach(en => { if (Math.hypot(en.x - pr.x, en.y - pr.y) < 220) en.stunTimer = 3.0; });
+            advanceQuest('props', 1);
+            interactiveProps.splice(i, 1);
+            break;
+          } else if (pr.type === 'flower_bumper') {
+            // Рикошет пули в ближайшего врага под углом
+            b.propCooldown = 0.35;
+            const target = enemies[0] || boss;
+            if (target) {
+              const ang = Math.atan2(target.y - b.y, target.x - b.x);
+              const spd = Math.hypot(b.vx, b.vy);
+              b.vx = Math.cos(ang) * spd;
+              b.vy = Math.sin(ang) * spd;
+            } else {
+              b.vx = (Math.random() - 0.5) * 500;
+            }
+            if (synth) synth.sfxStarCollect();
+            if (vfx) vfx.addShockwave(pr.x, pr.y, '#fee440', 45, 0.25);
+            advanceQuest('props', 1);
+          }
+        }
+      }
+
+      if (!interactiveProps[i]) continue;
+
+      // 2. Взаимодействие с кораблём игрока (Ускорители, Мыльные пузыри, Золотые Психо-споры)
+      if (Math.hypot(player.x - pr.x, player.y - pr.y) < player.r + pr.r) {
+        if (pr.type === 'candy_booster') {
+          player.turboTimer = 4.5;
+          if (synth) synth.sfxPurrBoost();
+          if (vfx) vfx.addPopup(pr.x, pr.y, '🌈 РАДУЖНЫЙ УСКОРИТЕЛЬ!', '#ffd166', 1.15);
+          advanceQuest('props', 1);
+          interactiveProps.splice(i, 1);
+          continue;
+        } else if (pr.type === 'giant_bubble') {
+          player.shield = true;
+          if (synth) synth.sfxShieldBlock();
+          if (vfx) vfx.addPopup(pr.x, pr.y, '🫧 ПУЗЫРЬ-ЩИТ!', '#9bf6ff', 1.15);
+          advanceQuest('props', 1);
+          interactiveProps.splice(i, 1);
+          continue;
+        } else if (pr.type === 'psy_spore') {
+          psySlowTimer = 5.0;
+          if (synth) synth.sfxVictory();
+          if (vfx) {
+            vfx.triggerFlash('#ffd166', 0.28);
+            vfx.addPopup(pr.x, pr.y, '🍄 ПСИХО-СПОРА: ЗАМЕДЛЕНИЕ + ВЕЕР!', '#ffd166', 1.2);
+          }
+          advanceQuest('props', 1);
+          interactiveProps.splice(i, 1);
+          continue;
+        }
+      }
+
+      // 3. Гигантский мыльный пузырь захватывает мелких врагов
+      if (pr.type === 'giant_bubble') {
+        for (let k = enemies.length - 1; k >= 0; k--) {
+          const en = enemies[k];
+          if (!en.isElite && Math.hypot(en.x - pr.x, en.y - pr.y) < pr.r + en.r) {
+            if (vfx) vfx.addPopup(en.x, en.y, '🫧 ПОЙМАН В ПУЗЫРЬ! +30 🐟', '#9bf6ff');
+            runCoins += 30;
+            enemies.splice(k, 1);
+            advanceQuest('props', 1);
+            break;
+          }
+        }
+      }
+
+      if (pr.y > H + 60) interactiveProps.splice(i, 1);
     }
   }
 
@@ -1044,33 +1166,87 @@
 
     if (screenShake > 0) screenShake = Math.max(0, screenShake - dt * 28);
     if (warningBannerTimer > 0) warningBannerTimer = Math.max(0, warningBannerTimer - dt);
+    if (psySlowTimer > 0) psySlowTimer = Math.max(0, psySlowTimer - dt);
     if (comboTimer > 0) { comboTimer -= dt; if (comboTimer <= 0) combo = 1; }
 
-    eventTimer -= dt;
-    if (eventTimer <= 0 && !activeEvent) { eventTimer = 17 + Math.random() * 6; triggerRandomAnomaly(lvl); }
-    if (activeEvent) { activeEvent.timer -= dt; if (activeEvent.timer <= 0) activeEvent = null; }
+    propTimer -= dt;
+    if (propTimer <= 0 && !boss && fishRainTimer <= 0) {
+      propTimer = 8.5 + Math.random() * 3.0;
+      spawnSectorInteractiveProp();
+    }
 
     obstacleTimer -= dt;
-    if (obstacleTimer <= 0 && !boss) { obstacleTimer = 3.6 + Math.random() * 1.8; spawnObstacle(); }
+    if (obstacleTimer <= 0 && !boss && fishRainTimer <= 0) {
+      obstacleTimer = (wave === 2 ? 2.2 : 3.8) + Math.random() * 1.4;
+      spawnObstacle();
+    }
 
+    // Режиссура 4 волн + бонусный «Рыбный дождь» перед выходом Босса
     const dMult = diff.durationMult || 1.0;
     waveTimer += dt;
     if (!boss) {
-      if (wave === 1 && waveTimer > 22 * dMult) { wave = 2; if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 2 / 4!', lvl.accent, 1.2); }
-      else if (wave === 2 && waveTimer > 44 * dMult) {
+      if (wave === 1 && waveTimer > 20 * dMult) {
+        wave = 2;
+        if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 2 / 4: МЕТЕОРНЫЙ СЛАЛОМ!', lvl.accent, 1.15);
+      } else if (wave === 2 && waveTimer > 40 * dMult) {
         if (diff.twoBosses && !midBossDefeated) spawnBoss(true);
-        else { wave = 3; if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 3 / 4: ШТУРМ!', lvl.accent, 1.2); }
-      } else if (wave === 3 && waveTimer > 66 * dMult) { wave = 4; if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 4 / 4: ЭЛИТА!', '#ffd166', 1.25); }
-      else if (wave === 4 && waveTimer > 85 * dMult) { wave = 5; spawnBoss(false); }
+        else {
+          wave = 3;
+          if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 3 / 4: ЭЛИТА В КОРОНАХ!', '#ffd166', 1.2);
+        }
+      } else if (wave === 3 && waveTimer > 62 * dMult) {
+        wave = 4;
+        fishRainTimer = 8.0; // 8 секунд безобидного бонусного «Рыбного дождя»!
+        if (synth) synth.sfxVictory();
+        if (vfx) vfx.addPopup(W / 2, H * 0.34, '🐟 БОНУС: РЫБНЫЙ ДОЖДЬ! 🐟', '#ffd166', 1.25);
+      } else if (wave === 4 && fishRainTimer <= 0 && waveTimer > 71 * dMult) {
+        wave = 5;
+        spawnBoss(false);
+      }
 
-      if (wave <= 4) {
+      if (wave <= 3) {
         spawnTimer -= dt;
         if (spawnTimer <= 0) {
-          spawnEnemy();
-          spawnTimer = ([0, 0.95, 0.82, 0.70, 0.58][wave] || 0.75) * diff.spawnRate;
+          spawnEnemyFormation();
+          spawnTimer = ([0, 1.15, 1.25, 0.90][wave] || 1.0) * diff.spawnRate;
         }
       }
     }
+
+    // Генерация тарелок с рыбкой и сметаной во время «Рыбного дождя»
+    if (fishRainTimer > 0) {
+      fishRainTimer -= dt;
+      fishRainSpawnTimer -= dt;
+      if (fishRainSpawnTimer <= 0) {
+        fishRainSpawnTimer = 0.36;
+        const emojis = ['🐟', '🥛', '🍖', '🍤'];
+        fishRainItems.push({
+          x: 40 + Math.random() * (W - 80),
+          y: -25,
+          vy: 165 + Math.random() * 60,
+          emoji: emojis[Math.floor(Math.random() * emojis.length)],
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    for (let i = fishRainItems.length - 1; i >= 0; i--) {
+      const fr = fishRainItems[i];
+      fr.y += fr.vy * dt;
+      fr.phase += dt * 4;
+      if (Math.hypot(player.x - fr.x, player.y - fr.y) < player.r + 22) {
+        runCoins += 25;
+        score += 100;
+        if (synth) synth.playStarCollect();
+        if (vfx) vfx.addPopup(fr.x, fr.y, `+25 ${fr.emoji}`, '#ffd166');
+        advanceQuest('rain', 1);
+        fishRainItems.splice(i, 1);
+        continue;
+      }
+      if (fr.y > H + 30) fishRainItems.splice(i, 1);
+    }
+
+    updateInteractiveProps(dt);
 
     const p = player;
     if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
@@ -1079,18 +1255,7 @@
     p.squashX += (1 - p.squashX) * Math.min(1, dt * 14);
     p.squashY += (1 - p.squashY) * Math.min(1, dt * 14);
 
-    let speedFactor = p.ship.speedMult || 1.0;
-    if (activeEvent) {
-      if (activeEvent.type === 'gravity') {
-        const dx = activeEvent.x - p.x, dy = activeEvent.y - p.y, dist = Math.hypot(dx, dy);
-        if (dist > 10 && dist < 280) { p.x += (dx / dist) * 85 * dt; p.y += (dy / dist) * 85 * dt; }
-      } else if (activeEvent.type === 'wave') p.x += activeEvent.dir * 95 * dt;
-      else if (activeEvent.type === 'sticky' && Math.hypot(activeEvent.x - p.x, activeEvent.y - p.y) < activeEvent.r) {
-        speedFactor *= 0.45;
-        if (p.stickyTimer <= 0) { p.stickyTimer = 1.2; if (synth) synth.sfxSticky(); }
-      }
-    }
-
+    let speedFactor = (p.ship.speedMult || 1.0) * (p.turboTimer > 0 ? 1.28 : 1.0);
     const moveSpeed = 355 * speedFactor;
     let ix = 0, iy = 0;
     if (keys['ArrowLeft'] || keys['KeyA']) ix -= 1;
@@ -1113,8 +1278,9 @@
     if (world3d) world3d.setCameraFromPlayer(p.x, W);
 
     p.fireCooldown -= dt;
+    const baseCd = p.turboTimer > 0 ? 0.11 : 0.18;
     if ((keys['Space'] || keys['KeyZ'] || pointer.active) && p.fireCooldown <= 0) {
-      p.fireCooldown = 0.18 * (p.ship.fireRateMult || 1.0);
+      p.fireCooldown = baseCd * (p.ship.fireRateMult || 1.0);
       p.squashX = 1.12; p.squashY = 0.90;
       firePlayerWeapon(p);
     }
@@ -1127,7 +1293,7 @@
         if (Math.hypot(b.x - ob.x, b.y - ob.y) < ob.r + b.r) {
           if (vfx) vfx.addHitSparks(b.x, b.y, ob.neonColor, 8);
           if (!b.pierce) bullets.splice(j, 1);
-          if (synth && Math.random() < 0.35) synth.sfxDisintegrate(0);
+          if (synth && Math.random() < 0.35) synth.sfxDisintegrate();
         }
       }
       if (Math.hypot(p.x - ob.x, p.y - ob.y) < p.r + ob.r - 4) {
@@ -1139,6 +1305,7 @@
 
     for (let i = bullets.length - 1; i >= 0; i--) {
       const b = bullets[i];
+      if (b.propCooldown > 0) b.propCooldown = Math.max(0, b.propCooldown - dt);
       b.rot = (b.rot || 0) + dt * 16;
       if (b.homing) {
         let target = boss, bestDist = boss ? Math.hypot(boss.x - b.x, boss.y - b.y) : 9999;
@@ -1161,62 +1328,67 @@
       if (b.y < -40 || b.x < -40 || b.x > W + 40) bullets.splice(i, 1);
     }
 
+    const slowMult = psySlowTimer > 0 ? 0.55 : 1.0;
+
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
       e.phase += dt * e.freq; e.rot += e.vrot * dt;
-
-      if (e.movePattern === 'zigzag') {
-        e.turnTimer -= dt;
-        if (e.turnTimer <= 0) { e.turnTimer = 0.55 + Math.random() * 0.85; e.vx = (Math.random() > 0.5 ? 1 : -1) * (110 + Math.random() * 110); }
-        e.x += e.vx * dt; e.y += e.baseVy * dt;
-      } else if (e.movePattern === 'dash') {
-        e.y += e.baseVy * (0.45 + Math.max(0, Math.sin(e.phase * 1.4)) * 1.45) * dt;
-        e.x += Math.cos(e.phase * 1.3) * e.amp * 1.15 * dt;
-      } else if (e.movePattern === 'figure8') {
-        e.y += (e.baseVy + Math.sin(e.phase * 2) * 85) * dt;
-        e.x += Math.cos(e.phase) * e.amp * 1.35 * dt;
-      } else {
-        e.turnTimer -= dt;
-        if (e.turnTimer <= 0) {
-          e.turnTimer = 0.65 + Math.random() * 0.9;
-          e.vx = Math.random() < 0.45 && player ? Math.sign(player.x - e.x) * (120 + Math.random() * 90) : (Math.random() - 0.5) * 260;
-          e.vy = e.baseVy * (0.7 + Math.random() * 0.85);
-        }
-        e.x += e.vx * dt; e.y += e.vy * dt;
-      }
-
-      if (e.x < e.r + 10) { e.x = e.r + 10; e.vx = Math.abs(e.vx); }
-      else if (e.x > W - e.r - 10) { e.x = W - e.r - 10; e.vx = -Math.abs(e.vx); }
       if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt * 6);
 
-      // Стрельба врагов всех 6 уровней
-      e.shootTimer -= dt;
-      if (e.shootTimer <= 0 && e.y > 40 && e.y < H * 0.68) {
-        e.shootTimer = 1.80 / diff.bulletSpeed;
-        const ang = Math.atan2(p.y - e.y, p.x - e.x);
-        const spd = 225 * diff.bulletSpeed;
-
-        if (e.kind === 'evil_flyagaric') {
-          // Злобный мухомор выпускает споры во все стороны!
-          for (let s = 0; s < 6; s++) {
-            const sa = e.phase + (Math.PI * 2 * s) / 6;
-            enemyBullets.push({ x: e.x, y: e.y + 8, vx: Math.cos(sa) * (spd * 0.85), vy: Math.sin(sa) * (spd * 0.85), r: 7, color: '#ffbe0b' });
-          }
-        } else if (e.kind === 'fractal_ship') {
-          enemyBullets.push({ kind: 'mini_spiral', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 10, color: '#00f5d4' });
-        } else if (e.kind === 'rubik_cube') {
-          const rCols = ['#ff3366', '#ffd166', '#06d6a0', '#48dbfb'];
-          enemyBullets.push({ kind: 'rubik_square', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25), r: 7.5, color: rCols[Math.floor(Math.random() * rCols.length)] });
-        } else if (e.kind === 'skeleton_ship' || e.kind === 'rainbow_spiral' || e.kind === 'crab_ship' || e.kind === 'starfish_ship' || e.kind === 'shroom_starship') {
-          const lCol = e.kind === 'shroom_starship' ? '#f72585' : (e.kind === 'starfish_ship' ? '#80ed99' : '#00f5d4');
-          enemyBullets.push({ kind: 'enemy_laser', x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 1.42), vy: Math.sin(ang) * (spd * 1.42), ang, r: 6.5, color: lCol });
-        } else if (e.kind === 'bat_ship' || e.kind === 'spider_ship' || e.kind === 'lollipop_ship' || e.kind === 'octopus_ship' || e.kind === 'octopus_bio' || e.kind === 'bacteria_shroom') {
-          enemyBullets.push({ kind: 'enemy_missile', homing: true, life: 2.7, x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 0.88), vy: Math.sin(ang) * (spd * 0.88), r: 8.5, color: '#ff5964' });
-        } else if (e.kind === 'manta_wave' || e.kind === 'jellyfish_ship' || e.kind === 'polyp_mushroom') {
-          enemyBullets.push({ kind: 'psy_wave', hue: 145, x: e.x, y: e.y + 18, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, ang, r: 18, color: lvl.accent });
+      if (e.stunTimer > 0) {
+        e.stunTimer -= dt;
+      } else {
+        const edt = dt * slowMult;
+        if (e.movePattern === 'zigzag') {
+          e.turnTimer -= edt;
+          if (e.turnTimer <= 0) { e.turnTimer = 0.55 + Math.random() * 0.85; e.vx = (Math.random() > 0.5 ? 1 : -1) * (110 + Math.random() * 110); }
+          e.x += e.vx * edt; e.y += e.baseVy * edt;
+        } else if (e.movePattern === 'dash') {
+          e.y += e.baseVy * (0.45 + Math.max(0, Math.sin(e.phase * 1.4)) * 1.45) * edt;
+          e.x += Math.cos(e.phase * 1.3) * e.amp * 1.15 * edt;
+        } else if (e.movePattern === 'figure8') {
+          e.y += (e.baseVy + Math.sin(e.phase * 2) * 85) * edt;
+          e.x += Math.cos(e.phase) * e.amp * 1.35 * edt;
         } else {
-          const bCol = `hsl(${Math.floor(e.phase * 140) % 360}, 100%, 64%)`;
-          enemyBullets.push({ x: e.x, y: e.y + e.r * 0.7, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 7.5, color: bCol });
+          e.turnTimer -= edt;
+          if (e.turnTimer <= 0) {
+            e.turnTimer = 0.65 + Math.random() * 0.9;
+            e.vx = Math.random() < 0.45 && player ? Math.sign(player.x - e.x) * (120 + Math.random() * 90) : (Math.random() - 0.5) * 260;
+            e.vy = e.baseVy * (0.7 + Math.random() * 0.85);
+          }
+          e.x += e.vx * edt; e.y += e.vy * edt;
+        }
+
+        if (e.x < e.r + 10) { e.x = e.r + 10; e.vx = Math.abs(e.vx); }
+        else if (e.x > W - e.r - 10) { e.x = W - e.r - 10; e.vx = -Math.abs(e.vx); }
+
+        e.shootTimer -= edt;
+        if (e.shootTimer <= 0 && e.y > 40 && e.y < H * 0.68) {
+          e.shootTimer = 1.80 / diff.bulletSpeed;
+          const ang = Math.atan2(p.y - e.y, p.x - e.x);
+          const spd = 225 * diff.bulletSpeed;
+
+          if (e.kind === 'evil_flyagaric') {
+            for (let s = 0; s < 6; s++) {
+              const sa = e.phase + (Math.PI * 2 * s) / 6;
+              enemyBullets.push({ x: e.x, y: e.y + 8, vx: Math.cos(sa) * (spd * 0.85), vy: Math.sin(sa) * (spd * 0.85), r: 7, color: '#ffbe0b' });
+            }
+          } else if (e.kind === 'fractal_ship') {
+            enemyBullets.push({ kind: 'mini_spiral', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 10, color: '#00f5d4' });
+          } else if (e.kind === 'rubik_cube') {
+            const rCols = ['#ff3366', '#ffd166', '#06d6a0', '#48dbfb'];
+            enemyBullets.push({ kind: 'rubik_square', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25), r: 7.5, color: rCols[Math.floor(Math.random() * rCols.length)] });
+          } else if (e.kind === 'skeleton_ship' || e.kind === 'rainbow_spiral' || e.kind === 'crab_ship' || e.kind === 'starfish_ship' || e.kind === 'shroom_starship') {
+            const lCol = e.kind === 'shroom_starship' ? '#f72585' : (e.kind === 'starfish_ship' ? '#80ed99' : '#00f5d4');
+            enemyBullets.push({ kind: 'enemy_laser', x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 1.42), vy: Math.sin(ang) * (spd * 1.42), ang, r: 6.5, color: lCol });
+          } else if (e.kind === 'bat_ship' || e.kind === 'spider_ship' || e.kind === 'lollipop_ship' || e.kind === 'octopus_ship' || e.kind === 'octopus_bio' || e.kind === 'bacteria_shroom') {
+            enemyBullets.push({ kind: 'enemy_missile', homing: true, life: 2.7, x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 0.88), vy: Math.sin(ang) * (spd * 0.88), r: 8.5, color: '#ff5964' });
+          } else if (e.kind === 'manta_wave' || e.kind === 'jellyfish_ship' || e.kind === 'polyp_mushroom') {
+            enemyBullets.push({ kind: 'psy_wave', hue: 145, x: e.x, y: e.y + 18, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, ang, r: 18, color: lvl.accent });
+          } else {
+            const bCol = `hsl(${Math.floor(e.phase * 140) % 360}, 100%, 64%)`;
+            enemyBullets.push({ x: e.x, y: e.y + e.r * 0.7, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 7.5, color: bCol });
+          }
         }
       }
 
@@ -1240,19 +1412,19 @@
           else bullets.splice(j, 1);
 
           if (e.hp <= 0) {
-            if (synth) synth.sfxExplosion(((e.x / W) * 2 - 1) * 0.8, false);
+            if (synth) synth.sfxExplosion();
             if (vfx) vfx.addRealisticExplosion(e.x, e.y, lvl.accent, 1.05, e.wingCol, e.bodyCol);
 
             score += Math.round(e.points * combo * diff.scoreMult);
             const earnedFood = Math.round(e.coinValue * (p.ship.coinMult || 1));
             runCoins += earnedFood; kills++; combo = Math.min(5, combo + 1); comboTimer = 3.2;
-            const fIcon = ['🐟', '🍖', '🥛'][kills % 3];
-            if (vfx) vfx.addPopup(e.x, e.y, `+${earnedFood} ${fIcon}`, '#ffd6a5');
-            maybeDropFoodBonus(e.x, e.y, false);
+            advanceQuest('kills', 1);
+
+            const label = e.isElite ? `👑 ЭЛИТА! +${earnedFood} 🐟` : `+${earnedFood} ${['🐟', '🍖', '🥛'][kills % 3]}`;
+            if (vfx) vfx.addPopup(e.x, e.y, label, e.isElite ? '#ffd166' : '#ffd6a5', e.isElite ? 1.15 : 1.0);
+            maybeDropFoodBonus(e.x, e.y, e.isElite);
             enemies.splice(i, 1); screenShake = Math.max(screenShake, 7);
-          } else {
-            if (synth) synth.sfxHit(((e.x / W) * 2 - 1) * 0.8);
-          }
+          } else if (synth) synth.sfxHit();
           break;
         }
       }
@@ -1269,18 +1441,19 @@
 
     for (let i = enemyBullets.length - 1; i >= 0; i--) {
       const eb = enemyBullets[i];
+      const ebDt = dt * slowMult;
       if (eb.homing && eb.life > 0) {
-        eb.life -= dt;
+        eb.life -= ebDt;
         const ang = Math.atan2(p.y - eb.y, p.x - eb.x);
-        eb.vx += Math.cos(ang) * 190 * dt; eb.vy += Math.sin(ang) * 190 * dt;
+        eb.vx += Math.cos(ang) * 190 * ebDt; eb.vy += Math.sin(ang) * 190 * ebDt;
         if (vfx && Math.random() < 0.4) vfx.addTrail(eb.x, eb.y, eb.color || '#ff758f', 4.5, 0.15);
       }
-      if (eb.kind === 'psy_wave') { eb.hue = (eb.hue + dt * 220) % 360; eb.r = Math.min(36, eb.r + dt * 12); }
+      if (eb.kind === 'psy_wave') { eb.hue = (eb.hue + ebDt * 220) % 360; eb.r = Math.min(36, eb.r + ebDt * 12); }
       else if (eb.kind === 'laser_flower' || eb.kind === 'green_spin_star' || eb.kind === 'laser_shuriken' || eb.kind === 'mini_spiral' || eb.kind === 'rubik_square' || eb.kind === 'thrown_donut' || eb.kind === 'mini_mushroom_shot') {
-        eb.rot = (eb.rot || 0) + dt * 9;
+        eb.rot = (eb.rot || 0) + ebDt * 9;
       }
 
-      eb.x += eb.vx * dt; eb.y += eb.vy * dt;
+      eb.x += eb.vx * ebDt; eb.y += eb.vy * ebDt;
       if (Math.hypot(eb.x - p.x, eb.y - p.y) < p.r + eb.r - 5) {
         if (vfx) vfx.addHitSparks(eb.x, eb.y, '#ff5964', 10);
         enemyBullets.splice(i, 1); damagePlayer(); continue;
@@ -1317,12 +1490,12 @@
     b.specialTimer -= dt;
     if (b.specialTimer <= 0) {
       if (b.laserState === 'idle') { b.laserState = 'charge'; b.laserTimer = 0.95; b.laserX = player.x; if (synth) synth.sfxBossAlarm(); }
-      else { b.specialTimer = 4.5; if (enemies.length < 3) spawnEnemy(); maybeDropFoodBonus(b.x, b.y + 45, true); }
+      else { b.specialTimer = 4.5; if (enemies.length < 3) spawnEnemyFormation(); maybeDropFoodBonus(b.x, b.y + 45, true); }
     }
 
     if (b.laserState === 'charge') {
       b.laserTimer -= dt; b.laserX += (player.x - b.laserX) * Math.min(1, dt * 3.8);
-      if (b.laserTimer <= 0) { b.laserState = 'fire'; b.laserTimer = 0.78; if (synth) synth.sfxExplosion(0, true); if (vfx) vfx.triggerFlash(lvl.accent, 0.24); screenShake = 9; }
+      if (b.laserTimer <= 0) { b.laserState = 'fire'; b.laserTimer = 0.78; if (synth) synth.sfxExplosion(); if (vfx) vfx.triggerFlash(lvl.accent, 0.24); screenShake = 9; }
     } else if (b.laserState === 'fire') {
       b.laserTimer -= dt;
       if (Math.abs(player.x - b.laserX) < 28 + player.r * 0.6 && player.y > b.y) damagePlayer();
@@ -1412,21 +1585,6 @@
     setTimeout(() => { endOverlay.classList.remove('hidden'); syncTopHudVisibility(); }, victory ? 480 : 320);
   }
 
-  function drawActiveAnomaly(ctx) {
-    if (!activeEvent) return;
-    ctx.save();
-    if (activeEvent.type === 'gravity') {
-      const r = 45 + Math.sin(globalTime * 8) * 10;
-      ctx.strokeStyle = 'rgba(189, 178, 255, 0.45)'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(activeEvent.x, activeEvent.y, r, 0, Math.PI * 2); ctx.stroke();
-      ctx.beginPath(); ctx.arc(activeEvent.x, activeEvent.y, r * 1.8, 0, Math.PI * 2); ctx.stroke();
-    } else if (activeEvent.type === 'sticky') {
-      ctx.fillStyle = 'rgba(255, 175, 204, 0.22)'; ctx.strokeStyle = 'rgba(255, 112, 166, 0.55)'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(activeEvent.x, activeEvent.y, activeEvent.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    }
-    ctx.restore();
-  }
-
   function drawPlayer(p) {
     if (p.invuln > 0 && Math.floor(p.invuln * 16) % 2 === 0) return;
     ctx.save();
@@ -1440,6 +1598,10 @@
       const pulse = 31 + Math.sin(globalTime * 8) * 2.5;
       ctx.strokeStyle = '#ff5964'; ctx.fillStyle = 'rgba(255, 89, 100, 0.20)'; ctx.lineWidth = 3.2;
       ctx.beginPath(); ctx.arc(0, 0, pulse, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    if (p.turboTimer > 0) {
+      ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 3; ctx.setLineDash([6, 4]);
+      ctx.beginPath(); ctx.arc(0, 0, 34, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     }
     ctx.restore();
   }
@@ -1473,9 +1635,17 @@
     ctx.strokeText(`${score}  •  🐟 ${runCoins}`, 18, 60); ctx.fillText(`${score}  •  🐟 ${runCoins}`, 18, 60);
 
     ctx.fillStyle = lvl.accent; ctx.font = '800 12px sans-serif';
-    const waveLabel = boss ? (boss.isMidBoss ? 'МИНИ-БОСС' : 'МЕГА-БОСС') : `ВОЛНА ${Math.min(4, wave)}/4`;
+    const waveLabel = boss ? (boss.isMidBoss ? 'МИНИ-БОСС' : 'МЕГА-БОСС') : (fishRainTimer > 0 ? '🐟 РЫБНЫЙ ДОЖДЬ!' : `ВОЛНА ${Math.min(4, wave)}/4`);
     const subHud = combo > 1 ? `УРОВЕНЬ ${lvl.id} • ${waveLabel} • x${combo}` : `УРОВЕНЬ ${lvl.id} • ${waveLabel}`;
     ctx.strokeText(subHud, 18, 78); ctx.fillText(subHud, 18, 78);
+
+    // Отображение мини-задания уровня
+    if (activeQuest) {
+      ctx.fillStyle = activeQuest.done ? '#06d6a0' : '#ffd166';
+      ctx.font = '800 11px sans-serif';
+      const qText = activeQuest.done ? `✔ Цель выполнена (+${activeQuest.reward} 🐟)` : `🎯 ${activeQuest.label}: ${activeQuest.cur}/${activeQuest.target}`;
+      ctx.strokeText(qText, 18, 95); ctx.fillText(qText, 18, 95);
+    }
 
     if (boss) {
       const bw = Math.min(240, W - 210), bx = (W - bw) / 2 - 18, by = 18;
@@ -1504,22 +1674,16 @@
     } else if (eb.kind === 'mini_mushroom_shot') {
       ctx.rotate(eb.rot || 0);
       ctx.fillStyle = '#ffffff'; ctx.fillRect(-3, 0, 6, 9);
-      ctx.fillStyle = `hsl(${eb.hue || 350}, 100%, 58%)`;
-      ctx.beginPath(); ctx.arc(0, 0, 10, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = `hsl(${eb.hue || 350}, 100%, 58%)`; ctx.beginPath(); ctx.arc(0, 0, 10, Math.PI, 0); ctx.fill();
     } else if (eb.kind === 'mini_spiral') {
-      ctx.rotate(eb.rot || 0); ctx.strokeStyle = '#00f5d4'; ctx.lineWidth = 2.6;
-      ctx.beginPath();
-      for (let t = 0; t < 14; t++) {
-        const a = t * 0.6, r = t * 0.7;
-        if (t === 0) ctx.moveTo(0, 0); else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-      }
+      ctx.rotate(eb.rot || 0); ctx.strokeStyle = '#00f5d4'; ctx.lineWidth = 2.6; ctx.beginPath();
+      for (let t = 0; t < 14; t++) { const a = t * 0.6, r = t * 0.7; if (t === 0) ctx.moveTo(0, 0); else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
       ctx.stroke();
     } else if (eb.kind === 'rubik_square') {
       ctx.rotate(eb.rot || 0); ctx.fillStyle = eb.color || '#ffd166'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.8;
       roundRectPath(ctx, -6, -6, 12, 12, 2.5); ctx.fill(); ctx.stroke();
     } else if (eb.kind === 'green_spin_star') {
-      ctx.rotate(eb.rot || 0); ctx.fillStyle = '#06d6a0'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
-      ctx.beginPath();
+      ctx.rotate(eb.rot || 0); ctx.fillStyle = '#06d6a0'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath();
       for (let i = 0; i < 5; i++) {
         const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
         ctx.lineTo(Math.cos(a) * (eb.r + 2), Math.sin(a) * (eb.r + 2));
@@ -1527,8 +1691,7 @@
       }
       ctx.closePath(); ctx.fill(); ctx.stroke();
     } else if (eb.kind === 'laser_shuriken') {
-      ctx.rotate(eb.rot || 0); ctx.fillStyle = '#ff002b'; ctx.strokeStyle = '#ffbe0b'; ctx.lineWidth = 2.2;
-      ctx.beginPath();
+      ctx.rotate(eb.rot || 0); ctx.fillStyle = '#ff002b'; ctx.strokeStyle = '#ffbe0b'; ctx.lineWidth = 2.2; ctx.beginPath();
       for (let i = 0; i < 8; i++) {
         const a = (Math.PI * i) / 4, rad = i % 2 === 0 ? eb.r + 2 : eb.r * 0.42;
         if (i === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad); else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
@@ -1567,12 +1730,13 @@
     if (world3d) world3d.render(ctx, lvl, W, H);
     else { ctx.fillStyle = lvl.skyMid; ctx.fillRect(0, 0, W, H); }
 
-    drawActiveAnomaly(ctx);
     if (vfx) vfx.renderTrails(ctx);
+    for (const pr of interactiveProps) drawInteractiveProp(ctx, pr);
     for (const ob of obstacles) drawObstacle(ctx, ob);
+    for (const fr of fishRainItems) drawFishRainItem(ctx, fr);
     for (const bn of bonuses) drawFoodBonus(ctx, bn);
     for (const b of bullets) drawPlayerBullet(ctx, b);
-    for (const e of enemies) drawUniqueEnemy(ctx, e);
+    for (const e of enemies) drawUniqueEnemy(ctx, e, player);
     if (boss) drawUniqueBoss(ctx, boss, lvl, player, H);
     for (const eb of enemyBullets) drawEnemyBullet(ctx, eb);
     if (player && state !== 'GAMEOVER' && state !== 'START') drawPlayer(player);
