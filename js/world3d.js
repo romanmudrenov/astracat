@@ -18,7 +18,6 @@ class World3DEngine {
       };
     });
 
-    // Слой крупных вращающихся геометрических фигур в стиле каждого уровня
     this.geoShapes = Array.from({ length: 9 }, (_, i) => ({
       x: (i + 0.5) / 9 + (Math.random() - 0.5) * 0.08,
       y: Math.random(),
@@ -31,7 +30,6 @@ class World3DEngine {
       phase: i * 1.1
     }));
 
-    // Тематические мелкие частицы (угли, сладости, рыбки/пузыри, лепестки/цветки)
     this.themeParticles = Array.from({ length: 28 }, (_, i) => ({
       x: Math.random(),
       y: Math.random(),
@@ -101,43 +99,41 @@ class World3DEngine {
     }
   }
 
-  // Плавная смена цветовых фаз неба каждые 14 секунд для каждого уровня
   getDynamicSkyColors(lvl) {
     const palettesByTheme = {
       lsd: [
         ['#180633', '#3b0d66', '#6b1475'],
         ['#260742', '#590d73', '#9b1d85'],
-        ['#0f1242', '#2b196e', '#691882'],
-        ['#2b063b', '#6e0d57', '#a81c6b']
+        ['#0f1242', '#2b196e', '#691882']
       ],
       horror: [
-        ['#05010a', '#17030c', '#2e0612'],
-        ['#0d0208', '#26040e', '#470816'],
-        ['#070212', '#1c041a', '#38071f']
+        ['#080214', '#1f0624', '#380a26'],
+        ['#050a1f', '#121d42', '#2e0a24'],
+        ['#0a1a12', '#1d3318', '#3d0c19']
       ],
       rainbow: [
         ['#22185c', '#3c2a8c', '#6941b5'],
-        ['#2e1a66', '#56329e', '#8f4ec4'],
-        ['#1a2463', '#2e3f9e', '#5a63c9']
+        ['#2e1a66', '#56329e', '#8f4ec4']
       ],
       underwater: [
         ['#08243d', '#114b6e', '#1c7c94'],
-        ['#0b2e4a', '#165e82', '#2694ab'],
-        ['#0e284d', '#1e4b85', '#3278b5']
+        ['#0b2e4a', '#165e82', '#2694ab']
       ],
       organic: [
         ['#05210e', '#0e4720', '#196e32'],
-        ['#082914', '#14592c', '#258544'],
-        ['#062619', '#0f5238', '#1d7d57']
+        ['#082914', '#14592c', '#258544']
+      ],
+      mushroom: [
+        ['#1a0436', '#4a0866', '#8a1278'],
+        ['#0c1844', '#3c096c', '#9d0258'],
+        ['#1f052e', '#5a189a', '#b5179e']
       ]
     };
     const list = palettesByTheme[lvl.theme] || [[lvl.skyTop, lvl.skyMid, lvl.skyBot]];
-    const cycle = (this.time / 14) % list.length;
-    const idx = Math.floor(cycle);
+    const idx = Math.floor((this.time / 12) % list.length);
     return list[idx];
   }
 
-  // Тематические геометрические фигуры для каждого уровня
   drawLevelGeometry(ctx, lvl, W, H) {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
@@ -151,15 +147,13 @@ class World3DEngine {
       ctx.translate(gx, gy);
       ctx.rotate(g.rot);
 
-      if (lvl.theme === 'lsd') {
-        // УРОВЕНЬ 1: Сакральные треугольники Шри-Янтры, лепестковые мандалы и фрактальные спирали
-        const hue = (this.time * 55 + g.phase * 60) % 360;
+      if (lvl.theme === 'lsd' || lvl.theme === 'mushroom') {
+        const hue = (this.time * 65 + g.phase * 60) % 360;
         ctx.strokeStyle = `hsl(${hue}, 95%, 66%)`;
-        ctx.lineWidth = 2.2;
-        ctx.globalAlpha = 0.28;
+        ctx.lineWidth = 2.4;
+        ctx.globalAlpha = 0.30;
 
         if (g.kind === 0) {
-          // Пересекающиеся треугольники янтры
           for (let dir of [1, -1]) {
             ctx.beginPath();
             for (let k = 0; k < 3; k++) {
@@ -167,114 +161,51 @@ class World3DEngine {
               if (k === 0) ctx.moveTo(Math.cos(a) * s, Math.sin(a) * s);
               else ctx.lineTo(Math.cos(a) * s, Math.sin(a) * s);
             }
-            ctx.closePath();
-            ctx.stroke();
+            ctx.closePath(); ctx.stroke();
           }
         } else if (g.kind === 1) {
-          // 6-лепестковая геометрическая мандала
           for (let k = 0; k < 6; k++) {
             ctx.rotate(Math.PI / 3);
-            ctx.beginPath();
-            ctx.ellipse(s * 0.45, 0, s * 0.45, s * 0.18, 0, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(s * 0.45, 0, s * 0.45, s * 0.18, 0, 0, Math.PI * 2); ctx.stroke();
           }
         } else {
-          // Концентрический фрактальный ромб
-          ctx.strokeRect(-s * 0.65, -s * 0.65, s * 1.3, s * 1.3);
-          ctx.rotate(Math.PI / 4);
-          ctx.strokeRect(-s * 0.45, -s * 0.45, s * 0.9, s * 0.9);
+          ctx.beginPath();
+          for (let t = 0; t < 18; t++) {
+            const ang = t * 0.45, rad = t * (s * 0.055);
+            if (t === 0) ctx.moveTo(0, 0); else ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
+          }
+          ctx.stroke();
         }
-
       } else if (lvl.theme === 'horror') {
-        // УРОВЕНЬ 2: Мигающие готические гексаграммы, острые кристаллы и рунические кольца
-        const blink = 0.16 + 0.22 * Math.abs(Math.sin(g.phase * 1.8));
-        ctx.strokeStyle = g.kind % 2 === 0 ? '#ff002b' : '#ff9f1c';
-        ctx.lineWidth = 2.2;
-        ctx.globalAlpha = blink;
-
-        if (g.kind === 0) {
-          ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI * 2); ctx.stroke();
-          ctx.beginPath();
-          for (let k = 0; k < 5; k++) {
-            const a = (Math.PI * 4 * k) / 5 - Math.PI / 2;
-            if (k === 0) ctx.moveTo(Math.cos(a) * s, Math.sin(a) * s);
-            else ctx.lineTo(Math.cos(a) * s, Math.sin(a) * s);
-          }
-          ctx.closePath(); ctx.stroke();
-        } else {
-          ctx.beginPath();
-          ctx.moveTo(0, -s * 1.2); ctx.lineTo(s * 0.7, 0); ctx.lineTo(0, s * 1.2); ctx.lineTo(-s * 0.7, 0);
-          ctx.closePath(); ctx.stroke();
-        }
-
+        const colors = ['#ff002b', '#ffbe0b', '#06d6a0', '#48dbfb'];
+        ctx.strokeStyle = colors[g.kind % colors.length];
+        ctx.lineWidth = 2.4;
+        ctx.globalAlpha = 0.24;
+        ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeRect(-s * 0.65, -s * 0.65, s * 1.3, s * 1.3);
       } else if (lvl.theme === 'rainbow') {
-        // УРОВЕНЬ 3: Радужные призмы, шестиугольные кристаллы и звёздчатые многогранники
         const hue = (this.time * 70 + g.phase * 50) % 360;
         ctx.strokeStyle = `hsl(${hue}, 100%, 72%)`;
         ctx.lineWidth = 2.6;
-        ctx.globalAlpha = 0.30;
-
+        ctx.globalAlpha = 0.28;
         ctx.beginPath();
-        const sides = g.kind === 0 ? 6 : (g.kind === 1 ? 5 : 8);
-        for (let k = 0; k < sides; k++) {
-          const a = (Math.PI * 2 * k) / sides;
+        for (let k = 0; k < 6; k++) {
+          const a = (Math.PI * k) / 3;
           if (k === 0) ctx.moveTo(Math.cos(a) * s, Math.sin(a) * s);
           else ctx.lineTo(Math.cos(a) * s, Math.sin(a) * s);
         }
         ctx.closePath(); ctx.stroke();
-        ctx.beginPath(); ctx.arc(0, 0, s * 0.45, 0, Math.PI * 2); ctx.stroke();
-
       } else if (lvl.theme === 'underwater') {
-        // УРОВЕНЬ 4: Пастельные сферы-пузыри, морские спирали-раковины и волновые кольца
         const pastelHue = 175 + Math.sin(g.phase) * 45;
         ctx.strokeStyle = `hsl(${pastelHue}, 95%, 80%)`;
         ctx.lineWidth = 2.2;
         ctx.globalAlpha = 0.28;
-
-        if (g.kind === 0) {
-          // Спираль Фибоначчи (раковина наутилуса)
-          ctx.beginPath();
-          for (let t = 0; t < 20; t++) {
-            const ang = t * 0.45;
-            const rad = t * (s * 0.05);
-            if (t === 0) ctx.moveTo(0, 0);
-            else ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
-          }
-          ctx.stroke();
-        } else {
-          // Двойной пастельный пузырь с бликом
-          ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI * 2); ctx.stroke();
-          ctx.beginPath(); ctx.arc(-s * 0.3, -s * 0.3, s * 0.25, 0, Math.PI * 2); ctx.stroke();
-        }
-
+        ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI * 2); ctx.stroke();
       } else if (lvl.theme === 'organic') {
-        // УРОВЕНЬ 5: Изумрудные био-соты, спирали ДНК и клеточные ядра
         ctx.strokeStyle = g.kind % 2 === 0 ? '#80ed99' : '#ccff33';
         ctx.lineWidth = 2.4;
         ctx.globalAlpha = 0.28;
-
-        if (g.kind === 0) {
-          // Двойная спираль ДНК
-          for (let strand of [-1, 1]) {
-            ctx.beginPath();
-            for (let y = -s; y <= s; y += 6) {
-              const x = Math.sin(y * 0.14 + g.phase) * (s * 0.45) * strand;
-              if (y === -s) ctx.moveTo(x, y);
-              else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-          }
-        } else {
-          // Клеточный гексагон с ядром
-          ctx.beginPath();
-          for (let k = 0; k < 6; k++) {
-            const a = (Math.PI * k) / 3;
-            if (k === 0) ctx.moveTo(Math.cos(a) * s, Math.sin(a) * s);
-            else ctx.lineTo(Math.cos(a) * s, Math.sin(a) * s);
-          }
-          ctx.closePath(); ctx.stroke();
-          ctx.beginPath(); ctx.arc(0, 0, s * 0.35, 0, Math.PI * 2); ctx.stroke();
-        }
+        ctx.strokeRect(-s * 0.6, -s * 0.6, s * 1.2, s * 1.2);
       }
 
       ctx.restore();
@@ -282,23 +213,63 @@ class World3DEngine {
     ctx.restore();
   }
 
+  // Планета в форме псилоцибинового гриба для 6-го уровня («Грибная Галактика»)
+  drawMushroomPlanet(ctx, px, py, r, hueShift) {
+    ctx.save();
+    ctx.translate(px, py);
+    const hue = (this.time * 55 + hueShift) % 360;
+    const capCol = `hsl(${hue}, 95%, 56%)`;
+    const glowCol = `hsl(${(hue + 140) % 360}, 100%, 68%)`;
+
+    ctx.fillStyle = glowCol;
+    ctx.globalAlpha = 0.24;
+    ctx.beginPath(); ctx.arc(0, 0, r * 1.35, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.90;
+
+    // Ножка планеты-гриба
+    ctx.fillStyle = '#f8edeb';
+    ctx.strokeStyle = '#14052b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.26, 0);
+    ctx.quadraticCurveTo(-r * 0.34, r * 0.65, -r * 0.20, r * 0.95);
+    ctx.lineTo(r * 0.20, r * 0.95);
+    ctx.quadraticCurveTo(r * 0.34, r * 0.65, r * 0.26, 0);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Психоделическая шляпка планеты-гриба
+    ctx.fillStyle = capCol;
+    ctx.strokeStyle = glowCol;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.95, Math.PI, 0);
+    ctx.quadraticCurveTo(r * 0.95, r * 0.22, 0, r * 0.16);
+    ctx.quadraticCurveTo(-r * 0.95, r * 0.22, -r * 0.95, 0);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // Светящиеся пятна на шляпке
+    ctx.fillStyle = '#ffffff';
+    [[-r * 0.42, -r * 0.35, r * 0.16], [r * 0.35, -r * 0.42, r * 0.14], [0, -r * 0.62, r * 0.18], [-r * 0.12, -r * 0.2, r * 0.11]].forEach(([sx, sy, sr]) => {
+      ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+    });
+
+    ctx.restore();
+  }
+
   drawSkullPlanet(ctx, px, py, r) {
     ctx.save();
     ctx.translate(px, py);
-    ctx.fillStyle = '#ff002b';
-    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = '#ff002b'; ctx.globalAlpha = 0.16;
     ctx.beginPath(); ctx.arc(0, 0, r * 1.35, 0, Math.PI * 2); ctx.fill();
 
     ctx.globalAlpha = 0.88;
-    ctx.fillStyle = '#2b2333';
-    ctx.strokeStyle = '#ff002b';
-    ctx.lineWidth = 2.2;
+    ctx.fillStyle = '#2b2333'; ctx.strokeStyle = '#ffbe0b'; ctx.lineWidth = 2.2;
     ctx.beginPath();
     ctx.arc(0, -r * 0.1, r * 0.92, Math.PI * 0.85, Math.PI * 2.15);
-    ctx.lineTo(r * 0.52, r * 0.82);
-    ctx.lineTo(-r * 0.52, r * 0.82);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
+    ctx.lineTo(r * 0.52, r * 0.82); ctx.lineTo(-r * 0.52, r * 0.82);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
 
     ctx.fillStyle = '#07030a';
     ctx.beginPath();
@@ -306,7 +277,7 @@ class World3DEngine {
     ctx.ellipse(r * 0.34, -r * 0.05, r * 0.24, r * 0.28, 0.15, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#ff002b';
+    ctx.fillStyle = '#06d6a0';
     ctx.beginPath();
     ctx.arc(-r * 0.34, -r * 0.05, r * 0.10, 0, Math.PI * 2);
     ctx.arc(r * 0.34, -r * 0.05, r * 0.10, 0, Math.PI * 2);
@@ -319,6 +290,11 @@ class World3DEngine {
     const py = p.y * H;
     const r = p.r;
 
+    if (lvl.theme === 'mushroom') {
+      this.drawMushroomPlanet(ctx, px, py, r, p.hueShift);
+      return;
+    }
+
     if (lvl.theme === 'horror') {
       this.drawSkullPlanet(ctx, px, py, r);
       return;
@@ -326,8 +302,7 @@ class World3DEngine {
 
     ctx.save();
     ctx.translate(px, py);
-    ctx.fillStyle = lvl.accent;
-    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = lvl.accent; ctx.globalAlpha = 0.18;
     ctx.beginPath(); ctx.arc(0, 0, r * 1.28, 0, Math.PI * 2); ctx.fill();
 
     ctx.globalAlpha = 0.85;
@@ -342,19 +317,9 @@ class World3DEngine {
       pal = ['#083d18', '#2d6a4f', '#80ed99'];
     }
 
-    ctx.fillStyle = pal[0];
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = pal[1];
-    ctx.beginPath(); ctx.arc(-r * 0.14, -r * 0.14, r * 0.84, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = pal[2];
-    ctx.beginPath(); ctx.arc(-r * 0.28, -r * 0.28, r * 0.52, 0, Math.PI * 2); ctx.fill();
-
-    if (p.kind === 'ringed') {
-      ctx.globalAlpha = 0.65;
-      ctx.strokeStyle = lvl.theme === 'organic' ? '#80ed99' : '#ffd166';
-      ctx.lineWidth = 6;
-      ctx.beginPath(); ctx.ellipse(0, 0, r * 1.85, r * 0.42, -0.28, 0, Math.PI); ctx.stroke();
-    }
+    ctx.fillStyle = pal[0]; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = pal[1]; ctx.beginPath(); ctx.arc(-r * 0.14, -r * 0.14, r * 0.84, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = pal[2]; ctx.beginPath(); ctx.arc(-r * 0.28, -r * 0.28, r * 0.52, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 
@@ -368,40 +333,34 @@ class World3DEngine {
       ctx.save();
       ctx.translate(px, py);
 
-      if (lvl.theme === 'horror') {
-        ctx.globalAlpha = 0.35 + 0.65 * Math.abs(Math.sin(tp.phase * 1.6));
-        ctx.fillStyle = tp.kindIdx === 0 ? '#ff002b' : (tp.kindIdx === 1 ? '#ff6b35' : '#ffd166');
+      if (lvl.theme === 'mushroom') {
+        // Парящие галлюциногенные мини-грибочки и споры на 6-м уровне
+        ctx.rotate(Math.sin(tp.phase) * 0.35);
+        ctx.globalAlpha = 0.85;
+        const hue = (tp.hue + this.time * 95) % 360;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-r * 0.22, 0, r * 0.44, r * 0.8);
+        ctx.fillStyle = `hsl(${hue}, 100%, 62%)`;
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.85, Math.PI, 0); ctx.fill();
+      } else if (lvl.theme === 'horror') {
+        const cols = ['#ff002b', '#ffbe0b', '#06d6a0', '#48dbfb'];
+        ctx.globalAlpha = 0.45 + 0.55 * Math.abs(Math.sin(tp.phase * 1.6));
+        ctx.fillStyle = cols[tp.kindIdx % cols.length];
         ctx.beginPath(); ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2); ctx.fill();
       } else if (lvl.theme === 'rainbow') {
-        ctx.rotate(tp.rot);
-        ctx.globalAlpha = 0.78;
-        if (tp.kindIdx === 0) {
-          ctx.fillStyle = '#f4a261';
-          ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#ff70a6';
-          ctx.beginPath(); ctx.arc(0, 0, r * 0.78, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#22185c';
-          ctx.beginPath(); ctx.arc(0, 0, r * 0.32, 0, Math.PI * 2); ctx.fill();
-        } else {
-          ctx.fillStyle = `hsl(${(tp.hue + this.time * 90) % 360}, 100%, 74%)`;
-          ctx.beginPath();
-          for (let i = 0; i < 5; i++) {
-            const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
-            ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-            ctx.lineTo(Math.cos(a + Math.PI / 5) * (r * 0.42), Math.sin(a + Math.PI / 5) * (r * 0.42));
-          }
-          ctx.closePath(); ctx.fill();
+        ctx.rotate(tp.rot); ctx.globalAlpha = 0.78;
+        ctx.fillStyle = `hsl(${(tp.hue + this.time * 90) % 360}, 100%, 74%)`;
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+          ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+          ctx.lineTo(Math.cos(a + Math.PI / 5) * (r * 0.42), Math.sin(a + Math.PI / 5) * (r * 0.42));
         }
+        ctx.closePath(); ctx.fill();
       } else if (lvl.theme === 'underwater') {
         const pastelCol = `hsl(${165 + Math.sin(tp.phase) * 45}, 90%, 80%)`;
-        if (tp.kindIdx === 0) {
-          ctx.fillStyle = pastelCol; ctx.globalAlpha = 0.72;
-          ctx.beginPath(); ctx.ellipse(0, 0, r * 1.1, r * 0.55, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.beginPath(); ctx.moveTo(-r * 0.9, 0); ctx.lineTo(-r * 1.6, -r * 0.5); ctx.lineTo(-r * 1.6, r * 0.5); ctx.closePath(); ctx.fill();
-        } else {
-          ctx.strokeStyle = pastelCol; ctx.lineWidth = 1.6; ctx.globalAlpha = 0.65;
-          ctx.beginPath(); ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2); ctx.stroke();
-        }
+        ctx.strokeStyle = pastelCol; ctx.lineWidth = 1.6; ctx.globalAlpha = 0.65;
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2); ctx.stroke();
       } else if (lvl.theme === 'organic') {
         ctx.rotate(tp.rot); ctx.globalAlpha = 0.80;
         ctx.fillStyle = tp.kindIdx === 0 ? '#ccff33' : '#80ed99';
@@ -421,22 +380,20 @@ class World3DEngine {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    // Отрисовка тематических геометрических фигур для каждого уровня
     this.drawLevelGeometry(ctx, lvl, W, H);
 
-    // Асинхронные синусоиды от края до края на 1-м уровне
-    if (lvl.theme === 'lsd') {
+    if (lvl.theme === 'lsd' || lvl.theme === 'mushroom') {
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = 0.34;
+      ctx.globalAlpha = 0.36;
       ctx.lineCap = 'round';
       const waveConfigs = [
-        { yFrac: 0.16, amp: 50, freq: 0.011, speed: 2.3, width: 7, dir: 1 },
-        { yFrac: 0.42, amp: 32, freq: 0.018, speed: -1.8, width: 4, dir: -1 },
-        { yFrac: 0.72, amp: 60, freq: 0.009, speed: 1.5, width: 8, dir: 1 }
+        { yFrac: 0.16, amp: 52, freq: 0.011, speed: 2.3, width: 7, dir: 1 },
+        { yFrac: 0.44, amp: 35, freq: 0.018, speed: -1.8, width: 4.5, dir: -1 },
+        { yFrac: 0.74, amp: 62, freq: 0.009, speed: 1.5, width: 8.5, dir: 1 }
       ];
       waveConfigs.forEach((cfg, s) => {
-        const hue = (this.time * 48 + s * 110) % 360;
+        const hue = (this.time * 58 + s * 110) % 360;
         ctx.strokeStyle = `hsl(${hue}, 95%, 65%)`;
         ctx.lineWidth = cfg.width;
         ctx.beginPath();
@@ -455,13 +412,11 @@ class World3DEngine {
       ctx.globalAlpha = 0.25;
       const rainbowBands = ['#ff3366', '#ff9933', '#ffee33', '#33ee88', '#33ccff', '#aa66ff'];
       rainbowBands.forEach((col, bIdx) => {
-        ctx.strokeStyle = col;
-        ctx.lineWidth = 13;
+        ctx.strokeStyle = col; ctx.lineWidth = 13;
         ctx.beginPath();
         for (let x = -80; x <= W + 80; x += 16) {
           const sy = H * 0.35 + bIdx * 12 + Math.sin(x * 0.011 + this.time * 1.8) * 55;
-          if (x === -80) ctx.moveTo(x, sy);
-          else ctx.lineTo(x, sy);
+          if (x === -80) ctx.moveTo(x, sy); else ctx.lineTo(x, sy);
         }
         ctx.stroke();
       });
