@@ -1,18 +1,11 @@
 'use strict';
 
-/**
- * ============================================================================
- * AstraCatSynth — 128-Voice Polyphonic Cozy Cosmic ASMR Synthesizer
- * Полная интеграция в игру AstraCat + MP3-плеер уровней/боссов + звуки меню
- * ============================================================================
- */
 class AstraCatSynth {
   constructor(maxVoices = 128) {
     this.maxVoices = maxVoices;
     this.ctx = null;
     this.isInitialized = false;
 
-    // Пул 128 полифонических голосов
     this.voices = Array.from({ length: maxVoices }, (_, id) => ({
       id,
       active: false,
@@ -20,7 +13,6 @@ class AstraCatSynth {
       stopFn: null
     }));
 
-    // Базовые ASMR-показатели (по умолчанию: Музыка 60%, Эффекты 40%, LPF 2400 Hz, Эхо 42%, Дрейф 55%)
     this.muted = false;
     this.musicEnabled = true;
     this.sfxEnabled = true;
@@ -34,14 +26,11 @@ class AstraCatSynth {
       psyDrift: 0.55
     };
 
-    // Состояние генеративного космического эмбиента
     this.ambientPlaying = false;
     this.ambientTimer = null;
     this.ambientStep = 0;
-
     this.brownNoiseBuffer = null;
 
-    // MP3-плеер уровней и боссов
     this.availableTracks = ['level1.mp3', 'level2.mp3', 'level3.mp3', 'level4.mp3'];
     this.bossTracks = ['boss.mp3'];
     this.selectedTrack = 'auto';
@@ -51,6 +40,7 @@ class AstraCatSynth {
     this.currentTrackPath = '';
     this.pendingTrack = null;
     this.pausedByGame = false;
+    this.lastScrollTickTime = 0;
 
     this.scanMusicFolder();
     this.setupAutoUnlock();
@@ -59,12 +49,14 @@ class AstraCatSynth {
   setupAutoUnlock() {
     const unlock = () => {
       this.init();
+      // Если игра стоит на паузе — ни в коем случае не включаем музыку обратно при кликах!
       if (this.pausedByGame) return;
       if (this.pendingTrack && (!this.bgmAudio || this.bgmAudio.paused)) {
         const t = this.pendingTrack;
         this.pendingTrack = null;
         this.playTrack(t.file, t.fallback);
       } else if (this.bgmAudio && this.bgmAudio.paused && this.musicEnabled && !this.muted) {
+        this.bgmAudio.volume = this.getEffectiveMusicVol();
         this.bgmAudio.play().catch(() => {});
       }
     };
@@ -144,8 +136,6 @@ class AstraCatSynth {
 
     this._createNoiseBuffers();
 
-    // Мастер-цепь 128-Voice Cozy Cosmic ASMR Synth:
-    // VoiceBus -> MasterLowpass -> VelvetShelf -> WarmShaper -> Stereo Delay -> Compressor -> MasterGain
     this.voiceBus = this.ctx.createGain();
     this.voiceBus.gain.value = 0.85;
 
@@ -163,7 +153,6 @@ class AstraCatSynth {
     this.warmShaper.curve = this._makeSoftWarmCurve(18);
     this.warmShaper.oversample = '2x';
 
-    // Стерео космическое эхо
     this.delayLeft = this.ctx.createDelay(1.5);
     this.delayRight = this.ctx.createDelay(1.5);
     this.delayLeft.delayTime.value = 0.34;
@@ -288,11 +277,41 @@ class AstraCatSynth {
     return count;
   }
 
-  // ============================================================================
-  // ОРИГИНАЛЬНЫЕ ТЁПЛЫЕ ЗВУКИ ТВОЕГО 128-VOICE ASMR СИНТЕЗАТОРА
-  // ============================================================================
+  // ASMR-щелчок прокрутки (типа мягкого механического колесика / тактильной вибрации при скролле Ангара)
+  sfxScrollTick() {
+    const nowMs = performance.now();
+    if (nowMs - this.lastScrollTickTime < 45) return;
+    this.lastScrollTickTime = nowMs;
 
-  // 1. Мягкая пулька (пузырёк + бархатный выдох коричневого шума)
+    this.init();
+    if (!this.ctx || this.muted || !this.sfxEnabled) return;
+
+    // Лёгкий тактильный отклик на смартфоне (если поддерживается браузером)
+    if (navigator.vibrate) {
+      try { navigator.vibrate(4); } catch (_) {}
+    }
+
+    const now = this.ctx.currentTime;
+    const dur = 0.032;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(195 + Math.random() * 25, now);
+    osc.frequency.exponentialRampToValueAtTime(62, now + dur);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.085, now + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+    osc.connect(gain);
+    gain.connect(this.voiceBus);
+
+    osc.start(now);
+    osc.stop(now + dur + 0.005);
+    this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
+  }
+
   playSoftBullet(pitchMultiplier = 1.0, panVal = null) {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -341,7 +360,6 @@ class AstraCatSynth {
     });
   }
 
-  // 2. Тёплый лазер («вуу-оом» без писка)
   playWarmLaser(panVal = null) {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -400,7 +418,6 @@ class AstraCatSynth {
     });
   }
 
-  // 3. Плюшевая ракета (глубокий воздушный поток + саб-бас)
   playPlushRocket() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -444,7 +461,6 @@ class AstraCatSynth {
     });
   }
 
-  // 4. Взрыв в туманности («бууум-шшш»)
   playNebulaExplosion() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -493,7 +509,6 @@ class AstraCatSynth {
     });
   }
 
-  // 5. Сбор звёздочки / выбора в меню (Rhodes Maj9 перезвон)
   playStarCollect() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -537,7 +552,6 @@ class AstraCatSynth {
     });
   }
 
-  // 6. Космический «Мрр-мяу»
   playCosmicMeow() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -584,7 +598,6 @@ class AstraCatSynth {
     });
   }
 
-  // 7. Пузырь-Щит (Swell аккорд Fmaj9)
   playShieldHum() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -618,7 +631,6 @@ class AstraCatSynth {
     });
   }
 
-  // 8. Мурчание двигателя (~26 Гц)
   playPurrBoost() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -659,100 +671,6 @@ class AstraCatSynth {
     });
   }
 
-  // Генеративный ASMR-эмбиент
-  toggleAmbient() {
-    this.init();
-    if (this.ambientPlaying) {
-      this.stopAmbient();
-      return false;
-    } else {
-      this.startAmbient();
-      return true;
-    }
-  }
-
-  startAmbient() {
-    if (this.ambientPlaying) return;
-    this.init();
-    this.ambientPlaying = true;
-    this.ambientStep = 0;
-
-    const progression = [
-      [130.81, 196.00, 246.94, 293.66, 329.63],
-      [110.00, 164.81, 220.00, 246.94, 329.63],
-      [87.31,  174.61, 220.00, 261.63, 329.63],
-      [82.41,  164.81, 196.00, 246.94, 293.66]
-    ];
-
-    const playChordStep = () => {
-      if (!this.ambientPlaying || !this.ctx) return;
-      const chord = progression[this.ambientStep % progression.length];
-      const now = this.ctx.currentTime;
-      const chordDur = 4.6;
-
-      chord.forEach((freq, i) => {
-        const osc = this.ctx.createOscillator();
-        const lfo = this.ctx.createOscillator();
-        const lfoDepth = this.ctx.createGain();
-        const gain = this.ctx.createGain();
-        const panner = this._createPanner((i % 2 === 0 ? -1 : 1) * 0.35);
-
-        osc.type = i === 0 ? 'sine' : 'triangle';
-        osc.frequency.setValueAtTime(freq, now);
-
-        lfo.type = 'sine';
-        lfo.frequency.value = 0.25 + i * 0.07;
-        lfoDepth.gain.value = (freq * 0.008) * this.settings.psyDrift;
-        lfo.connect(lfoDepth);
-        lfoDepth.connect(osc.frequency);
-
-        const lp = this.ctx.createBiquadFilter();
-        lp.type = 'lowpass';
-        lp.frequency.value = i === 0 ? 320 : 780;
-
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.linearRampToValueAtTime(i === 0 ? 0.09 : 0.045, now + 1.4);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + chordDur);
-
-        osc.connect(lp);
-        lp.connect(gain);
-        gain.connect(panner);
-        panner.connect(this.voiceBus);
-
-        osc.start(now);
-        lfo.start(now);
-        osc.stop(now + chordDur);
-        lfo.stop(now + chordDur);
-
-        this.allocateVoice(chordDur, () => {
-          try { osc.stop(); lfo.stop(); } catch (_) {}
-        });
-      });
-
-      if (Math.random() > 0.3) {
-        setTimeout(() => {
-          if (this.ambientPlaying) this.playStarCollect();
-        }, 1400 + Math.random() * 1200);
-      }
-
-      this.ambientStep++;
-      this.ambientTimer = setTimeout(playChordStep, 3800);
-    };
-
-    playChordStep();
-  }
-
-  stopAmbient() {
-    this.ambientPlaying = false;
-    if (this.ambientTimer) {
-      clearTimeout(this.ambientTimer);
-      this.ambientTimer = null;
-    }
-  }
-
-  // ============================================================================
-  // ЗВУКИ ВСЕХ ДЕЙСТВИЙ В МЕНЮ (НАЖАТИЯ, ВЫБОР, ПЕРЕХОДЫ, ПОКУПКИ В АНГАРЕ)
-  // ============================================================================
   sfxMenuTap() {
     this.playSoftBullet(1.18, 0);
   }
@@ -770,9 +688,6 @@ class AstraCatSynth {
     setTimeout(() => this.playStarCollect(), 120);
   }
 
-  // ============================================================================
-  // ИГРОВЫЕ МОСТЫ (ДЛЯ ОРУЖИЯ, ВЗРЫВОВ, ЩИТА И АНОМАЛИЙ)
-  // ============================================================================
   sfxShootWeapon(pan = 0, baseWeapon = 'droplet', secondary = 'none') {
     if (baseWeapon === 'droplet') {
       this.playSoftBullet(1.0, pan);
@@ -783,7 +698,6 @@ class AstraCatSynth {
     } else if (baseWeapon === 'prism_beam') {
       this.playWarmLaser(pan);
     } else {
-      // 5-е оружие (Сверхновая Пушка)
       this.playPlushRocket();
     }
 
@@ -807,7 +721,6 @@ class AstraCatSynth {
     }
   }
 
-  // Отдельный звук взрыва босса (подхватывает твой файл music/boss_explode.mp3 + даёт ASMR-бас)
   sfxBossExplosion() {
     this.playNebulaExplosion();
     if (this.muted || !this.sfxEnabled) return;
@@ -818,64 +731,22 @@ class AstraCatSynth {
     } catch (e) {}
   }
 
-  sfxIgnite() {
-    this.playPlushRocket();
-  }
-
-  sfxGravity() {
-    this.playShieldHum();
-  }
-
-  sfxDisintegrate(pan = 0) {
-    this.playSoftBullet(1.25, pan);
-  }
-
-  sfxUnderwater() {
-    this.playSoftBullet(0.92, 0);
-  }
-
-  sfxCosmicHum() {
-    this.playPurrBoost();
-  }
-
-  sfxSticky() {
-    this.playSoftBullet(0.7, 0);
-  }
-
-  sfxWave() {
-    this.playWarmLaser(0);
-  }
-
-  sfxPowerup() {
-    this.playStarCollect();
-    this.playCosmicMeow();
-  }
-
-  sfxShieldBlock() {
-    this.playShieldHum();
-  }
-
-  sfxHurt() {
-    this.playWarmLaser(0);
-  }
-
-  sfxBossAlarm() {
-    this.playShieldHum();
-    setTimeout(() => this.playPurrBoost(), 220);
-  }
-
-  sfxVictory() {
-    this.playCosmicMeow();
-    setTimeout(() => this.playStarCollect(), 180);
-    setTimeout(() => this.playShieldHum(), 360);
-  }
-
-  sfxGameOver() {
-    this.playNebulaExplosion();
-  }
+  sfxIgnite() { this.playPlushRocket(); }
+  sfxGravity() { this.playShieldHum(); }
+  sfxDisintegrate(pan = 0) { this.playSoftBullet(1.25, pan); }
+  sfxUnderwater() { this.playSoftBullet(0.92, 0); }
+  sfxCosmicHum() { this.playPurrBoost(); }
+  sfxSticky() { this.playSoftBullet(0.7, 0); }
+  sfxWave() { this.playWarmLaser(0); }
+  sfxPowerup() { this.playStarCollect(); this.playCosmicMeow(); }
+  sfxShieldBlock() { this.playShieldHum(); }
+  sfxHurt() { this.playWarmLaser(0); }
+  sfxBossAlarm() { this.playShieldHum(); setTimeout(() => this.playPurrBoost(), 220); }
+  sfxVictory() { this.playCosmicMeow(); setTimeout(() => this.playStarCollect(), 180); setTimeout(() => this.playShieldHum(), 360); }
+  sfxGameOver() { this.playNebulaExplosion(); }
 
   // ============================================================================
-  // УПРАВЛЕНИЕ ФОНОВОЙ МУЗЫКОЙ MP3 И ПАУЗОЙ
+  // MP3-ПЛЕЕР С ГАРАНТИРОВАННЫМ ОТКЛЮЧЕНИЕМ МУЗЫКИ НА ПАУЗЕ
   // ============================================================================
   pickNextTrack() {
     if (this.selectedTrack && this.selectedTrack !== 'auto') {
@@ -916,7 +787,7 @@ class AstraCatSynth {
   }
 
   getEffectiveMusicVol() {
-    if (this.muted || !this.musicEnabled) return 0;
+    if (this.muted || !this.musicEnabled || this.pausedByGame) return 0;
     return Math.max(0, Math.min(1, this.musicVolume));
   }
 
@@ -924,6 +795,7 @@ class AstraCatSynth {
     this.pausedByGame = false;
     const path = `music/${filename}`;
     if (this.currentTrackPath === path && this.bgmAudio && !this.bgmAudio.paused) {
+      this.bgmAudio.volume = this.getEffectiveMusicVol();
       return;
     }
     this.stopMusic();
@@ -950,17 +822,25 @@ class AstraCatSynth {
     } catch (e) {}
   }
 
+  // Полное отключение музыки при нажатии кнопки Пауза
   pauseMusic() {
     this.pausedByGame = true;
-    if (this.bgmAudio && !this.bgmAudio.paused) {
-      try { this.bgmAudio.pause(); } catch (e) {}
+    if (this.bgmAudio) {
+      try {
+        this.bgmAudio.volume = 0;
+        this.bgmAudio.pause();
+      } catch (e) {}
     }
   }
 
+  // Включение музыки обратно при выходе из Паузы
   resumeMusic() {
     this.pausedByGame = false;
-    if (this.bgmAudio && this.bgmAudio.paused && this.musicEnabled && !this.muted) {
-      try { this.bgmAudio.play().catch(() => {}); } catch (e) {}
+    if (this.bgmAudio && this.musicEnabled && !this.muted) {
+      try {
+        this.bgmAudio.volume = this.getEffectiveMusicVol();
+        this.bgmAudio.play().catch(() => {});
+      } catch (e) {}
     }
   }
 
@@ -1048,5 +928,4 @@ class AstraCatSynth {
   }
 }
 
-// Для обратной совместимости экспортируем и как PolySynth
 const PolySynth = AstraCatSynth;
