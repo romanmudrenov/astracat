@@ -1,7 +1,7 @@
 'use strict';
 
 class AstraCatSynth {
-  constructor(maxVoices = 32) {
+  constructor(maxVoices = 36) {
     this.maxVoices = maxVoices;
     this.ctx = null;
     this.isInitialized = false;
@@ -16,13 +16,12 @@ class AstraCatSynth {
     this.muted = false;
     this.musicEnabled = true;
     this.sfxEnabled = true;
-    this.musicVolume = 0.55;
-    // Базовая громкость ASMR-эффектов увеличена на +30% (с 0.40 до 0.70)
-    this.sfxVolume = 0.70;
+    this.musicVolume = 0.50;
+    this.sfxVolume = 0.85;
 
     this.settings = {
-      masterVolume: 0.70,
-      warmthCutoff: 2400,
+      masterVolume: 0.85,
+      warmthCutoff: 2600,
       spaceMix: 0.38,
       psyDrift: 0.55
     };
@@ -39,6 +38,7 @@ class AstraCatSynth {
     this.pausedByGame = false;
     this.lastScrollTickTime = 0;
     this.lastShotSoundTime = 0;
+    this.lastHeartbeatTime = 0;
 
     this.scanMusicFolder();
     this.setupAutoUnlock();
@@ -123,9 +123,8 @@ class AstraCatSynth {
 
     this._createNoiseBuffers();
 
-    // Усиленная шина голосов (+30% чистой громкости без клиппинга)
     this.voiceBus = this.ctx.createGain();
-    this.voiceBus.gain.value = 0.88;
+    this.voiceBus.gain.value = 1.25;
 
     this.masterLowpass = this.ctx.createBiquadFilter();
     this.masterLowpass.type = 'lowpass';
@@ -146,11 +145,11 @@ class AstraCatSynth {
     this.merger = this.ctx.createChannelMerger(2);
 
     this.compressor = this.ctx.createDynamicsCompressor();
-    this.compressor.threshold.value = -18;
-    this.compressor.knee.value = 12;
-    this.compressor.ratio.value = 10;
+    this.compressor.threshold.value = -14;
+    this.compressor.knee.value = 10;
+    this.compressor.ratio.value = 8;
     this.compressor.attack.value = 0.003;
-    this.compressor.release.value = 0.15;
+    this.compressor.release.value = 0.14;
 
     this.masterGain = this.ctx.createGain();
     this.masterGain.gain.value = this.getEffectiveSfxVol();
@@ -176,7 +175,7 @@ class AstraCatSynth {
 
   getEffectiveSfxVol() {
     if (this.muted || !this.sfxEnabled) return 0.0001;
-    return Math.max(0.0001, Math.min(1.45, this.sfxVolume * 1.30));
+    return Math.max(0.0001, Math.min(1.85, this.sfxVolume * 1.55));
   }
 
   updateSfxVolume() {
@@ -246,6 +245,55 @@ class AstraCatSynth {
     return count;
   }
 
+  // Мелодическая пентатоника при комбо-попаданиях
+  playComboNote(comboStep = 1) {
+    this.init();
+    if (!this.ctx || this.muted || !this.sfxEnabled) return;
+    const now = this.ctx.currentTime;
+    const pentatonic = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+    const freq = pentatonic[(comboStep - 1) % pentatonic.length];
+    const dur = 0.24;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.16, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+    osc.connect(gain); gain.connect(this.voiceBus);
+    osc.start(now); osc.stop(now + dur);
+    this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
+  }
+
+  // Тревожное сердцебиение на 1 жизни
+  playLowHpHeartbeat() {
+    const nowMs = performance.now();
+    if (nowMs - this.lastHeartbeatTime < 850) return;
+    this.lastHeartbeatTime = nowMs;
+
+    this.init();
+    if (!this.ctx || this.muted || !this.sfxEnabled) return;
+    const now = this.ctx.currentTime;
+    [0, 0.16].forEach((offset, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(idx === 0 ? 78 : 64, now + offset);
+      osc.frequency.exponentialRampToValueAtTime(38, now + offset + 0.11);
+
+      gain.gain.setValueAtTime(0.0001, now + offset);
+      gain.gain.linearRampToValueAtTime(0.18, now + offset + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.12);
+
+      osc.connect(gain); gain.connect(this.voiceBus);
+      osc.start(now + offset); osc.stop(now + offset + 0.13);
+      this.allocateVoice(0.15, () => { try { osc.stop(); } catch (_) {} });
+    });
+  }
+
   sfxScrollTick() {
     const nowMs = performance.now();
     if (nowMs - this.lastScrollTickTime < 55) return;
@@ -264,13 +312,11 @@ class AstraCatSynth {
     osc.frequency.exponentialRampToValueAtTime(65, now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.09, now + 0.004);
+    gain.gain.linearRampToValueAtTime(0.12, now + 0.004);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
-    osc.connect(gain);
-    gain.connect(this.voiceBus);
-    osc.start(now);
-    osc.stop(now + dur + 0.005);
+    osc.connect(gain); gain.connect(this.voiceBus);
+    osc.start(now); osc.stop(now + dur + 0.005);
     this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
   }
 
@@ -279,7 +325,7 @@ class AstraCatSynth {
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
     const dur = 0.14;
-    const baseFreq = 245 * pitchMultiplier * (0.96 + Math.random() * 0.08);
+    const baseFreq = 250 * pitchMultiplier * (0.96 + Math.random() * 0.08);
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -288,13 +334,11 @@ class AstraCatSynth {
     osc.frequency.exponentialRampToValueAtTime(Math.max(55, baseFreq * 0.45), now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.14, now + 0.012);
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
-    osc.connect(gain);
-    gain.connect(this.voiceBus);
-    osc.start(now);
-    osc.stop(now + dur + 0.01);
+    osc.connect(gain); gain.connect(this.voiceBus);
+    osc.start(now); osc.stop(now + dur + 0.01);
     this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
   }
 
@@ -313,18 +357,15 @@ class AstraCatSynth {
     osc.frequency.exponentialRampToValueAtTime(105, now + dur);
 
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(780, now);
+    filter.frequency.setValueAtTime(820, now);
     filter.frequency.exponentialRampToValueAtTime(210, now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.16, now + 0.025);
+    gain.gain.linearRampToValueAtTime(0.20, now + 0.025);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.voiceBus);
-    osc.start(now);
-    osc.stop(now + dur + 0.02);
+    osc.connect(filter); filter.connect(gain); gain.connect(this.voiceBus);
+    osc.start(now); osc.stop(now + dur + 0.02);
     this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
   }
 
@@ -342,13 +383,11 @@ class AstraCatSynth {
     sub.frequency.exponentialRampToValueAtTime(65, now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.18, now + 0.08);
+    gain.gain.linearRampToValueAtTime(0.22, now + 0.08);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
-    sub.connect(gain);
-    gain.connect(this.voiceBus);
-    sub.start(now);
-    sub.stop(now + dur + 0.02);
+    sub.connect(gain); gain.connect(this.voiceBus);
+    sub.start(now); sub.stop(now + dur + 0.02);
     this.allocateVoice(dur, () => { try { sub.stop(); } catch (_) {} });
   }
 
@@ -365,19 +404,19 @@ class AstraCatSynth {
 
     const subGain = this.ctx.createGain();
     subGain.gain.setValueAtTime(0.0001, now);
-    subGain.gain.linearRampToValueAtTime(0.24, now + 0.02);
+    subGain.gain.linearRampToValueAtTime(0.28, now + 0.02);
     subGain.gain.exponentialRampToValueAtTime(0.0001, now + dur * 0.85);
 
     const noise = this.ctx.createBufferSource();
     noise.buffer = this.brownNoiseBuffer;
     const lp = this.ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(520, now);
+    lp.frequency.setValueAtTime(540, now);
     lp.frequency.exponentialRampToValueAtTime(95, now + dur);
 
     const noiseGain = this.ctx.createGain();
     noiseGain.gain.setValueAtTime(0.0001, now);
-    noiseGain.gain.linearRampToValueAtTime(0.22, now + 0.03);
+    noiseGain.gain.linearRampToValueAtTime(0.26, now + 0.03);
     noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     sub.connect(subGain); subGain.connect(this.voiceBus);
@@ -402,7 +441,7 @@ class AstraCatSynth {
     osc.frequency.setValueAtTime(freq, now);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.14, now + 0.015);
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.015);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(gain); gain.connect(this.voiceBus);
@@ -430,7 +469,7 @@ class AstraCatSynth {
 
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.21, now + 0.06);
+    gain.gain.linearRampToValueAtTime(0.26, now + 0.06);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(formant); formant.connect(gain); gain.connect(this.voiceBus);
@@ -449,7 +488,7 @@ class AstraCatSynth {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, now);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.065, now + 0.25);
+      gain.gain.linearRampToValueAtTime(0.08, now + 0.25);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
       osc.connect(gain); gain.connect(this.voiceBus);
       osc.start(now); osc.stop(now + dur);
@@ -468,7 +507,7 @@ class AstraCatSynth {
     osc.frequency.setValueAtTime(95, now);
     osc.frequency.linearRampToValueAtTime(115, now + dur * 0.5);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.16, now + 0.1);
+    gain.gain.linearRampToValueAtTime(0.20, now + 0.1);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
     osc.connect(gain); gain.connect(this.voiceBus);
     osc.start(now); osc.stop(now + dur);
