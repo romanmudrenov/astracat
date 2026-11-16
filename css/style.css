@@ -58,6 +58,37 @@ canvas#menu-particles-canvas {
   pointer-events: none;
 }
 
+/* КНОПКА СУПЕР-УДАРА «КОШАЧЬЯ ЯРОСТЬ» В БОЮ */
+.ult-trigger-btn {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  padding: 12px 24px;
+  border-radius: 999px;
+  border: 2.5px solid #ffffff;
+  background: linear-gradient(135deg, #ffd166 0%, #ff006e 50%, #7209b7 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.65);
+  box-shadow: 0 5px 0 #3c096c, 0 0 24px rgba(255, 209, 102, 0.85);
+  cursor: pointer;
+  animation: ultPulse 0.85s infinite alternate;
+  touch-action: manipulation;
+}
+
+.ult-trigger-btn.hidden {
+  display: none;
+}
+
+@keyframes ultPulse {
+  from { transform: translateX(-50%) scale(1); }
+  to   { transform: translateX(-50%) scale(1.08); }
+}
+
 /* ВЕРХНЯЯ ПАНЕЛЬ */
 .hud-top-right-wrap {
   position: absolute;
@@ -138,7 +169,7 @@ canvas#menu-particles-canvas {
   display: none;
 }
 
-/* ОВЕРЛЕИ В ПРИГЛУШЁННОМ ПАСТЕЛЬНО-НЕОНОВОМ РОЗОВО-ФИОЛЕТОВО-СИНЕМ СТИЛЕ */
+/* ОВЕРЛЕИ */
 .overlay {
   position: absolute;
   inset: 0;
@@ -209,7 +240,6 @@ canvas#menu-particles-canvas {
   width: 100%;
 }
 
-/* ПРИГЛУШЁННАЯ ПАСТЕЛЬНО-МЕТАЛЛИЧЕСКАЯ КАРТОЧКА МЕНЮ (ЧУТЬ ТЕМНЕЕ И УЮТНЕЕ) */
 .card-3d {
   position: relative;
   z-index: 22;
@@ -231,7 +261,6 @@ canvas#menu-particles-canvas {
     inset 0 -6px 14px rgba(18, 8, 38, 0.55);
 }
 
-/* ПОЛНОЭКРАННЫЙ АНГАР */
 .card-3d.fullscreen-hangar {
   width: 100%;
   max-width: 100%;
@@ -339,7 +368,6 @@ h2 {
   margin-bottom: 10px;
 }
 
-/* ПЛЮШЕВЫЕ ПАСТЕЛЬНО-МЕТАЛЛИЧЕСКИЕ КНОПКИ */
 .btn-row {
   display: flex;
   gap: 10px;
@@ -348,8 +376,8 @@ h2 {
 .btn-3d {
   position: relative;
   flex: 1;
-  padding: 13px 14px;
-  font-size: 14px;
+  padding: 12px 14px;
+  font-size: 13.5px;
   font-weight: 900;
   border-radius: 999px;
   border: 1.5px solid rgba(255, 255, 255, 0.78);
@@ -399,6 +427,12 @@ h2 {
   text-shadow: 0 1px 2px rgba(35, 10, 75, 0.6);
   background: linear-gradient(145deg, #c77dff 0%, #9d4edd 55%, #5a189a 100%);
   box-shadow: 0 5px 0 #2b0952, inset 0 2px 4px rgba(255, 255, 255, 0.65);
+}
+
+.btn-3d.endless-pill {
+  color: #140b29;
+  background: linear-gradient(135deg, #ffd166 0%, #ffafcc 50%, #90e0ef 100%);
+  box-shadow: 0 5px 0 #5a189a, inset 0 2px 4px rgba(255, 255, 255, 0.9);
 }
 
 .section-label {
@@ -451,7 +485,6 @@ h2 {
   box-shadow: 0 4px 0 #1d0452;
 }
 
-/* СЕТКА НА 6 УРОВНЕЙ (включая 6-й уровень «Грибная Галактика») */
 .levels-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -505,30 +538,28 @@ h2 {
   font-size: 12px;
   line-height: 1.4;
   color: var(--text-soft);
-  margin-bottom: 11px;
+  margin-bottom: 10px;
 }
 
 .selected-level-box strong {
   color: #ffafcc;
 }
 
-/* =========================================================================
-   ВКЛАДКИ И КАРУСЕЛЬ АНГАРА (РАЗДЕЛЬНО КОРАБЛИ И ОРУЖИЕ)
-   ========================================================================= */
-.hangar-tabs-row {
+/* 3 ВКЛАДКИ АНГАРА */
+.hangar-tabs-row.three-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
   margin: 6px 0 8px;
 }
 
 .tab-pill {
-  padding: 10px 8px;
+  padding: 9px 4px;
   border-radius: 999px;
   border: 1.5px solid rgba(224, 170, 255, 0.5);
   background: linear-gradient(145deg, #3c2569 0%, #241542 100%);
   color: #d9c8f5;
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 900;
   cursor: pointer;
   touch-action: manipulation;
@@ -630,7 +661,7 @@ h2 {
 .media-viewport {
   position: relative;
   width: 100%;
-  height: 175px;
+  height: 170px;
   border-radius: 22px;
   border: 1.5px solid rgba(162, 210, 255, 0.45);
   background: radial-gradient(circle at 50% 45%, #2b1959 0%, #110826 100%);
@@ -922,7 +953,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .best-line {
-  margin-top: 10px;
+  margin-top: 8px;
   font-size: 12px;
   font-weight: 800;
   color: #e0aaff;
