@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'astro_cat_hangar_v12';
+  const STORAGE_KEY = 'astro_cat_hangar_v13';
   const BORDER_INK = typeof INK !== 'undefined' ? INK : '#100824';
 
   function loadProgress() {
@@ -35,6 +35,9 @@
   if (!canvas) return;
   const ctx = canvas.getContext('2d', { alpha: false });
 
+  const menuParticlesCanvas = document.getElementById('menu-particles-canvas');
+  const mpCtx = menuParticlesCanvas ? menuParticlesCanvas.getContext('2d') : null;
+
   const synth = typeof AstraCatSynth !== 'undefined' ? new AstraCatSynth(128) : null;
   const world3d = typeof World3DEngine !== 'undefined' ? new World3DEngine() : null;
   const vfx = typeof VFXEngine !== 'undefined' ? new VFXEngine() : null;
@@ -64,9 +67,112 @@
     canvas.width = Math.floor(W * dpr);
     canvas.height = Math.floor(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    if (menuParticlesCanvas && mpCtx) {
+      menuParticlesCanvas.width = Math.floor(W * dpr);
+      menuParticlesCanvas.height = Math.floor(H * dpr);
+      mpCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
   }
   window.addEventListener('resize', resize);
   resize();
+
+  // =========================================================================
+  // СИМУЛЯЦИЯ ПАРЯЩИХ ЧАСТИЦ В МЕНЮ: РЫБКИ, МОРДОЧКИ КОТИКОВ И РОЗОВЫЕ ПОНЧИКИ
+  // =========================================================================
+  const menuFloats = Array.from({ length: 22 }, (_, i) => ({
+    x: Math.random(),
+    y: Math.random(),
+    kind: i % 3 === 0 ? 'fish' : (i % 3 === 1 ? 'cat' : 'donut'),
+    size: 11 + (i % 3) * 3,
+    vy: 16 + (i % 4) * 7,
+    vx: (Math.random() - 0.5) * 14,
+    rot: Math.random() * Math.PI * 2,
+    vrot: (Math.random() - 0.5) * 1.4,
+    phase: Math.random() * Math.PI * 2
+  }));
+
+  function updateAndRenderMenuParticles(dt) {
+    if (!menuParticlesCanvas || !mpCtx) return;
+    const isMenuVisible =
+      !startOverlay.classList.contains('hidden') ||
+      !loreOverlay.classList.contains('hidden') ||
+      !introOverlay.classList.contains('hidden') ||
+      !settingsOverlay.classList.contains('hidden') ||
+      !endOverlay.classList.contains('hidden');
+
+    menuParticlesCanvas.style.display = isMenuVisible ? 'block' : 'none';
+    if (!isMenuVisible) return;
+
+    mpCtx.clearRect(0, 0, W, H);
+
+    for (const p of menuFloats) {
+      p.y -= (p.vy * dt) / H;
+      p.x += (p.vx * dt) / W;
+      p.rot += p.vrot * dt;
+      p.phase += dt * 3.5;
+
+      if (p.y < -0.06) { p.y = 1.06; p.x = Math.random(); }
+      if (p.x < -0.06) p.x = 1.06;
+      if (p.x > 1.06) p.x = -0.06;
+
+      const px = p.x * W + Math.sin(p.phase) * 8;
+      const py = p.y * H;
+      const r = p.size;
+
+      mpCtx.save();
+      mpCtx.translate(px, py);
+      mpCtx.rotate(Math.sin(p.phase * 0.7) * 0.25);
+      mpCtx.globalAlpha = 0.72;
+      mpCtx.lineJoin = 'round';
+      mpCtx.lineCap = 'round';
+
+      if (p.kind === 'fish') {
+        // Маленькая пастельно-голубая рыбка
+        mpCtx.fillStyle = '#90e0ef';
+        mpCtx.strokeStyle = '#ffffff';
+        mpCtx.lineWidth = 1.6;
+        mpCtx.beginPath();
+        mpCtx.ellipse(0, 0, r, r * 0.55, 0, 0, Math.PI * 2);
+        mpCtx.fill(); mpCtx.stroke();
+        mpCtx.beginPath();
+        mpCtx.moveTo(-r * 0.85, 0);
+        mpCtx.lineTo(-r * 1.45, -r * 0.5);
+        mpCtx.lineTo(-r * 1.45, r * 0.5);
+        mpCtx.closePath();
+        mpCtx.fill(); mpCtx.stroke();
+        mpCtx.fillStyle = '#23133b';
+        mpCtx.beginPath(); mpCtx.arc(r * 0.45, -r * 0.12, 1.8, 0, Math.PI * 2); mpCtx.fill();
+      } else if (p.kind === 'cat') {
+        // Мордочка котика
+        mpCtx.fillStyle = '#ffd166';
+        mpCtx.strokeStyle = '#ffffff';
+        mpCtx.lineWidth = 1.6;
+        mpCtx.beginPath();
+        mpCtx.moveTo(-r * 0.75, -r * 0.2); mpCtx.lineTo(-r * 0.85, -r * 1.05); mpCtx.lineTo(-r * 0.2, -r * 0.65);
+        mpCtx.moveTo(r * 0.75, -r * 0.2);  mpCtx.lineTo(r * 0.85, -r * 1.05);  mpCtx.lineTo(r * 0.2, -r * 0.65);
+        mpCtx.closePath();
+        mpCtx.fill(); mpCtx.stroke();
+        mpCtx.beginPath(); mpCtx.arc(0, 0, r * 0.82, 0, Math.PI * 2); mpCtx.fill(); mpCtx.stroke();
+        mpCtx.fillStyle = '#23133b';
+        mpCtx.beginPath(); mpCtx.arc(-r * 0.3, -r * 0.1, 1.6, 0, Math.PI * 2); mpCtx.arc(r * 0.3, -r * 0.1, 1.6, 0, Math.PI * 2); mpCtx.fill();
+        mpCtx.fillStyle = '#ff70a6';
+        mpCtx.beginPath(); mpCtx.arc(0, r * 0.2, 1.8, 0, Math.PI * 2); mpCtx.fill();
+      } else {
+        // Пончик с розовой глазурью и белой посыпкой
+        mpCtx.rotate(p.rot);
+        mpCtx.fillStyle = '#f4a261';
+        mpCtx.strokeStyle = '#ffffff';
+        mpCtx.lineWidth = 1.6;
+        mpCtx.beginPath(); mpCtx.arc(0, 0, r * 0.9, 0, Math.PI * 2); mpCtx.fill(); mpCtx.stroke();
+        mpCtx.fillStyle = '#ff85a1';
+        mpCtx.beginPath(); mpCtx.arc(0, 0, r * 0.72, 0, Math.PI * 2); mpCtx.fill();
+        mpCtx.fillStyle = '#cdb4db';
+        mpCtx.beginPath(); mpCtx.arc(0, 0, r * 0.28, 0, Math.PI * 2); mpCtx.fill();
+      }
+      mpCtx.restore();
+    }
+  }
 
   function syncTopHudVisibility() {
     if (!hudTopBar) return;
@@ -162,7 +268,7 @@
   }
 
   // =========================================================================
-  // МУЛЬТИМЕДИЙНЫЙ 3D-ГАРАЖ (КАРУСЕЛЬ КОРАБЛЕЙ И ОРУЖИЯ С ЖИВЫМ 3D-ВРАЩЕНИЕМ)
+  // ПОЛНОЭКРАННЫЙ АНГАР С ПЛАВНЫМИ 2D-АНИМАЦИЯМИ (БЕЗ ТОРМОЗОВ)
   // =========================================================================
   let hangarShipCanvases = [];
   let hangarWeaponCanvases = [];
@@ -182,7 +288,6 @@
     hangarShipCanvases = [];
     hangarWeaponCanvases = [];
 
-    // 1. КАРУСЕЛЬ КОРАБЛЕЙ (с живым 3D-вращением)
     shipsCarousel.innerHTML = '';
     SHIPS_CATALOG.forEach((ship, idx) => {
       const owned = progress.unlockedShips.includes(ship.id);
@@ -195,8 +300,8 @@
 
       card.innerHTML = `
         <div class="media-viewport">
-          <span class="viewport-badge">3D ВРАЩЕНИЕ</span>
-          <canvas width="260" height="116"></canvas>
+          <span class="viewport-badge">МОДЕЛЬ ${idx + 1}/5</span>
+          <canvas width="260" height="126"></canvas>
         </div>
         <div class="media-card-title">🚀 ${ship.name}</div>
         <div class="media-card-desc">${ship.desc}</div>
@@ -229,7 +334,6 @@
       shipsCarousel.appendChild(card);
     });
 
-    // 2. КАРУСЕЛЬ ОРУЖИЯ (с живой демонстрацией адаптации под корабль)
     weaponsCarousel.innerHTML = '';
     const activeShip = getActiveShip();
     WEAPONS_CATALOG.forEach((wp, idx) => {
@@ -243,8 +347,8 @@
 
       card.innerHTML = `
         <div class="media-viewport">
-          <span class="viewport-badge">ТЕСТ ОРУЖИЯ</span>
-          <canvas width="260" height="116"></canvas>
+          <span class="viewport-badge">ТЕСТ ЗАЛПА</span>
+          <canvas width="260" height="126"></canvas>
         </div>
         <div class="media-card-title">🔫 ${wp.name}</div>
         <div class="media-card-desc">${wp.desc}</div>
@@ -277,7 +381,6 @@
       weaponsCarousel.appendChild(card);
     });
 
-    // Прокручиваем к выбранным элементам
     const eqShipIdx = Math.max(0, SHIPS_CATALOG.findIndex(s => s.id === progress.equippedShip));
     const eqWpIdx = Math.max(0, WEAPONS_CATALOG.findIndex(w => w.id === progress.equippedWeapon));
     setTimeout(() => {
@@ -321,7 +424,7 @@
   setupCarouselControls('ships-carousel', 'ship-prev-btn', 'ship-next-btn', 'ship-counter', SHIPS_CATALOG.length);
   setupCarouselControls('weapons-carousel', 'weapon-prev-btn', 'weapon-next-btn', 'weapon-counter', WEAPONS_CATALOG.length);
 
-  // Живая отрисовка 3D-вращения кораблей и демонстрации оружия в карточках Ангара
+  // Быстрая плавная 2D-анимация в Ангаре (парение, покачивание, мерцание звёзд и демонстрация стрельбы)
   function renderHangarLivePreviews(t) {
     if (hangarOverlay.classList.contains('hidden')) return;
 
@@ -329,23 +432,33 @@
       const w = cvs.width, h = cvs.height;
       c.clearRect(0, 0, w, h);
 
-      // Сетка 3D-голограммы под кораблём
-      c.strokeStyle = 'rgba(128, 255, 219, 0.16)';
-      c.lineWidth = 1;
-      c.beginPath();
-      c.ellipse(w / 2, h * 0.78, 68, 16, 0, 0, Math.PI * 2);
-      c.stroke();
+      // Пролетающие звёзды в витрине корабля
+      c.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      for (let s = 0; s < 8; s++) {
+        const sx = ((s * 37 + idx * 19) % (w - 20)) + 10;
+        const sy = ((t * (45 + (s % 3) * 20) + s * 28) % h);
+        c.fillRect(sx, sy, 2, 4);
+      }
 
-      // Псевдо-3D вращение (поворот по оси Y с перспективным сжатием и наклоном)
-      const angle = t * 2.1 + idx * 0.8;
-      const yawScale = Math.cos(angle);
-      const bankTilt = Math.sin(angle) * 0.24;
-      const hoverY = h * 0.48 + Math.sin(t * 3.5 + idx) * 4;
+      // Пульсирующее неоновое кольцо под кораблём
+      const pulseR = 46 + Math.sin(t * 4 + idx) * 6;
+      c.strokeStyle = ship.neonColor;
+      c.globalAlpha = 0.35;
+      c.lineWidth = 2;
+      c.beginPath();
+      c.ellipse(w / 2, h * 0.72, pulseR, 12, 0, 0, Math.PI * 2);
+      c.stroke();
+      c.globalAlpha = 1;
+
+      // Плавное 2D-парение и лёгкое покачивание крыльями (без 3D-сжатия и лагов)
+      const hoverY = h * 0.48 + Math.sin(t * 3.4 + idx) * 6;
+      const swayX = Math.cos(t * 2.1 + idx) * 10;
+      const tilt = Math.sin(t * 2.1 + idx) * 0.14;
 
       c.save();
-      c.translate(w / 2, hoverY);
-      c.rotate(bankTilt);
-      c.scale((yawScale >= 0 ? 1 : -1) * Math.max(0.32, Math.abs(yawScale)) * 1.45, 1.45);
+      c.translate(w / 2 + swayX, hoverY);
+      c.rotate(tilt);
+      c.scale(1.42, 1.42);
       drawPlayerShipModel(c, ship, t, 0, { weaponId: progress.equippedWeapon });
       c.restore();
     });
@@ -357,7 +470,7 @@
       const shipX = w / 2, shipY = h * 0.72;
       const hp = getShipHardpoints(ship.id);
       const cycle = (t * 2.4 + idx * 0.4) % 1;
-      const shotY = shipY - 16 - cycle * 68;
+      const shotY = shipY - 16 - cycle * 74;
 
       c.save();
       if (wp.id === 'double_shot') {
@@ -399,7 +512,6 @@
       c.restore();
     });
   }
-
   document.getElementById('hangar-open-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     if (synth) { synth.init(); synth.sfxMenuTransition(); }
@@ -418,13 +530,10 @@
     syncTopHudVisibility();
   });
 
-  // =========================================================================
-  // КОМИКС, ВЫБОР УРОВНЕЙ И НАСТРОЙКИ
-  // =========================================================================
   const LORE_SLIDES = [
     { baseName: 'slide1', rawFallback: 'img/1000036324.jpg', title: 'ПЛАНЕТА КОТОВИЯ-17', text: 'На родной планете Котовия-17 заканчивается еда. Рыбка, колбаска и сметана выдаются только по талонам!' },
     { baseName: 'slide2', rawFallback: 'img/1000036326.jpg', title: 'СЕКРЕТНЫЙ ОТРЯД «АСТРО-КОТ»', text: 'Редж отправляется в дальний космос за провизией для всей планеты!' },
-    { baseName: 'slide3', rawFallback: 'img/1000036323.jpg', title: 'БИТВА С ПОЖИРАТЕЛЯМИ КОСМОСА', text: 'Добывай рыбку 🐟 в боях, открывай 5 кораблей и 5 видов оружия в 3D-Ангаре!' }
+    { baseName: 'slide3', rawFallback: 'img/1000036323.jpg', title: 'БИТВА С ПОЖИРАТЕЛЯМИ КОСМОСА', text: 'Добывай рыбку 🐟 в боях, открывай 5 кораблей и 5 видов оружия в Ангаре!' }
   ];
   let loreSlideIdx = 0;
 
@@ -601,7 +710,7 @@
   muteBtn.addEventListener('click', (e) => { e.stopPropagation(); if (!synth) return; muteBtn.textContent = synth.toggleMute() ? '🔇' : '🔊'; });
 
   // =========================================================================
-  // ИГРОВОЙ ПРОЦЕСС И АДАПТИВНАЯ СТРЕЛЬБА 5 КОРАБЛЕЙ / 5 ОРУДИЙ
+  // ИГРОВОЙ ПРОЦЕСС
   // =========================================================================
   let score = 0, runCoins = 0, kills = 0, combo = 1, comboTimer = 0, wave = 1, waveTimer = 0;
   let spawnTimer = 0, obstacleTimer = 4.0, eventTimer = 14.0, activeEvent = null;
@@ -677,7 +786,7 @@
     player = {
       x: W / 2, y: H - 105, vx: 0, vy: 0, r: 20, hp: totalHp, maxHp: totalHp,
       ship, baseWeapon: wp, invuln: 0, fireCooldown: 0, secondaryWeapon: 'none', secondaryLevel: 1,
-      shield: false, giantTimer: 0, turboTimer: 0, stickyTimer: 0, squashX: 1, squashY: 1, shotCycle: 0
+      shield: false, turboTimer: 0, stickyTimer: 0, squashX: 1, squashY: 1, shotCycle: 0
     };
 
     bullets = []; enemyBullets = []; enemies = []; obstacles = []; bonuses = []; boss = null;
@@ -744,22 +853,22 @@
     const diff = DIFFICULTIES[selectedDiffKey];
     const hpScale = lvl.hpMult * diff.enemyHp;
     const x = 44 + Math.random() * (W - 88);
-    const types = lvl.enemyTypes || ['psy_eye', 'shroom_cruiser', 'fractal_medusa'];
+    const types = lvl.enemyTypes || ['fractal_ship', 'mini_stamp', 'rubik_cube'];
     const typeIdx = Math.floor(Math.random() * types.length);
     const kind = types[typeIdx];
-    const isHeavy = typeIdx === 1;
-    const hp = Math.max(1, Math.round((isHeavy ? 4.5 : 2.2) * hpScale));
+    const isMiniBoss = kind.startsWith('mini_');
+    const hp = Math.max(1, Math.round((isMiniBoss ? 5 : 2.5) * hpScale));
     const patterns = ['zigzag', 'dash', 'figure8', 'erratic'];
 
     enemies.push({
       kind, movePattern: patterns[Math.floor(Math.random() * patterns.length)],
-      x, y: -38, r: isHeavy ? 24 : 20, hp, maxHp: hp,
-      baseVy: (isHeavy ? 105 : 138) * diff.bulletSpeed,
-      vy: (isHeavy ? 105 : 138) * diff.bulletSpeed,
+      x, y: -38, r: isMiniBoss ? 24 : 20, hp, maxHp: hp,
+      baseVy: (isMiniBoss ? 105 : 135) * diff.bulletSpeed,
+      vy: (isMiniBoss ? 105 : 135) * diff.bulletSpeed,
       vx: (Math.random() - 0.5) * 140, rot: 0, vrot: (Math.random() - 0.5) * 4.2,
       phase: Math.random() * Math.PI * 2, freq: 2.2 + Math.random() * 2.4, amp: 65 + Math.random() * 60,
-      turnTimer: 0.5 + Math.random() * 1.1, shootTimer: (isHeavy ? 1.25 : 1.65) + Math.random() * 0.7,
-      hitFlash: 0, points: isHeavy ? 180 : 120, coinValue: isHeavy ? 32 : 18
+      turnTimer: 0.5 + Math.random() * 1.1, shootTimer: (isMiniBoss ? 1.25 : 1.65) + Math.random() * 0.7,
+      hitFlash: 0, points: isMiniBoss ? 220 : 120, coinValue: isMiniBoss ? 36 : 18
     });
   }
 
@@ -780,24 +889,23 @@
     if (vfx) vfx.triggerFlash(lvl.accent, 0.28);
   }
 
+  // Убрано увеличение корабля: оставлены щит и 3 вида спец-оружия
   function maybeDropFoodBonus(x, y, guaranteed = false) {
     if (!guaranteed && Math.random() > 0.20) return;
-    const pool = ['fractal_shuriken', 'electric_shock', 'wave_cannon', 'green_star', 'red_shield'];
+    const pool = ['fractal_shuriken', 'electric_shock', 'wave_cannon', 'red_shield'];
     bonuses.push({ type: pool[Math.floor(Math.random() * pool.length)], x, y, r: 18, vy: 105, phase: Math.random() * Math.PI * 2 });
   }
 
-  // СТРЕЛЬБА 5 ОРУДИЙ, АДАПТИРОВАННЫХ ПОД 5 ДИЗАЙНОВ КОРАБЛЕЙ + УНИКАЛЬНОЕ ВООРУЖЕНИЕ КОРАБЛЯ
   function firePlayerWeapon(p) {
     p.shotCycle = (p.shotCycle || 0) + 1;
     const pan = ((p.x / W) * 2 - 1) * 0.7;
     const baseId = p.baseWeapon.id;
     const shipId = p.ship.id;
     const hp = getShipHardpoints(shipId);
-    const dmgScale = (p.ship.dmgMult || 1) * (p.baseWeapon.dmgBonus || 1) * (p.giantTimer > 0 ? 1.35 : 1.0);
+    const dmgScale = (p.ship.dmgMult || 1) * (p.baseWeapon.dmgBonus || 1);
 
     if (synth) synth.sfxShootWeapon(pan, baseId, p.secondaryWeapon);
 
-    // 1. Основное выбранное оружие из Ангара (адаптировано под геометрию корабля)
     if (baseId === 'droplet') {
       bullets.push({ kind: 'plasma', x: p.x, y: p.y + hp.noseY, vx: 0, vy: -780, r: 6.5, dmg: 1.05 * dmgScale, color: '#48dbfb' });
     } else if (baseId === 'double_shot') {
@@ -816,40 +924,22 @@
       });
     }
 
-    // 2. Уникальное встроенное вооружение каждого из 5 кораблей!
     if (shipId === 'green_hawk' && p.shotCycle % 2 === 0) {
-      // Зелёный Сокол пускает крыльевые мини-ракеты
-      [-19, 19].forEach(rx => {
-        bullets.push({ kind: 'player_rocket', homing: true, x: p.x + rx, y: p.y - 4, vx: rx * 2, vy: -660, r: 7, dmg: 0.85 * dmgScale, color: '#80ed99' });
-      });
+      [-19, 19].forEach(rx => bullets.push({ kind: 'player_rocket', homing: true, x: p.x + rx, y: p.y - 4, vx: rx * 2, vy: -660, r: 7, dmg: 0.85 * dmgScale, color: '#80ed99' }));
     } else if (shipId === 'blue_fish' && p.shotCycle % 2 === 0) {
-      // Синяя Рыбка выпускает воронковые вихревые кольца из носовой пушки
       bullets.push({ kind: 'vortex_ring', pierce: 2, rot: 0, x: p.x, y: p.y - 24, vx: 0, vy: -650, r: 16, dmg: 1.15 * dmgScale, color: '#90e0ef' });
     } else if (shipId === 'heart_ship') {
-      // Алое Сердце стреляет самонаводящимися сердцами
       bullets.push({ kind: 'heart_shot', homing: true, x: p.x, y: p.y - 22, vx: 0, vy: -720, r: 9, dmg: 1.25 * dmgScale, color: '#ff4d6d' });
     } else if (shipId === 'stealth_wing') {
-      // Крыло Архонта бьёт лазерами с законцовок крыльев и ракетами!
-      [-27, 27].forEach(lx => {
-        bullets.push({ kind: 'wing_laser', x: p.x + lx, y: p.y - 2, vx: 0, vy: -920, r: 5.5, dmg: 0.95 * dmgScale, color: '#f72585' });
-      });
-      if (p.shotCycle % 2 === 0) {
-        [-14, 14].forEach(rx => {
-          bullets.push({ kind: 'player_rocket', homing: true, x: p.x + rx, y: p.y - 8, vx: 0, vy: -680, r: 7.5, dmg: 1.05 * dmgScale, color: '#ffd166' });
-        });
-      }
+      [-27, 27].forEach(lx => bullets.push({ kind: 'wing_laser', x: p.x + lx, y: p.y - 2, vx: 0, vy: -920, r: 5.5, dmg: 0.95 * dmgScale, color: '#f72585' }));
+      if (p.shotCycle % 2 === 0) [-14, 14].forEach(rx => bullets.push({ kind: 'player_rocket', homing: true, x: p.x + rx, y: p.y - 8, vx: 0, vy: -680, r: 7.5, dmg: 1.05 * dmgScale, color: '#ffd166' }));
     }
 
-    // 3. Бонусное спец-оружие (подбираемое в бою)
     const lv2 = p.secondaryLevel >= 2;
     if (p.secondaryWeapon === 'fractal_shuriken') {
-      (lv2 ? [-0.26, 0, 0.26] : [-0.18, 0.18]).forEach(ang => {
-        bullets.push({ kind: 'fractal_shuriken', homing: true, x: p.x, y: p.y - 20, vx: Math.sin(ang) * 620, vy: -Math.cos(ang) * 620, rot: 0, r: 10, dmg: 1.35 * dmgScale, color: '#00f5d4' });
-      });
+      (lv2 ? [-0.26, 0, 0.26] : [-0.18, 0.18]).forEach(ang => bullets.push({ kind: 'fractal_shuriken', homing: true, x: p.x, y: p.y - 20, vx: Math.sin(ang) * 620, vy: -Math.cos(ang) * 620, rot: 0, r: 10, dmg: 1.35 * dmgScale, color: '#00f5d4' }));
     } else if (p.secondaryWeapon === 'electric_shock') {
-      (lv2 ? [-18, 0, 18] : [-14, 14]).forEach(ox => {
-        bullets.push({ kind: 'electric_bolt', chainLightning: true, x: p.x + ox, y: p.y - 22, vx: 0, vy: -880, r: 8, dmg: 1.35 * dmgScale, color: '#fee440' });
-      });
+      (lv2 ? [-18, 0, 18] : [-14, 14]).forEach(ox => bullets.push({ kind: 'electric_bolt', chainLightning: true, x: p.x + ox, y: p.y - 22, vx: 0, vy: -880, r: 8, dmg: 1.35 * dmgScale, color: '#fee440' }));
     } else if (p.secondaryWeapon === 'wave_cannon') {
       bullets.push({ kind: 'wave_pulse', pierce: lv2 ? 4 : 3, x: p.x, y: p.y - 24, vx: 0, vy: -640, r: lv2 ? 32 : 24, dmg: 1.65 * dmgScale, color: '#f15bb5' });
     }
@@ -861,11 +951,6 @@
     if (vfx) {
       vfx.addShockwave(bn.x, bn.y, '#80ffdb', 85, 0.42);
       vfx.addBurst(bn.x, bn.y, ['#ffd166', '#06d6a0', '#48dbfb', '#ffffff'], 14, 190);
-    }
-    if (bn.type === 'green_star') {
-      player.giantTimer = 11.0; score += 300;
-      if (vfx) vfx.addPopup(bn.x, bn.y, '⭐ МЕГА-КОРАБЛЬ (+УРОН)!', '#06d6a0', 1.2);
-      return;
     }
     if (bn.type === 'red_shield') {
       player.shield = true; score += 250;
@@ -930,19 +1015,17 @@
 
   function update(dt) {
     globalTime += dt;
+    updateAndRenderMenuParticles(dt);
 
     if (synth && !settingsOverlay.classList.contains('hidden')) {
       const badge = document.getElementById('voice-pool-badge');
       if (badge) badge.textContent = `Голоса: ${synth.getActiveVoiceCount()} / 128`;
     }
 
-    if (!hangarOverlay.classList.contains('hidden')) {
-      renderHangarLivePreviews(globalTime);
-    }
+    if (!hangarOverlay.classList.contains('hidden')) renderHangarLivePreviews(globalTime);
 
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
-
     if (world3d) world3d.update(dt, player && player.turboTimer > 0);
     if (vfx) vfx.update(dt);
     if (state !== 'PLAYING') return;
@@ -981,7 +1064,6 @@
     if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
     if (p.turboTimer > 0) p.turboTimer = Math.max(0, p.turboTimer - dt);
     if (p.stickyTimer > 0) p.stickyTimer = Math.max(0, p.stickyTimer - dt);
-    if (p.giantTimer > 0) p.giantTimer = Math.max(0, p.giantTimer - dt);
     p.squashX += (1 - p.squashX) * Math.min(1, dt * 14);
     p.squashY += (1 - p.squashY) * Math.min(1, dt * 14);
 
@@ -990,13 +1072,10 @@
       if (activeEvent.type === 'gravity') {
         const dx = activeEvent.x - p.x, dy = activeEvent.y - p.y, dist = Math.hypot(dx, dy);
         if (dist > 10 && dist < 280) { p.x += (dx / dist) * 85 * dt; p.y += (dy / dist) * 85 * dt; }
-      } else if (activeEvent.type === 'wave') {
-        p.x += activeEvent.dir * 95 * dt;
-      } else if (activeEvent.type === 'sticky') {
-        if (Math.hypot(activeEvent.x - p.x, activeEvent.y - p.y) < activeEvent.r) {
-          speedFactor *= 0.45;
-          if (p.stickyTimer <= 0) { p.stickyTimer = 1.2; if (synth) synth.sfxSticky(); }
-        }
+      } else if (activeEvent.type === 'wave') p.x += activeEvent.dir * 95 * dt;
+      else if (activeEvent.type === 'sticky' && Math.hypot(activeEvent.x - p.x, activeEvent.y - p.y) < activeEvent.r) {
+        speedFactor *= 0.45;
+        if (p.stickyTimer <= 0) { p.stickyTimer = 1.2; if (synth) synth.sfxSticky(); }
       }
     }
 
@@ -1015,13 +1094,10 @@
       const dx = pointer.x - p.x, dy = pointer.y - p.y;
       p.vx = dx * 12; p.vy = dy * 12;
       p.x += dx * Math.min(1, dt * 14); p.y += dy * Math.min(1, dt * 14);
-    } else {
-      p.vx *= 0.82; p.vy *= 0.82;
-    }
+    } else { p.vx *= 0.82; p.vy *= 0.82; }
 
-    const pad = p.giantTimer > 0 ? 38 : 24;
-    p.x = Math.max(pad, Math.min(W - pad, p.x));
-    p.y = Math.max(pad + 30, Math.min(H - pad, p.y));
+    p.x = Math.max(24, Math.min(W - 24, p.x));
+    p.y = Math.max(54, Math.min(H - 24, p.y));
     if (world3d) world3d.setCameraFromPlayer(p.x, W);
 
     p.fireCooldown -= dt;
@@ -1042,7 +1118,7 @@
           if (synth && Math.random() < 0.35) synth.sfxDisintegrate(0);
         }
       }
-      if (Math.hypot(p.x - ob.x, p.y - ob.y) < (p.giantTimer > 0 ? p.r * 1.4 : p.r) + ob.r - 4) {
+      if (Math.hypot(p.x - ob.x, p.y - ob.y) < p.r + ob.r - 4) {
         if (vfx) vfx.addRealisticExplosion(ob.x, ob.y, ob.neonColor, 1.0);
         obstacles.splice(i, 1); damagePlayer(); continue;
       }
@@ -1101,14 +1177,20 @@
       else if (e.x > W - e.r - 10) { e.x = W - e.r - 10; e.vx = -Math.abs(e.vx); }
       if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt * 6);
 
-      // Стрельба врагов (включая 3-й уровень: Клоун — пули, Леденец — ракеты, Радуга — лазеры!)
+      // Стрельба врагов (Уровень 1: Фрактал — мини-спирали, Мини-Марка — пули, Кубик Рубика — короткие разноцветные квадраты!)
       e.shootTimer -= dt;
       if (e.shootTimer <= 0 && e.y > 40 && e.y < H * 0.68) {
         e.shootTimer = 1.80 / diff.bulletSpeed;
         const ang = Math.atan2(p.y - e.y, p.x - e.x);
         const spd = 225 * diff.bulletSpeed;
 
-        if (e.kind === 'skeleton_ship' || e.kind === 'rainbow_spiral' || e.kind === 'crab_ship' || e.kind === 'starfish_ship') {
+        if (e.kind === 'fractal_ship') {
+          enemyBullets.push({ kind: 'mini_spiral', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 10, color: '#00f5d4' });
+        } else if (e.kind === 'rubik_cube') {
+          const rCols = ['#ff3366', '#ffd166', '#06d6a0', '#48dbfb'];
+          const sqCol = rCols[Math.floor(Math.random() * rCols.length)];
+          enemyBullets.push({ kind: 'rubik_square', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25), r: 7.5, color: sqCol });
+        } else if (e.kind === 'skeleton_ship' || e.kind === 'rainbow_spiral' || e.kind === 'crab_ship' || e.kind === 'starfish_ship') {
           const lCol = e.kind === 'starfish_ship' ? '#80ed99' : (e.kind === 'rainbow_spiral' ? '#ff006e' : (e.kind === 'crab_ship' ? '#9bf6ff' : '#ff002b'));
           enemyBullets.push({ kind: 'enemy_laser', x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 1.42), vy: Math.sin(ang) * (spd * 1.42), ang, r: 6.5, color: lCol });
         } else if (e.kind === 'bat_ship' || e.kind === 'spider_ship' || e.kind === 'lollipop_ship' || e.kind === 'octopus_ship' || e.kind === 'octopus_bio') {
@@ -1117,8 +1199,7 @@
         } else if (e.kind === 'manta_wave' || e.kind === 'jellyfish_ship') {
           enemyBullets.push({ kind: 'psy_wave', hue: e.kind === 'jellyfish_ship' ? 135 : 185, x: e.x, y: e.y + 18, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, ang, r: 18, color: lvl.accent });
         } else {
-          // Клоун (clown_ship) и базовые враги стреляют цветными пулями
-          const bCol = e.kind === 'clown_ship' ? `hsl(${Math.floor(e.phase * 140) % 360}, 100%, 64%)` : lvl.accent;
+          const bCol = `hsl(${Math.floor(e.phase * 140) % 360}, 100%, 64%)`;
           enemyBullets.push({ x: e.x, y: e.y + e.r * 0.7, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 7.5, color: bCol });
         }
       }
@@ -1143,8 +1224,7 @@
           else bullets.splice(j, 1);
 
           if (e.hp <= 0) {
-            const pan = ((e.x / W) * 2 - 1) * 0.8;
-            if (synth) synth.sfxExplosion(pan, false);
+            if (synth) synth.sfxExplosion(((e.x / W) * 2 - 1) * 0.8, false);
             if (vfx) vfx.addRealisticExplosion(e.x, e.y, lvl.accent, 1.05, e.wingCol, e.bodyCol);
 
             score += Math.round(e.points * combo * diff.scoreMult);
@@ -1162,7 +1242,7 @@
       }
 
       if (!enemies[i]) continue;
-      if (Math.hypot(p.x - e.x, p.y - e.y) < (p.giantTimer > 0 ? p.r * 1.4 : p.r) + e.r - 4) {
+      if (Math.hypot(p.x - e.x, p.y - e.y) < p.r + e.r - 4) {
         if (vfx) vfx.addRealisticExplosion(e.x, e.y, '#ff5964', 1.1, e.wingCol, e.bodyCol);
         enemies.splice(i, 1); damagePlayer(); continue;
       }
@@ -1180,10 +1260,12 @@
         if (vfx && Math.random() < 0.4) vfx.addTrail(eb.x, eb.y, eb.color || '#ff758f', 4.5, 0.15);
       }
       if (eb.kind === 'psy_wave') { eb.hue = (eb.hue + dt * 220) % 360; eb.r = Math.min(36, eb.r + dt * 12); }
-      else if (eb.kind === 'laser_flower' || eb.kind === 'green_spin_star' || eb.kind === 'laser_shuriken') eb.rot = (eb.rot || 0) + dt * 9;
+      else if (eb.kind === 'laser_flower' || eb.kind === 'green_spin_star' || eb.kind === 'laser_shuriken' || eb.kind === 'mini_spiral' || eb.kind === 'rubik_square') {
+        eb.rot = (eb.rot || 0) + dt * 10;
+      }
 
       eb.x += eb.vx * dt; eb.y += eb.vy * dt;
-      if (Math.hypot(eb.x - p.x, eb.y - p.y) < (p.giantTimer > 0 ? p.r * 1.4 : p.r) + eb.r - 5) {
+      if (Math.hypot(eb.x - p.x, eb.y - p.y) < p.r + eb.r - 5) {
         if (vfx) vfx.addHitSparks(eb.x, eb.y, '#ff5964', 10);
         enemyBullets.splice(i, 1); damagePlayer(); continue;
       }
@@ -1193,7 +1275,7 @@
     for (let i = bonuses.length - 1; i >= 0; i--) {
       const bn = bonuses[i];
       bn.phase += dt * 5; bn.y += bn.vy * dt;
-      if (Math.hypot(p.x - bn.x, p.y - bn.y) < (p.giantTimer > 0 ? p.r * 1.4 : p.r) + bn.r + 6) {
+      if (Math.hypot(p.x - bn.x, p.y - bn.y) < p.r + bn.r + 6) {
         applyFoodBonus(bn); bonuses.splice(i, 1); continue;
       }
       if (bn.y > H + 30) bonuses.splice(i, 1);
@@ -1305,7 +1387,7 @@
 
     document.getElementById('end-badge').textContent = victory ? `Уровень ${lvl.id} пройден!` : `Уровень ${lvl.id}: Корабль подбит`;
     document.getElementById('end-title').textContent = victory ? (lvl.id === 5 ? 'КОТОВИЯ-17 НАКОРМЛЕНА! 👑' : 'ПОБЕДА! 🏆') : 'ИГРА ОКОНЧЕНА';
-    document.getElementById('end-subtitle').textContent = victory ? `${lvl.bossName} повержен! Загляни в 3D-Ангар!` : `Ты добыл +${runCoins} 🐟 провизии!`;
+    document.getElementById('end-subtitle').textContent = victory ? `${lvl.bossName} повержен! Загляни в Ангар!` : `Ты добыл +${runCoins} 🐟 провизии!`;
     document.getElementById('final-score').textContent = score;
     document.getElementById('final-coins').textContent = `+${runCoins} 🐟`;
     document.getElementById('final-kills').textContent = kills;
@@ -1334,8 +1416,7 @@
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(Math.max(-0.24, Math.min(0.24, p.vx * 0.00055)));
-    const scaleFactor = (p.giantTimer > 0 ? 1.45 : 1.0);
-    ctx.scale(p.squashX * scaleFactor, p.squashY * scaleFactor);
+    ctx.scale(p.squashX, p.squashY);
 
     drawPlayerShipModel(ctx, p.ship, globalTime, p.vx, { weaponId: p.baseWeapon.id });
 
@@ -1343,10 +1424,6 @@
       const pulse = 31 + Math.sin(globalTime * 8) * 2.5;
       ctx.strokeStyle = '#ff5964'; ctx.fillStyle = 'rgba(255, 89, 100, 0.20)'; ctx.lineWidth = 3.2;
       ctx.beginPath(); ctx.arc(0, 0, pulse, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    }
-    if (p.giantTimer > 0) {
-      ctx.strokeStyle = '#06d6a0'; ctx.lineWidth = 3.2; ctx.setLineDash([6, 4]);
-      ctx.beginPath(); ctx.arc(0, 0, 34, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     }
     ctx.restore();
   }
@@ -1403,7 +1480,22 @@
 
   function drawEnemyBullet(ctx, eb) {
     ctx.save(); ctx.translate(eb.x, eb.y);
-    if (eb.kind === 'green_spin_star') {
+    if (eb.kind === 'mini_spiral') {
+      // Мини-спираль Фрактал-Корабля (Уровень 1)
+      ctx.rotate(eb.rot || 0);
+      ctx.strokeStyle = '#00f5d4'; ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      for (let t = 0; t < 14; t++) {
+        const a = t * 0.6, r = t * 0.7;
+        if (t === 0) ctx.moveTo(0, 0); else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      ctx.stroke();
+    } else if (eb.kind === 'rubik_square') {
+      // Короткий разноцветный квадратный снаряд Кубика Рубика (Уровень 1)
+      ctx.rotate(eb.rot || 0);
+      ctx.fillStyle = eb.color || '#ffd166'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.8;
+      roundRectPath(ctx, -6, -6, 12, 12, 2.5); ctx.fill(); ctx.stroke();
+    } else if (eb.kind === 'green_spin_star') {
       ctx.rotate(eb.rot || 0); ctx.fillStyle = '#06d6a0'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
       ctx.beginPath();
       for (let i = 0; i < 5; i++) {
@@ -1417,8 +1509,7 @@
       ctx.beginPath();
       for (let i = 0; i < 8; i++) {
         const a = (Math.PI * i) / 4, rad = i % 2 === 0 ? eb.r + 2 : eb.r * 0.42;
-        if (i === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
-        else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+        if (i === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad); else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
       }
       ctx.closePath(); ctx.fill(); ctx.stroke();
     } else if (eb.kind === 'psy_wave') {
