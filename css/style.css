@@ -29,7 +29,6 @@ html, body {
   justify-content: center;
 }
 
-/* Адаптивный контейнер: на телефоне 100% экрана, а на ПК / в режиме ПК держит идеальные пропорции аркадного автомата без лагов! */
 #game-wrap {
   position: relative;
   width: 100%;
@@ -56,7 +55,7 @@ canvas {
   touch-action: none;
 }
 
-/* ВЕРХНЯЯ ПАНЕЛЬ (не перекрывает карточки, автоматически прячется в модальных окнах) */
+/* ВЕРХНЯЯ ПАНЕЛЬ */
 .hud-top-right-wrap {
   position: absolute;
   top: 8px;
@@ -133,7 +132,7 @@ canvas {
   display: none;
 }
 
-/* ОВЕРЛЕИ И ПРОКРУЧИВАЕМЫЕ 3D-КАРТОЧКИ БЕЗ ТОРМОЗОВ */
+/* ОВЕРЛЕИ И КАРТОЧКИ */
 .overlay {
   position: absolute;
   inset: 0;
@@ -198,13 +197,12 @@ canvas {
   width: 100%;
 }
 
-/* КАРТОЧКА С РАБОТАЮЩИМ СКРОЛЛОМ НА ТЕЛЕФОНЕ И ПК */
 .card-3d {
   position: relative;
   z-index: 2;
   width: 100%;
   max-width: 455px;
-  max-height: 90vh;
+  max-height: 92vh;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
@@ -219,10 +217,6 @@ canvas {
     inset 0 2px 4px rgba(255, 255, 255, 0.35);
 }
 
-.card-3d * {
-  touch-action: pan-y;
-}
-
 .card-inner-bg-img {
   position: absolute;
   inset: 0;
@@ -230,7 +224,7 @@ canvas {
   height: 100%;
   object-fit: cover;
   object-position: center;
-  opacity: 0.25;
+  opacity: 0.24;
   z-index: 0;
   pointer-events: none;
 }
@@ -238,18 +232,13 @@ canvas {
 .card-content {
   position: relative;
   z-index: 1;
-  padding: 16px 16px 20px;
+  padding: 15px 15px 18px;
   text-align: center;
   background: linear-gradient(180deg, rgba(22, 15, 50, 0.65) 0%, rgba(12, 8, 30, 0.90) 100%);
 }
 
-/* Заметный стильный ползунок прокрутки для Ангара */
 .card-3d::-webkit-scrollbar {
-  width: 7px;
-}
-.card-3d::-webkit-scrollbar-track {
-  background: rgba(10, 6, 26, 0.6);
-  border-radius: 8px;
+  width: 6px;
 }
 .card-3d::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #80ffdb, #9d4edd);
@@ -260,7 +249,7 @@ canvas {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .wallet-pill {
@@ -300,7 +289,7 @@ h1 {
 }
 
 h2 {
-  font-size: 18px;
+  font-size: 17.5px;
   font-weight: 900;
   color: #ffffff;
   margin-bottom: 6px;
@@ -476,6 +465,164 @@ h2 {
   color: #80ffdb;
 }
 
+/* =========================================================================
+   МУЛЬТИМЕДИА 3D-КАРУСЕЛЬ АНГАРА (СВАЙП-СКРОЛЛ + ЖИВЫЕ 3D-ВИТРИНЫ)
+   ========================================================================= */
+.carousel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.carousel-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-arrow-btn {
+  width: 28px;
+  height: 26px;
+  border-radius: 9px;
+  border: 1.5px solid rgba(128, 255, 219, 0.65);
+  background: linear-gradient(180deg, #3c2a78 0%, #21154a 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #0d0724;
+  touch-action: manipulation;
+}
+
+.nav-arrow-btn:active {
+  transform: translateY(2px);
+}
+
+.nav-counter {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #80ffdb;
+  min-width: 34px;
+}
+
+.media-carousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  padding: 4px 4px 10px;
+}
+
+.media-carousel::-webkit-scrollbar {
+  height: 5px;
+}
+.media-carousel::-webkit-scrollbar-thumb {
+  background: rgba(128, 255, 219, 0.55);
+  border-radius: 999px;
+}
+
+.media-card {
+  flex: 0 0 88%;
+  scroll-snap-align: center;
+  background: linear-gradient(165deg, rgba(40, 29, 88, 0.95) 0%, rgba(18, 12, 44, 0.98) 100%);
+  border: 2px solid rgba(196, 181, 253, 0.45);
+  border-radius: 22px;
+  padding: 10px 12px 12px;
+  text-align: center;
+  box-shadow: 0 6px 0 #0a051c, 0 12px 24px rgba(0, 0, 0, 0.6);
+  transition: transform 0.25s cubic-bezier(0.22, 1.35, 0.36, 1), border-color 0.25s ease;
+}
+
+.media-card.equipped {
+  border-color: #80ffdb;
+  box-shadow: 0 6px 0 #0a3c49, 0 0 18px rgba(128, 255, 219, 0.35);
+}
+
+.media-viewport {
+  position: relative;
+  width: 100%;
+  height: 116px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(128, 255, 219, 0.4);
+  background: radial-gradient(circle at 50% 45%, #241757 0%, #090517 100%);
+  margin-bottom: 8px;
+  overflow: hidden;
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.7);
+}
+
+.media-viewport canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.viewport-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 9.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(114, 239, 221, 0.2);
+  color: #80ffdb;
+  border: 1px solid rgba(128, 255, 219, 0.5);
+}
+
+.media-card-title {
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 3px;
+}
+
+.media-card-desc {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  min-height: 30px;
+  margin-bottom: 8px;
+}
+
+.shop-action-btn {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 14px;
+  border: 1.5px solid #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.shop-action-btn:active {
+  transform: translateY(3px);
+}
+
+.shop-action-btn.buy {
+  background: linear-gradient(180deg, #ffe169, #f77f00);
+  color: #160e2e;
+  box-shadow: 0 4px 0 #8a4200;
+}
+
+.shop-action-btn.equip {
+  background: linear-gradient(180deg, #b5179e, #560bad);
+  color: #ffffff;
+  box-shadow: 0 4px 0 #240046;
+}
+
+.shop-action-btn.active {
+  background: linear-gradient(180deg, #80ffdb, #0096c7);
+  color: #091326;
+  box-shadow: 0 4px 0 #023e8a;
+}
+
+/* ОСТАЛЬНЫЕ ЭКРАНЫ */
 .stage-art-box {
   position: relative;
   width: 100%;
@@ -581,72 +728,6 @@ h2 {
 
 .intro-intel b {
   color: #80ffdb;
-}
-
-.shop-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.shop-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  background: linear-gradient(180deg, rgba(34, 25, 74, 0.92) 0%, rgba(19, 13, 45, 0.95) 100%);
-  border: 1.5px solid rgba(196, 181, 253, 0.36);
-  border-radius: 16px;
-  padding: 9px 11px;
-  text-align: left;
-  box-shadow: 0 3px 0 #0b061e;
-}
-
-.shop-item.equipped {
-  border-color: #80ffdb;
-  box-shadow: 0 3px 0 #0b3c49;
-}
-
-.shop-info strong {
-  display: block;
-  font-size: 12.5px;
-  color: #ffffff;
-}
-
-.shop-info span {
-  display: block;
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.shop-action-btn {
-  min-width: 94px;
-  padding: 8px 9px;
-  border-radius: 13px;
-  border: 1.5px solid #ffffff;
-  font-size: 11.5px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.shop-action-btn.buy {
-  background: linear-gradient(180deg, #ffe169, #f77f00);
-  color: #160e2e;
-  box-shadow: 0 3px 0 #8a4200;
-}
-
-.shop-action-btn.equip {
-  background: linear-gradient(180deg, #b5179e, #560bad);
-  color: #ffffff;
-  box-shadow: 0 3px 0 #240046;
-}
-
-.shop-action-btn.active {
-  background: linear-gradient(180deg, #80ffdb, #0096c7);
-  color: #091326;
-  box-shadow: 0 3px 0 #023e8a;
 }
 
 .setting-row {
