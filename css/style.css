@@ -740,19 +740,17 @@ h2 {
 }
 
 /* ОСТАЛЬНЫЕ ЭКРАНЫ */
-.stage-art-box {
+.stage-art-box,
+.stage-art-box.victory-stage-box {
   position: relative;
   width: 100%;
-  height: 195px;
+  aspect-ratio: 1 / 1;
+  height: auto;
   border-radius: 22px;
   border: 2px solid rgba(224, 170, 255, 0.6);
   background: #1b0e36;
   margin-bottom: 10px;
   overflow: hidden;
-}
-
-.stage-art-box.victory-stage-box {
-  height: 180px;
 }
 
 .stage-art-box.hidden {
@@ -762,8 +760,8 @@ h2 {
 .stage-art-box img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 22%;
+  object-fit: contain;
+  object-position: center;
   display: block;
 }
 
@@ -802,7 +800,8 @@ h2 {
 .lore-art-box.vertical {
   position: relative;
   width: 100%;
-  height: 280px;
+  aspect-ratio: 1 / 1;
+  height: auto;
   border-radius: 22px;
   border: 2px solid rgba(224, 170, 255, 0.5);
   background: #1b0e36;
