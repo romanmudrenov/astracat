@@ -459,20 +459,22 @@ margin: 6px 0 8px;
 }
 ​.hangar-tabs-row.three-tabs {
 grid-template-columns: repeat(3, 1fr);
-gap: 6px;
+gap: 5px;
 }
 ​.tab-pill {
-padding: 9px 4px;
+padding: 9px 3px;
 border-radius: 999px;
 border: 1.5px solid rgba(224, 170, 255, 0.5);
 background: linear-gradient(145deg, #3c2569 0%, #241542 100%);
 color: #d9c8f5;
-font-size: 11px;
+font-size: 10.5px;
 font-weight: 900;
 cursor: pointer;
 touch-action: manipulation;
 box-shadow: 0 4px 0 #140a29;
 white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
 }
 ​.tab-pill.active {
 background: linear-gradient(145deg, #ffafcc 0%, #f72585 55%, #9d4edd 100%);
@@ -720,7 +722,8 @@ margin-bottom: 12px;
 ​.intro-intel b {
 color: #ffafcc;
 }
-​.setting-row {
+​/* НАСТРОЙКИ ЗВУКА И ВЫБОР ТРЕКОВ (25+ ТРЕКОВ / БОССЫ) */
+.setting-row {
 background: rgba(30, 19, 61, 0.82);
 border: 1.5px solid rgba(224, 170, 255, 0.45);
 border-radius: 20px;
@@ -733,25 +736,30 @@ color: #f3e8ff;
 display: flex;
 justify-content: space-between;
 align-items: center;
+gap: 8px;
 font-size: 12px;
 font-weight: 800;
 margin-bottom: 5px;
 }
 ​.setting-hint {
 font-size: 10.5px;
+line-height: 1.35;
 color: #cdb4db;
-margin-top: 4px;
+margin-top: 5px;
 }
 ​.neon-select {
-max-width: 215px;
+max-width: 210px;
 background: #2b1959;
 color: #a2d2ff;
 border: 1.5px solid rgba(162, 210, 255, 0.6);
 border-radius: 999px;
 padding: 4px 10px;
-font-size: 11.5px;
+font-size: 11px;
 font-weight: 800;
 outline: none;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
 }
 ​.toggle-chip {
 padding: 4px 13px;
