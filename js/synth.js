@@ -18,13 +18,13 @@ class AstraCatSynth {
     this.musicEnabled = true;
     this.sfxEnabled = true;
     this.musicVolume = 0.55;
-    // Комфортная базовая громкость эффектов (40%), чтобы не перекрывать музыку и не перегружать динамик
-    this.sfxVolume = 0.40;
+    // Комфортная громкость эффектов (75% по умолчанию, с хорошим запасом до 100%)
+    this.sfxVolume = 0.75;
 
     this.settings = {
-      masterVolume: 0.40,
-      warmthCutoff: 2400,
-      spaceMix: 0.35,
+      masterVolume: 0.75,
+      warmthCutoff: 2500,
+      spaceMix: 0.20,
       psyDrift: 0.55
     };
 
@@ -54,11 +54,12 @@ class AstraCatSynth {
     this.isPlayRequestInFlight = false;
     this.pausedByGame = false;
 
-    // Таймеры анти-наложения (чтобы пачка взрывов не складывалась в 10-кратный пик громкости)
+    // Защита от наложения одинаковых звуков в один момент времени
     this.lastScrollTickTime = 0;
     this.lastShotSoundTime = 0;
     this.lastExplosionTime = 0;
     this.lastHitTime = 0;
+    this.lastPortalTime = 0;
 
     this.bgmAudio.addEventListener('playing', () => {
       this.isPlayRequestInFlight = false;
@@ -163,13 +164,13 @@ class AstraCatSynth {
     this.updateStatusHint(`Меню: intro.mp3 • Уровни: level1–11.mp3 • Боссы: boss.mp3, boss2.mp3`);
   }
 
-  _makeSoftClipCurve(amount = 1.4) {
+  _makeSoftClipCurve(amount = 1.15) {
     const samples = 44100;
     const curve = new Float32Array(samples);
     const norm = Math.tanh(amount);
     for (let i = 0; i < samples; i++) {
       const x = (i * 2) / samples - 1;
-      curve[i] = (Math.tanh(x * amount) / norm) * 0.85;
+      curve[i] = (Math.tanh(x * amount) / norm) * 0.96;
     }
     return curve;
   }
@@ -197,46 +198,46 @@ class AstraCatSynth {
 
     this._createNoiseBuffers();
 
-    // Чистый запас по уровню для полифонии (32 голоса) без перегруза
+    // Плотная и громкая шина голосов
     this.voiceBus = this.ctx.createGain();
-    this.voiceBus.gain.value = 0.28;
+    this.voiceBus.gain.value = 1.25;
 
-    // Фильтр защиты динамика телефона: отсекает гудящий суб-бас ниже 135 Гц, вызывающий треск корпуса
+    // Фильтр защиты динамика телефона от инфра-баса ниже 105 Гц
     this.speakerProtectFilter = this.ctx.createBiquadFilter();
     this.speakerProtectFilter.type = 'highpass';
-    this.speakerProtectFilter.frequency.value = 135;
-    this.speakerProtectFilter.Q.value = 0.7;
+    this.speakerProtectFilter.frequency.value = 105;
+    this.speakerProtectFilter.Q.value = 0.5;
 
     this.masterLowpass = this.ctx.createBiquadFilter();
     this.masterLowpass.type = 'lowpass';
     this.masterLowpass.frequency.value = this.settings.warmthCutoff;
     this.masterLowpass.Q.value = 0.5;
 
+    // Короткое стерео-эхо только для основных эффектов
     this.delayLeft = this.ctx.createDelay(1.0);
     this.delayRight = this.ctx.createDelay(1.0);
-    this.delayLeft.delayTime.value = 0.28;
-    this.delayRight.delayTime.value = 0.39;
+    this.delayLeft.delayTime.value = 0.16;
+    this.delayRight.delayTime.value = 0.22;
 
     this.delayFeedback = this.ctx.createGain();
-    this.delayFeedback.gain.value = 0.18;
+    this.delayFeedback.gain.value = 0.08;
 
     this.delayWetGain = this.ctx.createGain();
-    this.delayWetGain.gain.value = this.settings.spaceMix * 0.24;
+    this.delayWetGain.gain.value = this.settings.spaceMix * 0.14;
 
     this.merger = this.ctx.createChannelMerger(2);
 
-    // Мягкий аналоговый сатуратор вместо жёсткого цифрового клиппинга
+    // Мягкий ограничитель пиков (сатуратор) без треска на высокой громкости
     this.softClipper = this.ctx.createWaveShaper();
-    this.softClipper.curve = this._makeSoftClipCurve(1.35);
+    this.softClipper.curve = this._makeSoftClipCurve(1.15);
     this.softClipper.oversample = '2x';
 
-    // Защитный лимитер пиков
     this.compressor = this.ctx.createDynamicsCompressor();
-    this.compressor.threshold.value = -16;
-    this.compressor.knee.value = 6;
-    this.compressor.ratio.value = 12;
-    this.compressor.attack.value = 0.002;
-    this.compressor.release.value = 0.14;
+    this.compressor.threshold.value = -10;
+    this.compressor.knee.value = 10;
+    this.compressor.ratio.value = 8;
+    this.compressor.attack.value = 0.003;
+    this.compressor.release.value = 0.12;
 
     this.masterGain = this.ctx.createGain();
     this.masterGain.gain.value = this.getEffectiveSfxVol();
@@ -264,8 +265,8 @@ class AstraCatSynth {
 
   getEffectiveSfxVol() {
     if (this.muted || !this.sfxEnabled) return 0.0001;
-    // Линейно-мягкая кривая громкости с потолком 0.65, чтобы динамик никогда не хрипел даже на 100%
-    return Math.max(0.0001, Math.min(0.65, Math.pow(this.sfxVolume, 1.2) * 0.65));
+    // Увеличили выходной диапазон: на 75% звучит ярко и громко, на 100% — максимальная мощность
+    return Math.max(0.0001, Math.min(2.2, this.sfxVolume * 2.1));
   }
 
   updateSfxVolume() {
@@ -290,7 +291,7 @@ class AstraCatSynth {
   setSpaceMix(val) {
     this.settings.spaceMix = val;
     if (this.delayWetGain && this.ctx) {
-      this.delayWetGain.gain.setTargetAtTime(val * 0.24, this.ctx.currentTime, 0.04);
+      this.delayWetGain.gain.setTargetAtTime(val * 0.14, this.ctx.currentTime, 0.04);
     }
   }
 
@@ -345,15 +346,15 @@ class AstraCatSynth {
     if (navigator.vibrate) { try { navigator.vibrate(4); } catch (_) {} }
 
     const now = this.ctx.currentTime;
-    const dur = 0.034;
+    const dur = 0.032;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(360, now);
-    osc.frequency.exponentialRampToValueAtTime(160, now + dur);
+    osc.frequency.setValueAtTime(340, now);
+    osc.frequency.exponentialRampToValueAtTime(150, now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.05, now + 0.006);
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.005);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(gain);
@@ -367,17 +368,17 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.11;
-    const baseFreq = 420 * pitchMultiplier * (0.96 + Math.random() * 0.08);
+    const dur = 0.12;
+    const baseFreq = 390 * pitchMultiplier * (0.96 + Math.random() * 0.08);
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(baseFreq * 1.35, now);
-    osc.frequency.exponentialRampToValueAtTime(Math.max(165, baseFreq * 0.5), now + dur);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(150, baseFreq * 0.48), now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.075, now + 0.01);
+    gain.gain.linearRampToValueAtTime(0.28, now + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(gain);
@@ -387,30 +388,63 @@ class AstraCatSynth {
     this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
   }
 
+  // Мягкий, сухой звук для пролёта пуль через зеркальные порталы (полностью БЕЗ реверба и гула)
+  playPortalPass() {
+    const nowMs = performance.now();
+    if (nowMs - this.lastPortalTime < 115) return;
+    this.lastPortalTime = nowMs;
+
+    this.init();
+    if (!this.ctx || this.muted || !this.sfxEnabled) return;
+
+    const now = this.ctx.currentTime;
+    const dur = 0.095;
+    const startFreq = 350 + Math.random() * 45;
+
+    const osc = this.ctx.createOscillator();
+    const lp = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(startFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(startFreq * 1.42, now + dur);
+
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(950, now);
+    lp.Q.value = 0.4;
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+    // Подключаем напрямую к компрессору, минуя линию задержки (delayLeft/delayRight) — 0% реверба!
+    osc.connect(lp);
+    lp.connect(gain);
+    gain.connect(this.compressor);
+
+    osc.start(now);
+    osc.stop(now + dur + 0.01);
+    this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
+  }
+
   playWarmLaser() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.22;
+    const dur = 0.18;
 
     const osc = this.ctx.createOscillator();
-    const filter = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(520, now);
-    osc.frequency.exponentialRampToValueAtTime(190, now + dur);
-
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(980, now);
-    filter.frequency.exponentialRampToValueAtTime(340, now + dur);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(480, now);
+    osc.frequency.exponentialRampToValueAtTime(175, now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.075, now + 0.018);
+    gain.gain.linearRampToValueAtTime(0.26, now + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
-    osc.connect(filter);
-    filter.connect(gain);
+    osc.connect(gain);
     gain.connect(this.voiceBus);
     osc.start(now);
     osc.stop(now + dur + 0.02);
@@ -421,17 +455,17 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.30;
+    const dur = 0.28;
 
     const sub = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     sub.type = 'sine';
-    sub.frequency.setValueAtTime(190, now);
-    sub.frequency.exponentialRampToValueAtTime(280, now + dur * 0.55);
-    sub.frequency.exponentialRampToValueAtTime(155, now + dur);
+    sub.frequency.setValueAtTime(185, now);
+    sub.frequency.exponentialRampToValueAtTime(260, now + dur * 0.55);
+    sub.frequency.exponentialRampToValueAtTime(150, now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.085, now + 0.035);
+    gain.gain.linearRampToValueAtTime(0.28, now + 0.03);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     sub.connect(gain);
@@ -443,8 +477,7 @@ class AstraCatSynth {
 
   playNebulaExplosion() {
     const nowMs = performance.now();
-    // Защита от одновременного наложения нескольких взрывов в один кадр
-    if (nowMs - this.lastExplosionTime < 80) return;
+    if (nowMs - this.lastExplosionTime < 75) return;
     this.lastExplosionTime = nowMs;
 
     this.init();
@@ -454,24 +487,24 @@ class AstraCatSynth {
 
     const sub = this.ctx.createOscillator();
     sub.type = 'sine';
-    sub.frequency.setValueAtTime(210, now);
-    sub.frequency.exponentialRampToValueAtTime(125, now + dur * 0.8);
+    sub.frequency.setValueAtTime(195, now);
+    sub.frequency.exponentialRampToValueAtTime(115, now + dur * 0.8);
 
     const subGain = this.ctx.createGain();
     subGain.gain.setValueAtTime(0.0001, now);
-    subGain.gain.linearRampToValueAtTime(0.095, now + 0.018);
+    subGain.gain.linearRampToValueAtTime(0.34, now + 0.015);
     subGain.gain.exponentialRampToValueAtTime(0.0001, now + dur * 0.85);
 
     const noise = this.ctx.createBufferSource();
     noise.buffer = this.brownNoiseBuffer;
     const lp = this.ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(620, now);
+    lp.frequency.setValueAtTime(640, now);
     lp.frequency.exponentialRampToValueAtTime(180, now + dur);
 
     const noiseGain = this.ctx.createGain();
     noiseGain.gain.setValueAtTime(0.0001, now);
-    noiseGain.gain.linearRampToValueAtTime(0.085, now + 0.02);
+    noiseGain.gain.linearRampToValueAtTime(0.30, now + 0.02);
     noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     sub.connect(subGain); subGain.connect(this.voiceBus);
@@ -488,16 +521,16 @@ class AstraCatSynth {
     const now = this.ctx.currentTime;
     const scale = [587.33, 659.25, 783.99, 880.00, 1046.50];
     const freq = scale[Math.floor(Math.random() * scale.length)];
-    const dur = 0.38;
+    const dur = 0.36;
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, now);
-    osc.frequency.exponentialRampToValueAtTime(freq * 1.15, now + dur * 0.4);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.12, now + dur * 0.4);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.085, now + 0.015);
+    gain.gain.linearRampToValueAtTime(0.28, now + 0.015);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(gain); gain.connect(this.voiceBus);
@@ -509,27 +542,29 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.46;
+    const dur = 0.34;
 
     const osc = this.ctx.createOscillator();
-    osc.type = 'triangle';
+    osc.type = 'sine';
     osc.frequency.setValueAtTime(340, now);
-    osc.frequency.exponentialRampToValueAtTime(510, now + 0.16);
+    osc.frequency.exponentialRampToValueAtTime(450, now + 0.12);
     osc.frequency.exponentialRampToValueAtTime(360, now + dur);
 
-    const formant = this.ctx.createBiquadFilter();
-    formant.type = 'bandpass';
-    formant.Q.value = 1.8;
-    formant.frequency.setValueAtTime(600, now);
-    formant.frequency.exponentialRampToValueAtTime(980, now + 0.2);
+    const softFilter = this.ctx.createBiquadFilter();
+    softFilter.type = 'lowpass';
+    softFilter.Q.value = 0.5;
+    softFilter.frequency.setValueAtTime(900, now);
 
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.11, now + 0.05);
+    gain.gain.linearRampToValueAtTime(0.30, now + 0.035);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
-    osc.connect(formant); formant.connect(gain); gain.connect(this.voiceBus);
-    osc.start(now); osc.stop(now + dur);
+    osc.connect(softFilter);
+    softFilter.connect(gain);
+    gain.connect(this.voiceBus);
+    osc.start(now);
+    osc.stop(now + dur);
     this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
   }
 
@@ -537,17 +572,19 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.65;
-    [261.63, 329.63, 392.00].forEach((freq) => {
+    const dur = 0.36;
+    [329.63, 392.00, 523.25].forEach((freq) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, now);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.038, now + 0.14);
+      gain.gain.linearRampToValueAtTime(0.11, now + 0.04);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-      osc.connect(gain); gain.connect(this.voiceBus);
-      osc.start(now); osc.stop(now + dur);
+      osc.connect(gain);
+      gain.connect(this.voiceBus);
+      osc.start(now);
+      osc.stop(now + dur);
       this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
     });
   }
@@ -556,14 +593,14 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.36;
+    const dur = 0.30;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.setValueAtTime(240, now);
     osc.frequency.exponentialRampToValueAtTime(360, now + dur * 0.7);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.075, now + 0.07);
+    gain.gain.linearRampToValueAtTime(0.25, now + 0.04);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
     osc.connect(gain); gain.connect(this.voiceBus);
     osc.start(now); osc.stop(now + dur);
@@ -577,7 +614,7 @@ class AstraCatSynth {
 
   sfxShootWeapon(pan = 0, baseWeapon = 'droplet') {
     const nowMs = performance.now();
-    if (nowMs - this.lastShotSoundTime < 105) return;
+    if (nowMs - this.lastShotSoundTime < 100) return;
     this.lastShotSoundTime = nowMs;
 
     if (baseWeapon === 'droplet' || baseWeapon === 'double_shot') this.playSoftBullet(1.02);
@@ -589,7 +626,7 @@ class AstraCatSynth {
     const nowMs = performance.now();
     if (nowMs - this.lastHitTime < 65) return;
     this.lastHitTime = nowMs;
-    this.playSoftBullet(0.84);
+    this.playSoftBullet(0.85);
   }
 
   sfxExplosion() { this.playNebulaExplosion(); }
@@ -599,13 +636,14 @@ class AstraCatSynth {
     if (this.muted || !this.sfxEnabled) return;
     try {
       const customBoom = new Audio('music/boss_explode.mp3');
-      customBoom.volume = Math.max(0, Math.min(0.65, this.sfxVolume));
+      customBoom.volume = Math.max(0, Math.min(1, this.sfxVolume));
       customBoom.play().catch(() => {});
     } catch (e) {}
   }
 
   sfxIgnite() { this.playPlushRocket(); }
-  sfxGravity() { this.playShieldHum(); }
+  // Используется при пролёте пуль через порталы 1-го уровня: мягкий, сухой, без реверба
+  sfxGravity() { this.playPortalPass(); }
   sfxDisintegrate() { this.playSoftBullet(1.18); }
   sfxUnderwater() { this.playSoftBullet(0.95); }
   sfxCosmicHum() { this.playPurrBoost(); }
@@ -810,7 +848,6 @@ class AstraCatSynth {
       const white = Math.random() * 2 - 1;
       brownData[i] = (lastOut + (0.02 * white)) / 1.02;
       lastOut = brownData[i];
-      // Нормализованная амплитуда без внутреннего клиппинга сэмплов
       brownData[i] = Math.max(-0.85, Math.min(0.85, brownData[i] * 0.95));
     }
   }
