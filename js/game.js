@@ -584,14 +584,7 @@
     const lvl = LEVELS[selectedLevelIdx];
     applySiteTheme(lvl);
     if (synth) { synth.init(); synth.sfxMenuTransition(); }
-
-    const introArtBox = document.getElementById('intro-art-box');
-    if (introArtBox) introArtBox.classList.remove('hidden');
-    resolveImageToElement(
-      document.getElementById('intro-stage-img'),
-      [`img/lvl${lvl.id}_in.jpg`, `img/level${lvl.id}_in.jpg`, 'img/transition_in.jpg'],
-      () => { if (introArtBox) introArtBox.classList.add('hidden'); }
-    );
+    resolveImageToElement(document.getElementById('intro-stage-img'), [`img/level${lvl.id}_in.jpg`, 'img/transition_in.jpg', 'img/1000036354.jpg']);
 
     const diff = DIFFICULTIES[selectedDiffKey];
     document.getElementById('intro-sector-tag').textContent = `УРОВЕНЬ ${lvl.id} • ${diff.label.toUpperCase()}`;
@@ -817,6 +810,7 @@
     const pType = lvl.interactiveType || 'mirror_portal';
 
     if (pType === 'mirror_portal') {
+      // Парные зеркальные порталы (левый и правый)
       const yPos = 140 + Math.random() * 140;
       const p1 = { id: Math.random(), pairIdx: 0, type: 'mirror_portal', x: W * 0.22, y: yPos, r: 24, vy: 28, phase: 0, cooldown: 0 };
       const p2 = { id: Math.random(), pairIdx: 1, type: 'mirror_portal', x: W * 0.78, y: yPos, r: 24, vy: 28, phase: 1.5, cooldown: 0 };
@@ -847,6 +841,7 @@
     });
   }
 
+  // Строевой спавн врагов (клин / синусоида / элитные лидеры в коронах)
   function spawnEnemyFormation() {
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
@@ -946,6 +941,7 @@
       });
     }
 
+    // Веерный психо-залп при сборе Золотой Психо-Споры на 6-м уровне!
     if (psySlowTimer > 0) {
       [-0.35, 0.35].forEach(ang => {
         bullets.push({ kind: 'plasma', x: p.x, y: p.y - 20, vx: Math.sin(ang) * 760, vy: -Math.cos(ang) * 760, r: 7, dmg: 1.1 * dmgScale, color: '#ffd166' });
@@ -1049,6 +1045,7 @@
     }
   }
 
+  // Обработка физики 6 уникальных интерактивных объектов сектора
   function updateInteractiveProps(dt) {
     for (let i = interactiveProps.length - 1; i >= 0; i--) {
       const pr = interactiveProps[i];
@@ -1056,11 +1053,13 @@
       pr.phase += dt * 2.5;
       if (pr.cooldown > 0) pr.cooldown = Math.max(0, pr.cooldown - dt);
 
+      // 1. Взаимодействие с пулями игрока (Порталы, Пиньяты, Цветки-Батуты)
       for (let j = bullets.length - 1; j >= 0; j--) {
         const b = bullets[j];
         if (b.propCooldown > 0) continue;
         if (Math.hypot(b.x - pr.x, b.y - pr.y) < pr.r + b.r) {
           if (pr.type === 'mirror_portal' && pr.partner) {
+            // Телепортация пули во второй портал и наведение в спину врагу
             b.x = pr.partner.x;
             b.y = pr.partner.y;
             b.propCooldown = 0.45;
@@ -1068,6 +1067,7 @@
             if (vfx) vfx.addShockwave(pr.partner.x, pr.partner.y, '#00f5d4', 45, 0.25);
             advanceQuest('props', 1);
           } else if (pr.type === 'pinata_skull') {
+            // Взрыв черепа-пиньяты: конфетти, оглушение врагов и рыбка!
             bullets.splice(j, 1);
             if (synth) synth.sfxVictory();
             if (vfx) {
@@ -1080,6 +1080,7 @@
             interactiveProps.splice(i, 1);
             break;
           } else if (pr.type === 'flower_bumper') {
+            // Рикошет пули в ближайшего врага под углом
             b.propCooldown = 0.35;
             const target = enemies[0] || boss;
             if (target) {
@@ -1099,6 +1100,7 @@
 
       if (!interactiveProps[i]) continue;
 
+      // 2. Взаимодействие с кораблём игрока (Ускорители, Мыльные пузыри, Золотые Психо-споры)
       if (Math.hypot(player.x - pr.x, player.y - pr.y) < player.r + pr.r) {
         if (pr.type === 'candy_booster') {
           player.turboTimer = 4.5;
@@ -1127,6 +1129,7 @@
         }
       }
 
+      // 3. Гигантский мыльный пузырь захватывает мелких врагов
       if (pr.type === 'giant_bubble') {
         for (let k = enemies.length - 1; k >= 0; k--) {
           const en = enemies[k];
@@ -1178,6 +1181,7 @@
       spawnObstacle();
     }
 
+    // Режиссура 4 волн + бонусный «Рыбный дождь» перед выходом Босса
     const dMult = diff.durationMult || 1.0;
     waveTimer += dt;
     if (!boss) {
@@ -1192,7 +1196,7 @@
         }
       } else if (wave === 3 && waveTimer > 62 * dMult) {
         wave = 4;
-        fishRainTimer = 8.0;
+        fishRainTimer = 8.0; // 8 секунд безобидного бонусного «Рыбного дождя»!
         if (synth) synth.sfxVictory();
         if (vfx) vfx.addPopup(W / 2, H * 0.34, '🐟 БОНУС: РЫБНЫЙ ДОЖДЬ! 🐟', '#ffd166', 1.25);
       } else if (wave === 4 && fishRainTimer <= 0 && waveTimer > 71 * dMult) {
@@ -1209,6 +1213,7 @@
       }
     }
 
+    // Генерация тарелок с рыбкой и сметаной во время «Рыбного дождя»
     if (fishRainTimer > 0) {
       fishRainTimer -= dt;
       fishRainSpawnTimer -= dt;
@@ -1552,7 +1557,6 @@
 
     const lvl = LEVELS[selectedLevelIdx];
     const victoryStageBox = document.getElementById('victory-stage-box');
-    const endStageImg = document.getElementById('end-stage-img');
     progress.coins += runCoins;
 
     if (victory) {
@@ -1560,24 +1564,11 @@
       if (!progress.completed.includes(lvl.id)) progress.completed.push(lvl.id);
       if (victoryStageBox) {
         victoryStageBox.classList.remove('hidden');
-        if (endStageImg) endStageImg.alt = 'Победа на уровне';
-        resolveImageToElement(
-          endStageImg,
-          [`img/lvl${lvl.id}_out.jpg`, `img/level${lvl.id}_out.jpg`, 'img/transition_out.jpg'],
-          () => victoryStageBox.classList.add('hidden')
-        );
+        resolveImageToElement(document.getElementById('end-stage-img'), [`img/level${lvl.id}_out.jpg`, 'img/transition_out.jpg', 'img/1000036352.jpg']);
       }
     } else {
       if (synth) synth.sfxGameOver();
-      if (victoryStageBox) {
-        victoryStageBox.classList.remove('hidden');
-        if (endStageImg) endStageImg.alt = 'Поражение на уровне';
-        resolveImageToElement(
-          endStageImg,
-          [`img/lvl${lvl.id}_lose.jpg`, 'img/lose.jpg'],
-          () => victoryStageBox.classList.add('hidden')
-        );
-      }
+      if (victoryStageBox) victoryStageBox.classList.add('hidden');
     }
 
     if (score > progress.bestScore) progress.bestScore = score;
@@ -1648,6 +1639,7 @@
     const subHud = combo > 1 ? `УРОВЕНЬ ${lvl.id} • ${waveLabel} • x${combo}` : `УРОВЕНЬ ${lvl.id} • ${waveLabel}`;
     ctx.strokeText(subHud, 18, 78); ctx.fillText(subHud, 18, 78);
 
+    // Отображение мини-задания уровня
     if (activeQuest) {
       ctx.fillStyle = activeQuest.done ? '#06d6a0' : '#ffd166';
       ctx.font = '800 11px sans-serif';
