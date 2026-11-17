@@ -1,0 +1,71 @@
+html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASTRACAT • Диагностика модулей</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #100824;
+      color: #f8f4ff;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      padding: 14px;
+      line-height: 1.4;
+    }
+    .container { max-width: 540px; margin: 0 auto; }
+    h1 { font-size: 20px; font-weight: 900; color: #90e0ef; margin-bottom: 4px; }
+    .sub { font-size: 12px; color: #cdb4db; margin-bottom: 12px; }
+    .toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
+    button {
+      flex: 1; padding: 11px 12px; border-radius: 999px;
+      border: 1.5px solid #ffffff; font-size: 13px; font-weight: 900; cursor: pointer;
+    }
+    .btn-run { background: linear-gradient(135deg, #72efdd, #48bfe3); color: #140b29; }
+    .btn-copy { background: linear-gradient(135deg, #ffafcc, #9d4edd); color: #ffffff; }
+    .summary {
+      padding: 12px 14px; border-radius: 18px; background: #1f1240;
+      border: 1.5px solid rgba(224, 170, 255, 0.45); margin-bottom: 12px;
+      font-size: 13px; font-weight: 800;
+    }
+    .module-card {
+      background: #1a0f36; border: 1.5px solid rgba(224, 170, 255, 0.35);
+      border-radius: 16px; padding: 11px 13px; margin-bottom: 9px;
+    }
+    .module-card.ok { border-color: #06d6a0; }
+    .module-card.err { border-color: #ff006e; background: #2b0c24; }
+    .module-card.warn { border-color: #ffd166; }
+    .mod-head {
+      display: flex; justify-content: space-between; align-items: center;
+      font-weight: 900; font-size: 14px; margin-bottom: 5px;
+    }
+    .badge { padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 900; }
+    .badge.ok { background: #06d6a0; color: #091c16; }
+    .badge.err { background: #ff006e; color: #ffffff; }
+    .badge.warn { background: #ffd166; color: #1f1035; }
+    .mod-details { font-size: 12px; color: #e2d4f7; }
+    .mod-details div { margin-top: 3px; word-break: break-word; }
+    .code-snippet {
+      margin-top: 5px; padding: 6px 8px; border-radius: 8px;
+      background: rgba(0, 0, 0, 0.45); font-family: monospace; font-size: 11px; color: #ffafcc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🛠 ASTRACAT • ТЕСТ МОДУЛЕЙ</h1>
+    <p class="sub">Автоматическая проверка синтаксиса, разметки HTML, стилей, JS-классов и медиа-файлов.</p>
+
+    <div class="toolbar">
+      <button class="btn-run" id="run-btn">🔄 Перезапустить тест</button>
+      <button class="btn-copy" id="copy-btn">📋 Скопировать отчёт</button>
+    </div>
+
+    <div class="summary" id="summary-box">Запуск диагностики...</div>
+    <div id="results-list"></div>
+  </div>
+
+  <script src="test.js?v=1"></script>
+</body>
+</html>
