@@ -1,10 +1,11 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ASTRACAT • Космическая Одиссея</title>
-  <link rel="stylesheet" href="css/style.css?v=26" />
+  <link rel="stylesheet" href="css/style.css?v=28" />
 </head>
 <body>
   <div id="game-wrap">
@@ -79,7 +80,7 @@
       </div>
     </div>
 
-    <!-- 3. ПОЛНОЭКРАННЫЙ АНГАР С ОТДЕЛЬНЫМИ ВКЛАДКАМИ ДЛЯ КОРАБЛЕЙ И ОРУЖИЯ -->
+    <!-- 3. ПОЛНОЭКРАННЫЙ АНГАР (3 ВКЛАДКИ: КОРАБЛИ / ОРУЖИЕ / ДРОНЫ) -->
     <div id="hangar-overlay" class="overlay fullscreen-overlay hidden">
       <img id="hangar-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d hangar-card fullscreen-hangar">
@@ -92,9 +93,10 @@
             </div>
             <h2>АНГАР КОТОВИИ</h2>
 
-            <div class="hangar-tabs-row">
-              <button id="tab-ships-btn" class="tab-pill active">🚀 КОРАБЛИ (5)</button>
-              <button id="tab-weapons-btn" class="tab-pill">🔫 ОРУЖИЕ (5)</button>
+            <div class="hangar-tabs-row three-tabs">
+              <button id="tab-ships-btn" class="tab-pill active">🚀 КОРАБЛИ</button>
+              <button id="tab-weapons-btn" class="tab-pill">🔫 ОРУЖИЕ</button>
+              <button id="tab-drones-btn" class="tab-pill">🤖 ДРОНЫ</button>
             </div>
           </div>
 
@@ -120,6 +122,18 @@
               </div>
             </div>
             <div class="media-carousel" id="weapons-carousel"></div>
+          </div>
+
+          <div id="hangar-section-drones" class="hangar-section hidden">
+            <div class="carousel-header">
+              <span class="section-label" style="margin:0;">Дрон-компаньон</span>
+              <div class="carousel-nav">
+                <button id="drone-prev-btn" class="nav-arrow-btn">◀</button>
+                <span id="drone-counter" class="nav-counter">1 / 4</span>
+                <button id="drone-next-btn" class="nav-arrow-btn">▶</button>
+              </div>
+            </div>
+            <div class="media-carousel" id="drones-carousel"></div>
           </div>
 
           <div class="btn-row" style="margin-top:8px;">
@@ -178,7 +192,7 @@
       </div>
     </div>
 
-    <!-- 6. МЕНЮ НАСТРОЕК ЗВУКА (БАЗОВАЯ ГРОМКОСТЬ ASMR +30% -> 70%) -->
+    <!-- 6. МЕНЮ НАСТРОЕК ЗВУКА -->
     <div id="settings-overlay" class="overlay hidden">
       <img id="settings-outer-bg" class="overlay-bg-img" alt="" />
       <div class="card-3d scrollable-card" id="settings-scroll-box">
@@ -293,10 +307,11 @@
     </div>
   </div>
 
-  <script src="js/synth.js?v=26"></script>
-  <script src="js/vfx.js?v=26"></script>
-  <script src="js/world3d.js?v=26"></script>
-  <script src="js/entities.js?v=26"></script>
-  <script src="js/game.js?v=26"></script>
+  <script src="js/synth.js?v=28"></script>
+  <script src="js/vfx.js?v=28"></script>
+  <script src="js/world3d.js?v=28"></script>
+  <script src="js/entities.js?v=28"></script>
+  <script src="js/game.js?v=28"></script>
 </body>
 </html>
+```
