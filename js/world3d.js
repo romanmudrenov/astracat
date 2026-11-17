@@ -134,7 +134,6 @@ class World3DEngine {
     return list[idx];
   }
 
-  // Яркие световые блики/огни на фоне по тематике уровня
   drawThemeLights(ctx, lvl, W, H) {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
@@ -163,7 +162,6 @@ class World3DEngine {
       ctx.fill();
     }
 
-    // Дополнительные каустические лучи света для 4-го уровня (Волна / Океан)
     if (lvl.theme === 'underwater') {
       ctx.globalAlpha = 0.09;
       for (let r = 0; r < 4; r++) {
@@ -182,7 +180,6 @@ class World3DEngine {
     ctx.restore();
   }
 
-  // Тематические синусоиды разных цветов и форм для уровней 1, 2, 3, 4, 5, 6
   drawThemeSineWaves(ctx, lvl, W, H) {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
@@ -190,7 +187,6 @@ class World3DEngine {
     ctx.lineJoin = 'round';
 
     if (lvl.theme === 'lsd' || lvl.theme === 'mushroom') {
-      // 1) Уровень 1 (и 6): Более широкие переливающиеся психоделические синусоиды
       const waveConfigs = [
         { yFrac: 0.15, amp: 64, freq: 0.010, speed: 2.2, width: 22 },
         { yFrac: 0.36, amp: 48, freq: 0.014, speed: -1.9, width: 18 },
@@ -201,7 +197,6 @@ class World3DEngine {
         const hue = (this.time * 72 + s * 88) % 360;
         const hue2 = (hue + 140) % 360;
 
-        // Широкая переливающаяся аура волны
         ctx.strokeStyle = `hsl(${hue}, 100%, 62%)`;
         ctx.lineWidth = cfg.width;
         ctx.globalAlpha = 0.26;
@@ -215,7 +210,6 @@ class World3DEngine {
         }
         ctx.stroke();
 
-        // Яркая переливающаяся сердцевина синусоиды
         ctx.strokeStyle = `hsl(${hue2}, 100%, 74%)`;
         ctx.lineWidth = cfg.width * 0.32;
         ctx.globalAlpha = 0.45;
@@ -223,7 +217,6 @@ class World3DEngine {
       });
 
     } else if (lvl.theme === 'horror') {
-      // 2) Уровень 2: Неоновые праздничные синусоиды Калавера (зигзагообразные и двойные спирали)
       const fiestaWaves = [
         { yFrac: 0.20, amp: 38, freq: 0.018, speed: 2.0, col: '#ff006e', w: 6 },
         { yFrac: 0.48, amp: 44, freq: 0.014, speed: -1.7, col: '#ffbe0b', w: 7 },
@@ -242,7 +235,6 @@ class World3DEngine {
         }
         ctx.stroke();
 
-        // Светящиеся лепестки-бусины вдоль синусоиды
         ctx.fillStyle = idx % 2 === 0 ? '#00f5d4' : '#ffbe0b';
         ctx.globalAlpha = 0.42;
         for (let x = 20; x < W; x += 56) {
@@ -254,7 +246,6 @@ class World3DEngine {
       });
 
     } else if (lvl.theme === 'underwater') {
-      // 4) Уровень 4: Волновые морские синусоиды с гребнями и био-пеной
       const oceanWaves = [
         { yFrac: 0.18, amp: 32, freq: 0.015, speed: 2.1, col: '#48cae4', width: 12 },
         { yFrac: 0.38, amp: 42, freq: 0.012, speed: -1.6, col: '#9bf6ff', width: 15 },
@@ -267,7 +258,6 @@ class World3DEngine {
         ctx.globalAlpha = 0.25;
         ctx.beginPath();
         for (let x = -60; x <= W + 60; x += 12) {
-          // Трохоидальная форма морской волны (заострённый гребень, плавная ложбина)
           const phase = x * ow.freq + this.time * ow.speed + idx * 1.4;
           const sy = H * ow.yFrac + Math.sin(phase) * ow.amp - Math.cos(phase * 2) * (ow.amp * 0.22);
           if (x === -60) ctx.moveTo(x, sy);
@@ -275,7 +265,6 @@ class World3DEngine {
         }
         ctx.stroke();
 
-        // Тонкий светящийся гребень морской пены
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2.5;
         ctx.globalAlpha = 0.36;
@@ -283,7 +272,6 @@ class World3DEngine {
       });
 
     } else if (lvl.theme === 'organic') {
-      // 5) Уровень 5: Растительные синусоиды-лианы с листьями и светящимися бутонами
       const vineWaves = [
         { yFrac: 0.22, amp: 44, freq: 0.013, speed: 1.5, vineCol: '#38b000', leafCol: '#80ed99', budCol: '#ffd166' },
         { yFrac: 0.50, amp: 52, freq: 0.011, speed: -1.3, vineCol: '#70e000', leafCol: '#ccff33', budCol: '#ff85a1' },
@@ -301,7 +289,6 @@ class World3DEngine {
         }
         ctx.stroke();
 
-        // Листочки и светящиеся цветки вдоль стебля синусоиды
         for (let x = 24; x < W; x += 52) {
           const phase = x * vw.freq + this.time * vw.speed + idx * 2;
           const sy = H * vw.yFrac + Math.sin(phase) * vw.amp;
@@ -345,7 +332,6 @@ class World3DEngine {
     ctx.restore();
   }
 
-  // Миниатюрный мексиканский неоновый череп Калавера для фона 2-го уровня
   drawBgCalaveraIcon(ctx, s, col1, col2, col3) {
     ctx.strokeStyle = col1;
     ctx.lineWidth = 2.2;
@@ -356,14 +342,12 @@ class World3DEngine {
     ctx.closePath();
     ctx.stroke();
 
-    // Цветочные глазницы
     ctx.strokeStyle = col2;
     ctx.lineWidth = 1.8;
     [-s * 0.26, s * 0.26].forEach(ex => {
       ctx.beginPath(); ctx.arc(ex, -s * 0.06, s * 0.18, 0, Math.PI * 2); ctx.stroke();
     });
 
-    // Цветок бархатцев на лбу
     ctx.fillStyle = col3;
     ctx.beginPath(); ctx.arc(0, -s * 0.42, s * 0.14, 0, Math.PI * 2); ctx.fill();
   }
@@ -388,7 +372,6 @@ class World3DEngine {
         ctx.globalAlpha = 0.34;
 
         if (g.kind === 0) {
-          // Звезда Меркаба / фрактальный треугольник
           for (let dir of [1, -1]) {
             ctx.beginPath();
             for (let k = 0; k < 3; k++) {
@@ -399,13 +382,11 @@ class World3DEngine {
             ctx.closePath(); ctx.stroke();
           }
         } else if (g.kind === 1) {
-          // 8-лепестковая калейдоскоп-мандала
           for (let k = 0; k < 8; k++) {
             ctx.rotate(Math.PI / 4);
             ctx.beginPath(); ctx.ellipse(s * 0.45, 0, s * 0.45, s * 0.16, 0, 0, Math.PI * 2); ctx.stroke();
           }
         } else {
-          // Психоделическая спираль
           ctx.beginPath();
           for (let t = 0; t < 20; t++) {
             const ang = t * 0.45, rad = t * (s * 0.052);
@@ -414,17 +395,15 @@ class World3DEngine {
           ctx.stroke();
         }
       } else if (lvl.theme === 'horror') {
-        // Неоновые мексиканские черепа Калавера и цветы бархатцев на фоне 2-го уровня
         const colors = ['#ff006e', '#ffbe0b', '#06d6a0', '#00f5d4'];
         const c1 = colors[g.kind % colors.length];
         const c2 = colors[(g.kind + 1) % colors.length];
         const c3 = colors[(g.kind + 2) % colors.length];
         ctx.globalAlpha = 0.34;
         if (g.kind % 2 === 0) {
-          ctx.rotate(-g.rot * 0.7); // Черепа слегка покачиваются, не переворачиваясь вверх ногами
+          ctx.rotate(-g.rot * 0.7);
           this.drawBgCalaveraIcon(ctx, s, c1, c2, c3);
         } else {
-          // Неоновый цветок Marigold (бархатцы)
           ctx.strokeStyle = c2;
           ctx.lineWidth = 2.2;
           for (let p = 0; p < 8; p++) {
@@ -445,7 +424,6 @@ class World3DEngine {
         }
         ctx.closePath(); ctx.stroke();
       } else if (lvl.theme === 'underwater') {
-        // 4) Волновые узоры: концентрические круги на воде и спиральные раковины-волны
         const pastelHue = 175 + Math.sin(g.phase) * 35;
         ctx.strokeStyle = `hsl(${pastelHue}, 95%, 78%)`;
         ctx.lineWidth = 2.2;
@@ -462,7 +440,6 @@ class World3DEngine {
           ctx.stroke();
         }
       } else if (lvl.theme === 'organic') {
-        // 5) Растительные узоры: цветущие био-лотосы и спирали папоротника
         ctx.strokeStyle = g.kind % 2 === 0 ? '#80ed99' : '#ccff33';
         ctx.lineWidth = 2.3;
         ctx.globalAlpha = 0.34;
@@ -536,7 +513,6 @@ class World3DEngine {
     ctx.lineTo(r * 0.52, r * 0.82); ctx.lineTo(-r * 0.52, r * 0.82);
     ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Цветочные лепестки вокруг глаз планеты-Калавера
     [-r * 0.34, r * 0.34].forEach((ex, idx) => {
       ctx.fillStyle = idx === 0 ? '#ff006e' : '#00f5d4';
       for (let p = 0; p < 8; p++) {
@@ -551,7 +527,6 @@ class World3DEngine {
       ctx.beginPath(); ctx.arc(ex, -r * 0.05, r * 0.10, 0, Math.PI * 2); ctx.fill();
     });
 
-    // Цветок на лбу
     ctx.fillStyle = '#06d6a0';
     ctx.beginPath(); ctx.arc(0, -r * 0.52, r * 0.16, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
@@ -606,7 +581,6 @@ class World3DEngine {
       ctx.translate(px, py);
 
       if (lvl.theme === 'lsd') {
-        // Яркие психоделические искры и мини-звёздочки
         ctx.rotate(tp.rot);
         ctx.globalAlpha = 0.85;
         const hue = (tp.hue + this.time * 120) % 360;
@@ -623,7 +597,6 @@ class World3DEngine {
         ctx.fillStyle = `hsl(${hue}, 100%, 62%)`;
         ctx.beginPath(); ctx.arc(0, 0, r * 0.85, Math.PI, 0); ctx.fill();
       } else if (lvl.theme === 'horror') {
-        // Неоновые мини-черепа Калавера и лепестки бархатцев
         const cols = ['#ff006e', '#ffbe0b', '#06d6a0', '#00f5d4'];
         ctx.globalAlpha = 0.55 + 0.45 * Math.abs(Math.sin(tp.phase * 1.4));
         if (tp.kindIdx === 0) {
@@ -649,7 +622,6 @@ class World3DEngine {
         ctx.fillStyle = '#ffffff';
         ctx.beginPath(); ctx.arc(-r * 0.25, -r * 0.25, r * 0.22, 0, Math.PI * 2); ctx.fill();
       } else if (lvl.theme === 'organic') {
-        // Светящиеся био-листья и золотистые светлячки пыльцы
         ctx.rotate(tp.rot); ctx.globalAlpha = 0.85;
         if (tp.kindIdx % 2 === 0) {
           ctx.fillStyle = '#80ed99';
