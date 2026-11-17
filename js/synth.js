@@ -18,7 +18,6 @@ class AstraCatSynth {
     this.musicEnabled = true;
     this.sfxEnabled = true;
     this.musicVolume = 0.55;
-    // Базовая громкость ASMR-эффектов увеличена на +30% (с 0.40 до 0.70)
     this.sfxVolume = 0.70;
 
     this.settings = {
@@ -30,21 +29,20 @@ class AstraCatSynth {
 
     this.brownNoiseBuffer = null;
 
-    // Строго треки с названием level (level1.mp3 — level11.mp3) для случайной ротации на уровнях
+    // Строго треки уровней (level1.mp3 — level11.mp3) для случайной ротации без повтора 4 треков
     this.availableTracks = [
       'level1.mp3', 'level2.mp3', 'level3.mp3', 'level4.mp3',
       'level5.mp3', 'level6.mp3', 'level7.mp3', 'level8.mp3',
       'level9.mp3', 'level10.mp3', 'level11.mp3'
     ];
 
-    // Треки боссов (играют ТОЛЬКО при появлении босса)
+    // Треки боссов — включаются ТОЛЬКО при появлении босса
     this.bossTracks = ['boss.mp3', 'boss2.mp3'];
 
     this.selectedTrack = 'auto';
     this.recentTracks = [];
     this.currentTrackIndex = 0;
 
-    // Единый аудио-элемент для надёжной работы на смартфонах и GitHub Pages
     this.bgmAudio = new Audio();
     this.bgmAudio.loop = true;
     this.bgmAudio.preload = 'auto';
@@ -56,7 +54,12 @@ class AstraCatSynth {
     this.lastScrollTickTime = 0;
     this.lastShotSoundTime = 0;
 
+    this.bgmAudio.addEventListener('playing', () => {
+      this.updateStatusHint(`▶ Играет: ${this.currentTrackFile}`);
+    });
+
     this.bgmAudio.addEventListener('error', () => {
+      this.updateStatusHint(`⚠ Ошибка загрузки ${this.currentTrackFile}`);
       if (this.fallbackTrackFile && this.currentTrackFile !== this.fallbackTrackFile) {
         const fb = this.fallbackTrackFile;
         this.fallbackTrackFile = null;
@@ -68,11 +71,15 @@ class AstraCatSynth {
     this.setupAutoUnlock();
   }
 
+  updateStatusHint(text) {
+    const hint = document.getElementById('tracks-found-hint');
+    if (hint) hint.textContent = text;
+  }
+
   setupAutoUnlock() {
     const unlock = () => {
       this.init();
 
-      // Принудительная разблокировка Web Audio API на Android Chrome и iOS Safari
       if (this.ctx) {
         if (this.ctx.state !== 'running') {
           this.ctx.resume().catch(() => {});
@@ -102,17 +109,15 @@ class AstraCatSynth {
       }
     };
 
-    // Слушаем touchend и click — именно их мобильный Chrome считает разрешением на звук
     window.addEventListener('touchend', unlock, { passive: true });
     window.addEventListener('click', unlock, { passive: true });
-    window.addEventListener('pointerup', unlock, { passive: true });
+    window.addEventListener('pointerdown', unlock, { passive: true });
     window.addEventListener('keydown', unlock, { passive: true });
   }
 
   scanMusicFolder() {
     const list = this.availableTracks;
     const sel = document.getElementById('track-select');
-    const hint = document.getElementById('tracks-found-hint');
 
     if (sel) {
       const curVal = sel.value || 'auto';
@@ -126,9 +131,7 @@ class AstraCatSynth {
       sel.value = curVal;
     }
 
-    if (hint) {
-      hint.textContent = `Уровней: ${list.length} (level1–11) • Боссов: ${this.bossTracks.length} • Заставка: intro.mp3`;
-    }
+    this.updateStatusHint(`Уровни: level1–11.mp3 • Боссы: boss.mp3, boss2.mp3`);
   }
 
   init() {
@@ -154,9 +157,8 @@ class AstraCatSynth {
 
     this._createNoiseBuffers();
 
-    // Усиленная шина голосов (+30% чистой громкости без клиппинга)
     this.voiceBus = this.ctx.createGain();
-    this.voiceBus.gain.value = 0.88;
+    this.voiceBus.gain.value = 1.0;
 
     this.masterLowpass = this.ctx.createBiquadFilter();
     this.masterLowpass.type = 'lowpass';
@@ -207,7 +209,7 @@ class AstraCatSynth {
 
   getEffectiveSfxVol() {
     if (this.muted || !this.sfxEnabled) return 0.0001;
-    return Math.max(0.0001, Math.min(1.45, this.sfxVolume * 1.30));
+    return Math.max(0.0001, Math.min(1.5, this.sfxVolume * 1.45));
   }
 
   updateSfxVolume() {
@@ -287,15 +289,15 @@ class AstraCatSynth {
     if (navigator.vibrate) { try { navigator.vibrate(4); } catch (_) {} }
 
     const now = this.ctx.currentTime;
-    const dur = 0.032;
+    const dur = 0.04;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(195, now);
-    osc.frequency.exponentialRampToValueAtTime(65, now + dur);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(520, now);
+    osc.frequency.exponentialRampToValueAtTime(220, now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.09, now + 0.004);
+    gain.gain.linearRampToValueAtTime(0.16, now + 0.005);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(gain);
@@ -309,17 +311,17 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.14;
-    const baseFreq = 245 * pitchMultiplier * (0.96 + Math.random() * 0.08);
+    const dur = 0.15;
+    const baseFreq = 540 * pitchMultiplier * (0.96 + Math.random() * 0.08);
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(baseFreq * 1.4, now);
-    osc.frequency.exponentialRampToValueAtTime(Math.max(55, baseFreq * 0.45), now + dur);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(baseFreq * 1.45, now);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(160, baseFreq * 0.45), now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.14, now + 0.012);
+    gain.gain.linearRampToValueAtTime(0.24, now + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(gain);
@@ -333,22 +335,22 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.34;
+    const dur = 0.30;
 
     const osc = this.ctx.createOscillator();
     const filter = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(390, now);
-    osc.frequency.exponentialRampToValueAtTime(105, now + dur);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(760, now);
+    osc.frequency.exponentialRampToValueAtTime(210, now + dur);
 
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(780, now);
-    filter.frequency.exponentialRampToValueAtTime(210, now + dur);
+    filter.frequency.setValueAtTime(1600, now);
+    filter.frequency.exponentialRampToValueAtTime(420, now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.16, now + 0.025);
+    gain.gain.linearRampToValueAtTime(0.24, now + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(filter);
@@ -363,17 +365,17 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.48;
+    const dur = 0.42;
 
     const sub = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    sub.type = 'sine';
-    sub.frequency.setValueAtTime(78, now);
-    sub.frequency.exponentialRampToValueAtTime(135, now + dur * 0.6);
-    sub.frequency.exponentialRampToValueAtTime(65, now + dur);
+    sub.type = 'triangle';
+    sub.frequency.setValueAtTime(220, now);
+    sub.frequency.exponentialRampToValueAtTime(380, now + dur * 0.55);
+    sub.frequency.exponentialRampToValueAtTime(150, now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.18, now + 0.08);
+    gain.gain.linearRampToValueAtTime(0.26, now + 0.05);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     sub.connect(gain);
@@ -387,28 +389,28 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.68;
+    const dur = 0.62;
 
     const sub = this.ctx.createOscillator();
-    sub.type = 'sine';
-    sub.frequency.setValueAtTime(110, now);
-    sub.frequency.exponentialRampToValueAtTime(32, now + dur * 0.75);
+    sub.type = 'triangle';
+    sub.frequency.setValueAtTime(210, now);
+    sub.frequency.exponentialRampToValueAtTime(55, now + dur * 0.75);
 
     const subGain = this.ctx.createGain();
     subGain.gain.setValueAtTime(0.0001, now);
-    subGain.gain.linearRampToValueAtTime(0.24, now + 0.02);
+    subGain.gain.linearRampToValueAtTime(0.34, now + 0.02);
     subGain.gain.exponentialRampToValueAtTime(0.0001, now + dur * 0.85);
 
     const noise = this.ctx.createBufferSource();
     noise.buffer = this.brownNoiseBuffer;
     const lp = this.ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(520, now);
-    lp.frequency.exponentialRampToValueAtTime(95, now + dur);
+    lp.frequency.setValueAtTime(980, now);
+    lp.frequency.exponentialRampToValueAtTime(160, now + dur);
 
     const noiseGain = this.ctx.createGain();
     noiseGain.gain.setValueAtTime(0.0001, now);
-    noiseGain.gain.linearRampToValueAtTime(0.22, now + 0.03);
+    noiseGain.gain.linearRampToValueAtTime(0.32, now + 0.025);
     noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     sub.connect(subGain); subGain.connect(this.voiceBus);
@@ -423,17 +425,18 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const scale = [523.25, 587.33, 659.25, 783.99, 987.77];
+    const scale = [587.33, 659.25, 783.99, 880.00, 1046.50];
     const freq = scale[Math.floor(Math.random() * scale.length)];
-    const dur = 0.55;
+    const dur = 0.48;
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'sine';
+    osc.type = 'triangle';
     osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.25, now + dur * 0.4);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.14, now + 0.015);
+    gain.gain.linearRampToValueAtTime(0.24, now + 0.015);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(gain); gain.connect(this.voiceBus);
@@ -448,20 +451,20 @@ class AstraCatSynth {
     const dur = 0.54;
 
     const osc = this.ctx.createOscillator();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(310, now);
-    osc.frequency.exponentialRampToValueAtTime(480, now + 0.16);
-    osc.frequency.exponentialRampToValueAtTime(340, now + dur);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(360, now);
+    osc.frequency.exponentialRampToValueAtTime(580, now + 0.16);
+    osc.frequency.exponentialRampToValueAtTime(380, now + dur);
 
     const formant = this.ctx.createBiquadFilter();
     formant.type = 'bandpass';
-    formant.Q.value = 3.2;
-    formant.frequency.setValueAtTime(540, now);
-    formant.frequency.exponentialRampToValueAtTime(980, now + 0.2);
+    formant.Q.value = 3.0;
+    formant.frequency.setValueAtTime(640, now);
+    formant.frequency.exponentialRampToValueAtTime(1120, now + 0.2);
 
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.21, now + 0.06);
+    gain.gain.linearRampToValueAtTime(0.32, now + 0.05);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(formant); formant.connect(gain); gain.connect(this.voiceBus);
@@ -473,14 +476,14 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.95;
-    [174.61, 261.63, 329.63].forEach((freq) => {
+    const dur = 0.85;
+    [261.63, 329.63, 392.00].forEach((freq) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      osc.type = 'sine';
+      osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, now);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.065, now + 0.25);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.18);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
       osc.connect(gain); gain.connect(this.voiceBus);
       osc.start(now); osc.stop(now + dur);
@@ -492,14 +495,14 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.5;
+    const dur = 0.45;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(95, now);
-    osc.frequency.linearRampToValueAtTime(115, now + dur * 0.5);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(440, now + dur * 0.7);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.16, now + 0.1);
+    gain.gain.linearRampToValueAtTime(0.24, now + 0.08);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
     osc.connect(gain); gain.connect(this.voiceBus);
     osc.start(now); osc.stop(now + dur);
@@ -521,7 +524,7 @@ class AstraCatSynth {
     else this.playWarmLaser();
   }
 
-  sfxHit() { this.playSoftBullet(0.78); }
+  sfxHit() { this.playSoftBullet(0.85); }
   sfxExplosion() { this.playNebulaExplosion(); }
 
   sfxBossExplosion() {
@@ -537,9 +540,9 @@ class AstraCatSynth {
   sfxIgnite() { this.playPlushRocket(); }
   sfxGravity() { this.playShieldHum(); }
   sfxDisintegrate() { this.playSoftBullet(1.22); }
-  sfxUnderwater() { this.playSoftBullet(0.92); }
+  sfxUnderwater() { this.playSoftBullet(0.95); }
   sfxCosmicHum() { this.playPurrBoost(); }
-  sfxSticky() { this.playSoftBullet(0.7); }
+  sfxSticky() { this.playSoftBullet(0.8); }
   sfxWave() { this.playWarmLaser(); }
   sfxPowerup() { this.playStarCollect(); }
   sfxShieldBlock() { this.playShieldHum(); }
@@ -558,7 +561,7 @@ class AstraCatSynth {
     const chosen = pool[Math.floor(Math.random() * pool.length)];
     this.currentTrackIndex = Math.max(0, this.availableTracks.indexOf(chosen));
     this.recentTracks.push(chosen);
-    // Храним историю из 4 треков, чтобы ни один не повторялся минимум 4 трека подряд
+    // Минимум 4 трека не повторяются подряд
     if (this.recentTracks.length > 4) this.recentTracks.shift();
     return chosen;
   }
@@ -601,7 +604,10 @@ class AstraCatSynth {
       if (this.bgmAudio.paused && this.musicEnabled && !this.muted) {
         const p = this.bgmAudio.play();
         if (p && typeof p.catch === 'function') {
-          p.catch(() => { this.pendingTrack = { file: filename, fallback: fallbackTrack }; });
+          p.catch(() => {
+            this.pendingTrack = { file: filename, fallback: fallbackTrack };
+            this.updateStatusHint(`Нажми на экран для запуска: ${filename}`);
+          });
         }
       }
       return;
@@ -613,13 +619,14 @@ class AstraCatSynth {
     try {
       this.bgmAudio.pause();
       this.bgmAudio.src = path;
-      this.bgmAudio.currentTime = 0;
+      this.bgmAudio.load();
       this.bgmAudio.volume = this.getEffectiveMusicVol();
 
       const playPromise = this.bgmAudio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(() => {
           this.pendingTrack = { file: filename, fallback: fallbackTrack };
+          this.updateStatusHint(`Нажми на экран для запуска: ${filename}`);
         });
       }
     } catch (e) {}
@@ -656,12 +663,12 @@ class AstraCatSynth {
       return;
     }
     if (mode === 'boss') {
-      // Треки босса играют ТОЛЬКО при появлении босса
+      // Треки боссов играют ТОЛЬКО при выходе босса
       const bossFile = this.bossTracks[(levelId - 1) % this.bossTracks.length] || 'boss.mp3';
       this.playTrack(bossFile, 'boss.mp3', true);
       return;
     }
-    // Во время уровня играют только треки с названием level вразнобой без повторов 4 трека
+    // В обычном полёте по уровню — только случайные level1..11.mp3 без повторов 4 трека
     this.playTrack(this.pickNextTrack(), 'level1.mp3', true);
   }
 
