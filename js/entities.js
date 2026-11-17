@@ -266,9 +266,6 @@ function getShipHardpoints(shipId) {
   return { noseY: -22, pairX: 10, pairY: -8, wingX: 19, wingY: 2 };
 }
 
-// =========================================================================
-// ХЕЛПЕРЫ ДЛЯ ПЛЮШЕВО-МУЛЬТЯШНОЙ ГРАФИКИ
-// =========================================================================
 function drawGlossyCircle(ctx, x, y, r, mainCol) {
   ctx.fillStyle = mainCol;
   ctx.strokeStyle = INK;
@@ -332,9 +329,6 @@ function drawEliteCrown(ctx, yTop) {
   ctx.restore();
 }
 
-// =========================================================================
-// 3 УНИКАЛЬНЫХ ОРБИТАЛЬНЫХ ДРОНА (ДЛЯ АНГАРА И БОЯ)
-// =========================================================================
 function drawDroneModel(ctx, drone, time, opts = {}) {
   const id = (drone && drone.id) || 'cat_orb';
   const mainCol = (drone && drone.mainColor) || '#90e0ef';
@@ -347,15 +341,12 @@ function drawDroneModel(ctx, drone, time, opts = {}) {
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
 
-  // Мягкое неоновое свечение вокруг дрона
   ctx.fillStyle = mainCol;
   ctx.globalAlpha = 0.24;
   ctx.beginPath(); ctx.arc(0, 0, 19, 0, Math.PI * 2); ctx.fill();
   ctx.globalAlpha = 1;
 
   if (id === 'prism_guard') {
-    // 2. Кристальный Страж «Призма-Х»
-    // Магнитная пульсирующая волна
     const waveR = 14 + ((time * 18) % 10);
     ctx.strokeStyle = coreCol;
     ctx.globalAlpha = Math.max(0.1, 1 - (waveR - 14) / 10);
@@ -363,7 +354,6 @@ function drawDroneModel(ctx, drone, time, opts = {}) {
     ctx.beginPath(); ctx.arc(0, 0, waveR, 0, Math.PI * 2); ctx.stroke();
     ctx.globalAlpha = 1;
 
-    // 4 вращающихся лепестка-призмы
     ctx.save();
     ctx.rotate(time * 2.8);
     for (let k = 0; k < 4; k++) {
@@ -377,7 +367,6 @@ function drawDroneModel(ctx, drone, time, opts = {}) {
     }
     ctx.restore();
 
-    // Граненый кристальный корпус
     ctx.fillStyle = mainCol;
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.2;
@@ -385,19 +374,15 @@ function drawDroneModel(ctx, drone, time, opts = {}) {
     ctx.moveTo(0, -12); ctx.lineTo(10, 0); ctx.lineTo(0, 12); ctx.lineTo(-10, 0);
     ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Внутренний энергетический ромб
     ctx.fillStyle = coreCol;
     ctx.beginPath();
     ctx.moveTo(0, -6); ctx.lineTo(5, 0); ctx.lineTo(0, 6); ctx.lineTo(-5, 0);
     ctx.closePath(); ctx.fill();
 
-    // Блик
     ctx.fillStyle = '#ffffff';
     ctx.beginPath(); ctx.arc(-2.5, -3.5, 2, 0, Math.PI * 2); ctx.fill();
 
   } else if (id === 'neon_jelly') {
-    // 3. Психо-Медуза «Неон-Спрут»
-    // Светящиеся щупальца снизу
     for (let t = -1.5; t <= 1.5; t += 1) {
       const wag = Math.sin(time * 7 + t * 1.6) * 4;
       ctx.strokeStyle = t % 2 === 0 ? accentCol : mainCol;
@@ -411,7 +396,6 @@ function drawDroneModel(ctx, drone, time, opts = {}) {
       ctx.beginPath(); ctx.arc(t * 4 - wag * 0.7, 17, 1.4, 0, Math.PI * 2); ctx.fill();
     }
 
-    // Пульсирующий купол медузы
     const pulse = 1 + Math.sin(time * 5.5) * 0.08;
     ctx.save();
     ctx.scale(pulse, 2 - pulse);
@@ -424,20 +408,16 @@ function drawDroneModel(ctx, drone, time, opts = {}) {
     ctx.quadraticCurveTo(-13, 7, -12, 2);
     ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Пятна и золотой нимб
     ctx.fillStyle = accentCol;
     ctx.beginPath(); ctx.arc(-5, -3, 2.2, 0, Math.PI * 2); ctx.arc(5, -3, 2.2, 0, Math.PI * 2); ctx.arc(0, -6, 2.6, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 
-    // Милые глазки-сенсоры
     ctx.fillStyle = INK;
     ctx.beginPath(); ctx.arc(-3.5, 1.5, 1.6, 0, Math.PI * 2); ctx.arc(3.5, 1.5, 1.6, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#ffffff';
     ctx.beginPath(); ctx.arc(-4, 1, 0.7, 0, Math.PI * 2); ctx.arc(3, 1, 0.7, 0, Math.PI * 2); ctx.fill();
 
   } else {
-    // 1. Кото-Спутник «Мур-Орбита»
-    // Вращающееся орбитальное кольцо-гироскоп
     ctx.save();
     ctx.rotate(Math.sin(time * 2.5) * 0.35);
     ctx.strokeStyle = accentCol;
@@ -445,7 +425,6 @@ function drawDroneModel(ctx, drone, time, opts = {}) {
     ctx.beginPath(); ctx.ellipse(0, 1, 16, 5.5, 0, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
 
-    // Неоновые кото-ушки
     ctx.fillStyle = accentCol;
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2;
@@ -454,10 +433,8 @@ function drawDroneModel(ctx, drone, time, opts = {}) {
     ctx.moveTo(8, -5);  ctx.lineTo(9, -14);  ctx.lineTo(2, -9);
     ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Сферический корпус спутника
     drawGlossyCircle(ctx, 0, 0, 10.5, mainCol);
 
-    // Визор с глазами котика
     ctx.fillStyle = '#14082e';
     roundRectPath(ctx, -7, -3.5, 14, 6.5, 3.2);
     ctx.fill();
@@ -465,7 +442,6 @@ function drawDroneModel(ctx, drone, time, opts = {}) {
     ctx.fillStyle = coreCol;
     ctx.beginPath(); ctx.arc(-3.2, -0.2, 1.7, 0, Math.PI * 2); ctx.arc(3.2, -0.2, 1.7, 0, Math.PI * 2); ctx.fill();
 
-    // Нижнее сопло турели
     ctx.fillStyle = accentCol;
     ctx.beginPath(); ctx.arc(0, 10.5, 2.8, 0, Math.PI * 2); ctx.fill();
   }
@@ -473,9 +449,6 @@ function drawDroneModel(ctx, drone, time, opts = {}) {
   ctx.restore();
 }
 
-// =========================================================================
-// 5 МИНИАТЮРНЫХ ОБТЕКАЕМЫХ КОРАБЛЕЙ ИГРОКА
-// =========================================================================
 function drawPlayerShipModel(ctx, ship, time, vx = 0, opts = {}) {
   const shipId = ship.id || 'shuttle';
   const hullCol = ship.hullColor || '#e0fbfc';
@@ -606,9 +579,6 @@ function drawPlayerShipModel(ctx, ship, time, vx = 0, opts = {}) {
   ctx.restore();
 }
 
-// =========================================================================
-// ИНТЕРАКТИВНЫЕ ОБЪЕКТЫ УРОВНЕЙ
-// =========================================================================
 function drawInteractiveProp(ctx, pr) {
   ctx.save();
   ctx.translate(pr.x, pr.y);
@@ -740,9 +710,6 @@ function drawPlayerBullet(ctx, b) {
   ctx.restore();
 }
 
-// =========================================================================
-// ПРЕПЯТСТВИЯ НА ПУТИ
-// =========================================================================
 function drawObstacle(ctx, ob) {
   ctx.save(); ctx.translate(ob.x, ob.y); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   const hue = Math.floor(((ob.phase || 0) * 95) % 360);
@@ -816,11 +783,7 @@ function drawObstacle(ctx, ob) {
   ctx.restore();
 }
 
-// =========================================================================
-// ХЕЛПЕР МЕКСИКАНСКОГО НЕОНОВОГО ЧЕРЕПА (CALAVERA / SUGAR SKULL)
-// =========================================================================
 function drawCalaveraOrnament(ctx, leftX, rightX, eyeY, eyeR, cPetal, cAccent, cGlow) {
-  // Цветочные лепестки вокруг глазниц (стиль Калавера)
   [leftX, rightX].forEach((ex, idx) => {
     const ringCol = idx === 0 ? cPetal : cGlow;
     ctx.fillStyle = ringCol;
@@ -832,7 +795,6 @@ function drawCalaveraOrnament(ctx, leftX, rightX, eyeY, eyeR, cPetal, cAccent, c
     }
   });
 
-  // Цветок бархатцев (Marigold) на лбу
   ctx.fillStyle = cAccent;
   ctx.beginPath();
   ctx.arc(0, eyeY - 9, 3.6, 0, Math.PI * 2);
@@ -842,7 +804,6 @@ function drawCalaveraOrnament(ctx, leftX, rightX, eyeY, eyeR, cPetal, cAccent, c
   ctx.arc(0, eyeY - 9, 1.7, 0, Math.PI * 2);
   ctx.fill();
 
-  // Перевёрнутое сердечко-носик Калавера
   ctx.fillStyle = cPetal;
   ctx.beginPath();
   ctx.moveTo(0, eyeY + 4.5);
@@ -851,7 +812,6 @@ function drawCalaveraOrnament(ctx, leftX, rightX, eyeY, eyeR, cPetal, cAccent, c
   ctx.closePath();
   ctx.fill();
 
-  // Завитки на скулах
   ctx.strokeStyle = cGlow;
   ctx.lineWidth = 1.6;
   ctx.beginPath();
@@ -862,9 +822,6 @@ function drawCalaveraOrnament(ctx, leftX, rightX, eyeY, eyeR, cPetal, cAccent, c
   ctx.stroke();
 }
 
-// =========================================================================
-// МНОГОСЛОЙНЫЕ ПЛЮШЕВЫЕ ВРАГИ С ЖИВЫМИ ГЛАЗАМИ И ЭЛИТНЫМИ КОРОНАМИ
-// =========================================================================
 function drawUniqueEnemy(ctx, e, player = null) {
   ctx.save(); ctx.translate(e.x, e.y); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   if (e.isElite) ctx.scale(1.18, 1.18);
@@ -878,7 +835,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.setLineDash([]);
   }
 
-  // --- УРОВЕНЬ 6: ГРИБНАЯ ГАЛАКТИКА ---
   if (e.kind === 'evil_flyagaric' || e.kind === 'mini_flyagaric') {
     const capCol = e.kind === 'mini_flyagaric' ? `hsl(${hue}, 95%, 56%)` : '#ff002b';
     e.wingCol = capCol; e.bodyCol = '#ffffff';
@@ -909,7 +865,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // --- УРОВЕНЬ 1: ФРАКТАЛ, МИНИ-МАРКА, КУБИК РУБИКА ---
   if (e.kind === 'fractal_ship') {
     const c1 = `hsl(${hue}, 95%, 62%)`, c2 = `hsl(${(hue + 140) % 360}, 95%, 68%)`;
     e.wingCol = c1; e.bodyCol = c2;
@@ -951,7 +906,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // --- УРОВЕНЬ 2: МЕКСИКАНСКИЕ НЕОНОВЫЕ ЧЕРЕПА (CALAVERA / SUGAR SKULLS) ---
   if (e.kind === 'bat_ship' || e.kind === 'spider_ship' || e.kind === 'skeleton_ship' || e.kind === 'mini_skull') {
     const calaveraNeon = ['#ff006e', '#ffbe0b', '#06d6a0', '#00f5d4', '#c77dff'];
     const idx = Math.floor(e.phase * 1.2) % calaveraNeon.length;
@@ -962,7 +916,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     e.bodyCol = '#fff8eb';
 
     if (e.kind === 'bat_ship') {
-      // Витражные неон-крылья летучей мыши Калавера
       const flap = Math.sin(e.phase * 4.2) * 7;
       ctx.fillStyle = flash ? '#ffffff' : cPetal;
       ctx.strokeStyle = cGlow;
@@ -977,7 +930,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
       ctx.bezierCurveTo(33, -15 + flap, 18, -22, 0, -6);
       ctx.closePath(); ctx.fill(); ctx.stroke();
 
-      // Неоновые прожилки на крыльях
       ctx.strokeStyle = cAccent;
       ctx.lineWidth = 1.6;
       ctx.beginPath();
@@ -985,7 +937,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
       ctx.moveTo(10, -2);  ctx.lineTo(25, 2 + flap * 0.7);
       ctx.stroke();
     } else if (e.kind === 'spider_ship') {
-      // 6 неоновых суставчатых лапок паука Калавера
       [-10, 0, 10].forEach((ly, li) => {
         const legSwing = Math.sin(e.phase * 5 + li) * 3.5;
         ctx.strokeStyle = li % 2 === 0 ? cPetal : cGlow;
@@ -996,7 +947,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
         ctx.stroke();
       });
     } else if (e.kind === 'skeleton_ship') {
-      // Неоновая грудная клетка / крылья-рёбра скелета
       ctx.strokeStyle = cGlow;
       ctx.lineWidth = 3.2;
       [-7, 0, 7].forEach((ry, ri) => {
@@ -1006,7 +956,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
         ctx.stroke();
       });
     } else if (e.kind === 'mini_skull') {
-      // Корона из лепестков бархатцев вокруг Мини-Черепа Калавера
       ctx.save();
       ctx.rotate(e.phase * 0.8);
       for (let m = 0; m < 10; m++) {
@@ -1017,7 +966,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
       ctx.restore();
     }
 
-    // Форма мексиканского черепа Калавера (округлый лоб + скулы + челюсть с зубками)
     const skR = e.kind === 'mini_skull' ? 17 : 15;
     ctx.fillStyle = flash ? '#ffffff' : '#fff8eb';
     ctx.strokeStyle = cPetal;
@@ -1030,7 +978,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.fill();
     ctx.stroke();
 
-    // Зубки Калавера на нижней челюсти
     ctx.strokeStyle = INK;
     ctx.lineWidth = 1.6;
     ctx.beginPath();
@@ -1039,7 +986,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.moveTo(3, skR - 2);  ctx.lineTo(3, skR + 3.5);
     ctx.stroke();
 
-    // Цветочные узоры Калавера вокруг глаз, на лбу и скулах
     drawCalaveraOrnament(ctx, -6, 6, -2, 4.3, cPetal, cAccent, cGlow);
     drawCartoonEyes(ctx, e, -6, 6, -2, 4.1, cGlow, player);
 
@@ -1047,7 +993,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // --- УРОВЕНЬ 3: КЛОУН, ЛЕДЕНЕЦ, РАДУГА, МИНИ-ПОНЧИК ---
   if (e.kind === 'clown_ship' || e.kind === 'lollipop_ship' || e.kind === 'rainbow_spiral' || e.kind === 'mini_donut') {
     const wingCol = `hsl(${hue}, 95%, 66%)`;
     e.wingCol = wingCol; e.bodyCol = '#fff8eb';
@@ -1070,7 +1015,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // --- УРОВЕНЬ 4 И 5: МОРСКИЕ И РАСТИТЕЛЬНЫЕ ПЛЮШЕВЫЕ ВРАГИ ---
   const mainCol = lvlColorByKind(e.kind, hue);
   e.wingCol = mainCol; e.bodyCol = '#ffffff';
   if (e.kind === 'crab_ship') {
@@ -1096,9 +1040,6 @@ function lvlColorByKind(kind, hue) {
   return `hsl(${110 + (hue % 45)}, 90%, 62%)`;
 }
 
-// =========================================================================
-// ДЕТАЛИЗИРОВАННЫЕ БОССЫ УРОВНЕЙ 1–6
-// =========================================================================
 function drawUniqueBoss(ctx, b, lvl, player, H) {
   const bScale = b.bossScale || 1.0;
 
@@ -1163,11 +1104,9 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.fillStyle = flash ? '#ffffff' : '#fff8eb'; ctx.strokeStyle = '#ff006e'; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.arc(0, -14, 52, Math.PI * 0.82, Math.PI * 2.18); ctx.lineTo(26, 52); ctx.lineTo(-26, 52); ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Цветок бархатцев на лбу Босса Калавера
     ctx.fillStyle = '#ffbe0b'; ctx.beginPath(); ctx.arc(0, -40, 11, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#ff006e'; ctx.beginPath(); ctx.arc(0, -40, 5, 0, Math.PI * 2); ctx.fill();
 
-    // Цветочные глазницы Босса
     [-21, 21].forEach((ex, idx) => {
       const pCol = idx === 0 ? '#06d6a0' : '#ff006e';
       ctx.fillStyle = pCol;
@@ -1239,7 +1178,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.restore(); return;
   }
 
-  // БОСС 6: ОГРОМНЫЙ СТРАШНЫЙ МУХОМОР
   const capCol = flash ? '#ffffff' : `hsl(${hue}, 100%, 54%)`;
   ctx.fillStyle = '#f8edeb'; ctx.strokeStyle = INK; ctx.lineWidth = 4;
   ctx.beginPath(); ctx.moveTo(-28, 0); ctx.quadraticCurveTo(-36, 36, -24, 62); ctx.lineTo(24, 62); ctx.quadraticCurveTo(36, 36, 28, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
