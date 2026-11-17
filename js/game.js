@@ -584,7 +584,10 @@
     const lvl = LEVELS[selectedLevelIdx];
     applySiteTheme(lvl);
     if (synth) { synth.init(); synth.sfxMenuTransition(); }
-    resolveImageToElement(document.getElementById('intro-stage-img'), [`img/level${lvl.id}_in.jpg`, 'img/transition_in.jpg', 'img/1000036354.jpg']);
+    resolveImageToElement(
+      document.getElementById('intro-stage-img'),
+      [`img/lvl${lvl.id}_in.jpg`, `img/level${lvl.id}_in.jpg`, 'img/transition_in.jpg']
+    );
 
     const diff = DIFFICULTIES[selectedDiffKey];
     document.getElementById('intro-sector-tag').textContent = `УРОВЕНЬ ${lvl.id} • ${diff.label.toUpperCase()}`;
@@ -1557,18 +1560,33 @@
 
     const lvl = LEVELS[selectedLevelIdx];
     const victoryStageBox = document.getElementById('victory-stage-box');
+    const endStageImg = document.getElementById('end-stage-img');
+    const endOuterBg = document.getElementById('end-outer-bg');
     progress.coins += runCoins;
 
     if (victory) {
       if (synth) synth.sfxVictory();
       if (!progress.completed.includes(lvl.id)) progress.completed.push(lvl.id);
-      if (victoryStageBox) {
+      if (victoryStageBox && endStageImg) {
         victoryStageBox.classList.remove('hidden');
-        resolveImageToElement(document.getElementById('end-stage-img'), [`img/level${lvl.id}_out.jpg`, 'img/transition_out.jpg', 'img/1000036352.jpg']);
+        endStageImg.alt = 'Победа на уровне';
+        resolveImageToElement(
+          endStageImg,
+          [`img/lvl${lvl.id}_out.jpg`, `img/level${lvl.id}_out.jpg`, 'img/transition_out.jpg']
+        );
       }
+      resolveImageToElement(endOuterBg, [`img/lvl${lvl.id}_out.jpg`, 'img/transition_out.jpg']);
     } else {
       if (synth) synth.sfxGameOver();
-      if (victoryStageBox) victoryStageBox.classList.add('hidden');
+      if (victoryStageBox && endStageImg) {
+        victoryStageBox.classList.remove('hidden');
+        endStageImg.alt = 'Поражение на уровне';
+        resolveImageToElement(
+          endStageImg,
+          [`img/lvl${lvl.id}_los.jpg`, `img/level${lvl.id}_los.jpg`, 'img/transition_out.jpg']
+        );
+      }
+      resolveImageToElement(endOuterBg, [`img/lvl${lvl.id}_los.jpg`, 'img/transition_out.jpg']);
     }
 
     if (score > progress.bestScore) progress.bestScore = score;
