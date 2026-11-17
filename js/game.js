@@ -584,14 +584,7 @@
     const lvl = LEVELS[selectedLevelIdx];
     applySiteTheme(lvl);
     if (synth) { synth.init(); synth.sfxMenuTransition(); }
-
-    const introArtBox = document.getElementById('intro-art-box');
-    if (introArtBox) introArtBox.classList.remove('hidden');
-    resolveImageToElement(
-      document.getElementById('intro-stage-img'),
-      [`img/lvl${lvl.id}_in.jpg`, 'img/transition_in.jpg'],
-      () => { if (introArtBox) introArtBox.classList.add('hidden'); }
-    );
+    resolveImageToElement(document.getElementById('intro-stage-img'), [`img/level${lvl.id}_in.jpg`, 'img/transition_in.jpg', 'img/1000036354.jpg']);
 
     const diff = DIFFICULTIES[selectedDiffKey];
     document.getElementById('intro-sector-tag').textContent = `УРОВЕНЬ ${lvl.id} • ${diff.label.toUpperCase()}`;
@@ -1066,6 +1059,7 @@
         if (b.propCooldown > 0) continue;
         if (Math.hypot(b.x - pr.x, b.y - pr.y) < pr.r + b.r) {
           if (pr.type === 'mirror_portal' && pr.partner) {
+            // Телепортация пули во второй портал и наведение в спину врагу
             b.x = pr.partner.x;
             b.y = pr.partner.y;
             b.propCooldown = 0.45;
@@ -1073,6 +1067,7 @@
             if (vfx) vfx.addShockwave(pr.partner.x, pr.partner.y, '#00f5d4', 45, 0.25);
             advanceQuest('props', 1);
           } else if (pr.type === 'pinata_skull') {
+            // Взрыв черепа-пиньяты: конфетти, оглушение врагов и рыбка!
             bullets.splice(j, 1);
             if (synth) synth.sfxVictory();
             if (vfx) {
@@ -1085,6 +1080,7 @@
             interactiveProps.splice(i, 1);
             break;
           } else if (pr.type === 'flower_bumper') {
+            // Рикошет пули в ближайшего врага под углом
             b.propCooldown = 0.35;
             const target = enemies[0] || boss;
             if (target) {
@@ -1200,7 +1196,7 @@
         }
       } else if (wave === 3 && waveTimer > 62 * dMult) {
         wave = 4;
-        fishRainTimer = 8.0;
+        fishRainTimer = 8.0; // 8 секунд безобидного бонусного «Рыбного дождя»!
         if (synth) synth.sfxVictory();
         if (vfx) vfx.addPopup(W / 2, H * 0.34, '🐟 БОНУС: РЫБНЫЙ ДОЖДЬ! 🐟', '#ffd166', 1.25);
       } else if (wave === 4 && fishRainTimer <= 0 && waveTimer > 71 * dMult) {
@@ -1566,20 +1562,13 @@
     if (victory) {
       if (synth) synth.sfxVictory();
       if (!progress.completed.includes(lvl.id)) progress.completed.push(lvl.id);
+      if (victoryStageBox) {
+        victoryStageBox.classList.remove('hidden');
+        resolveImageToElement(document.getElementById('end-stage-img'), [`img/level${lvl.id}_out.jpg`, 'img/transition_out.jpg', 'img/1000036352.jpg']);
+      }
     } else {
       if (synth) synth.sfxGameOver();
-    }
-
-    if (victoryStageBox) {
-      victoryStageBox.classList.remove('hidden');
-      const stageImgCandidates = victory
-        ? [`img/lvl${lvl.id}_out.jpg`, 'img/transition_out.jpg']
-        : [`img/lvl${lvl.id}_los.jpg`, 'img/transition_out.jpg'];
-      resolveImageToElement(
-        document.getElementById('end-stage-img'),
-        stageImgCandidates,
-        () => { victoryStageBox.classList.add('hidden'); }
-      );
+      if (victoryStageBox) victoryStageBox.classList.add('hidden');
     }
 
     if (score > progress.bestScore) progress.bestScore = score;
