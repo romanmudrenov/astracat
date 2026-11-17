@@ -4,9 +4,14 @@
   const STORAGE_KEY = 'astro_cat_hangar_v16';
   const BORDER_INK = typeof INK !== 'undefined' ? INK : '#120826';
 
+  // Загрузка и сохранение прогресса игрока (монеты, корабли, оружие, дроны)
   function loadProgress() {
     try {
-      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem('astro_cat_hangar_v15') || '{}');
+      const raw = JSON.parse(
+        localStorage.getItem(STORAGE_KEY) ||
+        localStorage.getItem('astro_cat_hangar_v15') ||
+        '{}'
+      );
       return {
         bestScore: raw.bestScore || 0,
         coins: typeof raw.coins === 'number' ? raw.coins : 0,
@@ -80,6 +85,7 @@
   window.addEventListener('resize', resize);
   resize();
 
+  // Парящие частицы в меню (рыбки, котики, пончики)
   const menuFloats = Array.from({ length: 8 }, (_, i) => ({
     x: (i + 0.5) / 8,
     y: Math.random(),
@@ -168,6 +174,7 @@
     }, { passive: true });
   });
 
+  // Последовательная проверка кандидатов изображений (поддерживает webp и jpg)
   function resolveImageToElement(imgEl, candidates, onFail = null) {
     if (!imgEl) return;
     let idx = 0;
@@ -236,6 +243,7 @@
   }
 
   function getActiveDrone() {
+    if (typeof DRONES_CATALOG === 'undefined' || !DRONES_CATALOG.length) return null;
     return DRONES_CATALOG.find(d => d.id === progress.equippedDrone) || DRONES_CATALOG[0];
   }
 
@@ -247,7 +255,7 @@
   }
 
   // =========================================================================
-  // АНГАР (ВКЛАДКИ: КОРАБЛИ / ОРУЖИЕ / ДРОНЫ)
+  // АНГАР (3 ВКЛАДКИ: КОРАБЛИ / ОРУЖИЕ / ДРОНЫ)
   // =========================================================================
   let hangarShipCanvases = [];
   let hangarWeaponCanvases = [];
@@ -292,12 +300,13 @@
     const shipsCarousel = document.getElementById('ships-carousel');
     const weaponsCarousel = document.getElementById('weapons-carousel');
     const dronesCarousel = document.getElementById('drones-carousel');
-    if (!shipsCarousel || !weaponsCarousel || !dronesCarousel) return;
+    if (!shipsCarousel || !weaponsCarousel) return;
 
     hangarShipCanvases = [];
     hangarWeaponCanvases = [];
     hangarDroneCanvases = [];
 
+    // 1. Карточки кораблей
     shipsCarousel.innerHTML = '';
     SHIPS_CATALOG.forEach((ship, idx) => {
       const owned = progress.unlockedShips.includes(ship.id);
@@ -336,6 +345,7 @@
       shipsCarousel.appendChild(card);
     });
 
+    // 2. Карточки оружия
     weaponsCarousel.innerHTML = '';
     const activeShip = getActiveShip();
     WEAPONS_CATALOG.forEach((wp, idx) => {
@@ -375,59 +385,65 @@
       weaponsCarousel.appendChild(card);
     });
 
-    dronesCarousel.innerHTML = '';
-    DRONES_CATALOG.forEach((drone, idx) => {
-      const owned = progress.unlockedDrones.includes(drone.id);
-      const equipped = progress.equippedDrone === drone.id;
-      const card = document.createElement('div');
-      card.className = 'media-card' + (equipped ? ' equipped' : '');
+    // 3. Карточки орбитальных дронов
+    if (dronesCarousel && typeof DRONES_CATALOG !== 'undefined') {
+      dronesCarousel.innerHTML = '';
+      DRONES_CATALOG.forEach((drone, idx) => {
+        const owned = progress.unlockedDrones.includes(drone.id);
+        const equipped = progress.equippedDrone === drone.id;
+        const card = document.createElement('div');
+        card.className = 'media-card' + (equipped ? ' equipped' : '');
 
-      const btnClass = equipped ? 'active' : (owned ? 'equip' : 'buy');
-      const btnLabel = equipped ? 'АКТИВЕН ✔' : (owned ? 'ВЫБРАТЬ' : `${drone.price} 🐟`);
+        const btnClass = equipped ? 'active' : (owned ? 'equip' : 'buy');
+        const btnLabel = equipped ? 'АКТИВЕН ✔' : (owned ? 'ВЫБРАТЬ' : `${drone.price} 🐟`);
 
-      card.innerHTML = `
-        <div class="media-viewport">
-          <span class="viewport-badge">СПУТНИК ${idx + 1}/3</span>
-          <canvas width="260" height="175"></canvas>
-        </div>
-        <div class="media-card-title">🛸 ${drone.name}</div>
-        <div class="media-card-desc">${drone.desc}</div>
-        <button class="shop-action-btn ${btnClass}">${btnLabel}</button>
-      `;
+        card.innerHTML = `
+          <div class="media-viewport">
+            <span class="viewport-badge">СПУТНИК ${idx + 1}/${DRONES_CATALOG.length}</span>
+            <canvas width="260" height="175"></canvas>
+          </div>
+          <div class="media-card-title">🛸 ${drone.name}</div>
+          <div class="media-card-desc">${drone.desc}</div>
+          <button class="shop-action-btn ${btnClass}">${btnLabel}</button>
+        `;
 
-      const cvs = card.querySelector('canvas');
-      hangarDroneCanvases.push({ cvs, ctx: cvs.getContext('2d'), drone, ship: activeShip, idx });
+        const cvs = card.querySelector('canvas');
+        hangarDroneCanvases.push({ cvs, ctx: cvs.getContext('2d'), drone, ship: activeShip, idx });
 
-      card.querySelector('button').addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (synth) synth.init();
-        if (equipped) { if (synth) synth.sfxMenuTap(); return; }
-        if (owned) {
-          progress.equippedDrone = drone.id; saveProgress(progress);
-          if (synth) synth.sfxMenuSelect(); renderHangar();
-        } else if (progress.coins >= drone.price) {
-          progress.coins -= drone.price; progress.unlockedDrones.push(drone.id); progress.equippedDrone = drone.id;
-          saveProgress(progress); if (synth) synth.sfxBuyItem(); renderHangar();
-        } else if (synth) synth.sfxHurt();
+        card.querySelector('button').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (synth) synth.init();
+          if (equipped) { if (synth) synth.sfxMenuTap(); return; }
+          if (owned) {
+            progress.equippedDrone = drone.id; saveProgress(progress);
+            if (synth) synth.sfxMenuSelect(); renderHangar();
+          } else if (progress.coins >= drone.price) {
+            progress.coins -= drone.price; progress.unlockedDrones.push(drone.id); progress.equippedDrone = drone.id;
+            saveProgress(progress); if (synth) synth.sfxBuyItem(); renderHangar();
+          } else if (synth) synth.sfxHurt();
+        });
+        dronesCarousel.appendChild(card);
       });
-      dronesCarousel.appendChild(card);
-    });
+    }
 
     switchHangarTab(activeHangarTab);
     const eqShipIdx = Math.max(0, SHIPS_CATALOG.findIndex(s => s.id === progress.equippedShip));
     const eqWpIdx = Math.max(0, WEAPONS_CATALOG.findIndex(w => w.id === progress.equippedWeapon));
-    const eqDroneIdx = Math.max(0, DRONES_CATALOG.findIndex(d => d.id === progress.equippedDrone));
+    const eqDroneIdx = typeof DRONES_CATALOG !== 'undefined'
+      ? Math.max(0, DRONES_CATALOG.findIndex(d => d.id === progress.equippedDrone))
+      : 0;
+
     setTimeout(() => {
       scrollCarouselToIdx(shipsCarousel, eqShipIdx);
       scrollCarouselToIdx(weaponsCarousel, eqWpIdx);
-      scrollCarouselToIdx(dronesCarousel, eqDroneIdx);
+      if (dronesCarousel) scrollCarouselToIdx(dronesCarousel, eqDroneIdx);
     }, 30);
   }
 
   function setupCarouselControls(carouselId, prevBtnId, nextBtnId, counterId, totalCount) {
     const el = document.getElementById(carouselId);
     const counter = document.getElementById(counterId);
-    if (!el) return;
+    if (!el || !totalCount) return;
 
     let currentIdx = 0;
     const updateCounter = () => {
@@ -456,7 +472,9 @@
 
   setupCarouselControls('ships-carousel', 'ship-prev-btn', 'ship-next-btn', 'ship-counter', SHIPS_CATALOG.length);
   setupCarouselControls('weapons-carousel', 'weapon-prev-btn', 'weapon-next-btn', 'weapon-counter', WEAPONS_CATALOG.length);
-  setupCarouselControls('drones-carousel', 'drone-prev-btn', 'drone-next-btn', 'drone-counter', DRONES_CATALOG.length);
+  if (typeof DRONES_CATALOG !== 'undefined') {
+    setupCarouselControls('drones-carousel', 'drone-prev-btn', 'drone-next-btn', 'drone-counter', DRONES_CATALOG.length);
+  }
 
   function renderHangarLivePreviews(t) {
     if (hangarOverlay.classList.contains('hidden')) return;
@@ -535,7 +553,7 @@
         drawPlayerShipModel(c, ship, t, 0, { weaponId: wp.id });
         c.restore();
       });
-    } else if (activeHangarTab === 'drones') {
+    } else if (activeHangarTab === 'drones' && typeof drawDroneModel === 'function') {
       hangarDroneCanvases.forEach(({ cvs, ctx: c, drone, ship, idx }) => {
         const w = cvs.width, h = cvs.height;
         c.clearRect(0, 0, w, h);
@@ -613,6 +631,9 @@
     closeHangarToMenu();
   });
 
+  // =========================================================================
+  // КОМИКС ПРЕДЫСТОРИИ
+  // =========================================================================
   const LORE_SLIDES = [
     { num: 1, title: 'ПЛАНЕТА КОТОВИЯ-17', text: 'На родной планете Котовия-17 заканчивается еда. Рыбка, колбаска и сметана выдаются только по талонам!' },
     { num: 2, title: 'СЕКРЕТНЫЙ ОТРЯД «АСТРО-КОТ»', text: 'Редж отправляется в дальний космос за провизией для всей планеты!' },
@@ -658,6 +679,9 @@
     progress.loreSeen = true; saveProgress(progress); loreOverlay.classList.add('hidden'); renderLevelGrid(); startOverlay.classList.remove('hidden'); syncTopHudVisibility();
   });
 
+  // =========================================================================
+  // ВЫБОР СЕКТОРА И ЗАСТАВКА ПЕРЕД УРОВНЕМ (lvl1_in.jpg ... lvl6_in.jpg)
+  // =========================================================================
   function renderLevelGrid() {
     updateCoinsUI();
     const grid = document.getElementById('levels-grid');
@@ -681,8 +705,9 @@
     const drone = getActiveDrone();
     const diff = DIFFICULTIES[selectedDiffKey];
     const bossCountLabel = diff.twoBosses ? '2 БОССА ПОДРЯД!' : cur.bossName;
+    const droneTag = drone ? ` + 🛸 ${drone.name.split('«')[1]?.replace('»', '') || 'Дрон'}` : '';
     document.getElementById('selected-level-info').innerHTML =
-      `<strong>Уровень ${cur.id}: ${cur.name}</strong> (+${cur.coinReward} 🐟)<br><span>Босс: ${bossCountLabel} • ${ship.name} + 🛸 ${drone.name.split('«')[1]?.replace('»', '') || 'Дрон'}</span>`;
+      `<strong>Уровень ${cur.id}: ${cur.name}</strong> (+${cur.coinReward} 🐟)<br><span>Босс: ${bossCountLabel} • ${ship.name}${droneTag}</span>`;
     document.getElementById('start-best').textContent =
       `Рекорд: ${progress.bestScore} • Пройдено: ${progress.completed.length}/${LEVELS.length}`;
   }
@@ -728,6 +753,9 @@
   document.getElementById('intro-launch-btn')?.addEventListener('click', (e) => { e.stopPropagation(); if (synth) synth.sfxMenuSelect(); startLevel(selectedLevelIdx); });
   document.getElementById('intro-back-btn')?.addEventListener('click', (e) => { e.stopPropagation(); if (synth) synth.sfxMenuTap(); introOverlay.classList.add('hidden'); startOverlay.classList.remove('hidden'); syncTopHudVisibility(); });
 
+  // =========================================================================
+  // НАСТРОЙКИ ЗВУКА ASMR
+  // =========================================================================
   let state = 'START', prevStateBeforeSettings = 'START';
 
   function openSettings() {
@@ -807,7 +835,7 @@
   muteBtn?.addEventListener('click', (e) => { e.stopPropagation(); if (!synth) return; muteBtn.textContent = synth.toggleMute() ? '🔇' : '🔊'; });
 
   // =========================================================================
-  // ИГРОВОЙ ПРОЦЕСС
+  // ИГРОВОЙ ПРОЦЕСС (ВОЛНЫ, ДРОНЫ, ИНТЕРАКТИВНЫЕ ОБЪЕКТЫ, БОССЫ)
   // =========================================================================
   let score = 0, runCoins = 0, kills = 0, combo = 1, comboTimer = 0, wave = 1, waveTimer = 0;
   let spawnTimer = 0, obstacleTimer = 4.0, propTimer = 6.5;
@@ -1120,6 +1148,7 @@
       });
     }
 
+    // Дополнительные радужные бортовые залпы при активном Карамельном ускорителе (Ур. 3)
     if (p.turboTimer > 0) {
       const rCol = `hsl(${Math.floor(globalTime * 360) % 360}, 100%, 68%)`;
       [-16, 16].forEach(ox => {
@@ -1486,6 +1515,7 @@
     p.y = Math.max(54, Math.min(H - 24, p.y));
     if (world3d) world3d.setCameraFromPlayer(p.x, W);
 
+    // Орбитальное движение и авто-стрельба активного дрона
     if (p.drone) {
       p.droneAngle += dt * 2.7;
       p.droneX = p.x + Math.cos(p.droneAngle) * 42;
@@ -1833,8 +1863,9 @@
   function drawPlayer(p) {
     if (p.invuln > 0 && Math.floor(p.invuln * 16) % 2 === 0) return;
 
-    const droneBehind = p.drone && Math.sin(p.droneAngle) < 0;
-    if (p.drone && droneBehind) {
+    const hasDrone = p.drone && typeof drawDroneModel === 'function';
+    const droneBehind = hasDrone && Math.sin(p.droneAngle) < 0;
+    if (hasDrone && droneBehind) {
       ctx.save();
       ctx.translate(p.droneX, p.droneY);
       drawDroneModel(ctx, p.drone, globalTime, { scale: 0.92 });
@@ -1860,7 +1891,7 @@
     }
     ctx.restore();
 
-    if (p.drone && !droneBehind) {
+    if (hasDrone && !droneBehind) {
       ctx.save();
       ctx.translate(p.droneX, p.droneY);
       drawDroneModel(ctx, p.drone, globalTime, { scale: 0.96 });
