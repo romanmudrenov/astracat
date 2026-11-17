@@ -481,14 +481,8 @@ margin-bottom: 10px;
 ​.selected-level-box strong {
 color: #ffafcc;
 }
-​/* ВКЛАДКИ АНГАРА */
-.hangar-tabs-row {
-display: grid;
-grid-template-columns: repeat(2, 1fr);
-gap: 8px;
-margin: 6px 0 8px;
-}
-​.hangar-tabs-row.three-tabs {
+​/* 3 ВКЛАДКИ АНГАРА */
+.hangar-tabs-row.three-tabs {
 display: grid;
 grid-template-columns: repeat(3, 1fr);
 gap: 6px;
@@ -657,11 +651,11 @@ background: linear-gradient(145deg, #ade8f4, #72efdd 60%, #48bfe3);
 color: #14213d;
 box-shadow: 0 4px 0 #1d5c78;
 }
-​/* КВАДРАТНЫЕ 1:1 ЗАСТАВКИ УРОВНЕЙ (ВХОД / ПОБЕДА / ПОРАЖЕНИЕ) */
+​/* ОСТАЛЬНЫЕ ЭКРАНЫ (КВАДРАТНЫЕ 1:1 ЗАСТАВКИ УРОВНЕЙ) */
 .stage-art-box {
 position: relative;
 width: 100%;
-max-width: 245px;
+max-width: 240px;
 aspect-ratio: 1 / 1;
 height: auto;
 border-radius: 22px;
@@ -669,10 +663,9 @@ border: 2px solid rgba(224, 170, 255, 0.6);
 background: #1b0e36;
 margin: 0 auto 10px;
 overflow: hidden;
-box-shadow: 0 8px 20px rgba(10, 4, 24, 0.55);
 }
 ​.stage-art-box.victory-stage-box {
-max-width: 225px;
+max-width: 220px;
 }
 ​.stage-art-box.hidden {
 display: none;
