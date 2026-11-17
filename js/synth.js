@@ -18,18 +18,19 @@ class AstraCatSynth {
     this.musicEnabled = true;
     this.sfxEnabled = true;
     this.musicVolume = 0.55;
-    this.sfxVolume = 0.70;
+    // Комфортная базовая громкость эффектов (40%), чтобы не перекрывать музыку и не перегружать динамик
+    this.sfxVolume = 0.40;
 
     this.settings = {
-      masterVolume: 0.70,
+      masterVolume: 0.40,
       warmthCutoff: 2400,
-      spaceMix: 0.38,
+      spaceMix: 0.35,
       psyDrift: 0.55
     };
 
     this.brownNoiseBuffer = null;
 
-    // Строго треки уровней (level1.mp3 — level11.mp3) для случайной ротации без повтора 4 треков
+    // Треки уровней (level1.mp3 — level11.mp3) для случайной ротации без повтора минимум 4 треков
     this.availableTracks = [
       'level1.mp3', 'level2.mp3', 'level3.mp3', 'level4.mp3',
       'level5.mp3', 'level6.mp3', 'level7.mp3', 'level8.mp3',
@@ -50,16 +51,32 @@ class AstraCatSynth {
     this.currentTrackFile = '';
     this.fallbackTrackFile = null;
     this.pendingTrack = null;
+    this.isPlayRequestInFlight = false;
     this.pausedByGame = false;
+
+    // Таймеры анти-наложения (чтобы пачка взрывов не складывалась в 10-кратный пик громкости)
     this.lastScrollTickTime = 0;
     this.lastShotSoundTime = 0;
+    this.lastExplosionTime = 0;
+    this.lastHitTime = 0;
 
     this.bgmAudio.addEventListener('playing', () => {
+      this.isPlayRequestInFlight = false;
+      this.pendingTrack = null;
       this.updateStatusHint(`▶ Играет: ${this.currentTrackFile}`);
     });
 
+    this.bgmAudio.addEventListener('ended', () => {
+      if (!this.pausedByGame && this.musicEnabled && !this.muted && this.currentTrackFile) {
+        this.bgmAudio.currentTime = 0;
+        const p = this.bgmAudio.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      }
+    });
+
     this.bgmAudio.addEventListener('error', () => {
-      this.updateStatusHint(`⚠ Ошибка загрузки ${this.currentTrackFile}`);
+      this.isPlayRequestInFlight = false;
+      this.updateStatusHint(`⚠ Ошибка файла ${this.currentTrackFile}`);
       if (this.fallbackTrackFile && this.currentTrackFile !== this.fallbackTrackFile) {
         const fb = this.fallbackTrackFile;
         this.fallbackTrackFile = null;
@@ -96,22 +113,34 @@ class AstraCatSynth {
         }
       }
 
-      if (this.pausedByGame) return;
+      if (this.pausedByGame || !this.musicEnabled || this.muted) return;
+      if (this.isPlayRequestInFlight) return;
 
       if (this.pendingTrack) {
         const t = this.pendingTrack;
         this.pendingTrack = null;
-        this.playTrack(t.file, t.fallback, true);
-      } else if (this.currentTrackFile && this.bgmAudio.paused && this.musicEnabled && !this.muted) {
+        this.playTrack(t.file, t.fallback, false);
+      } else if (this.currentTrackFile && this.bgmAudio.paused) {
         this.bgmAudio.volume = this.getEffectiveMusicVol();
+        this.isPlayRequestInFlight = true;
         const p = this.bgmAudio.play();
-        if (p && typeof p.catch === 'function') p.catch(() => {});
+        if (p && typeof p.then === 'function') {
+          p.then(() => {
+            this.isPlayRequestInFlight = false;
+          }).catch(() => {
+            this.isPlayRequestInFlight = false;
+            this.pendingTrack = { file: this.currentTrackFile, fallback: this.fallbackTrackFile };
+            this.updateStatusHint(`Нажми на экран для запуска: ${this.currentTrackFile}`);
+          });
+        } else {
+          this.isPlayRequestInFlight = false;
+        }
       }
     };
 
+    window.addEventListener('pointerdown', unlock, { passive: true });
     window.addEventListener('touchend', unlock, { passive: true });
     window.addEventListener('click', unlock, { passive: true });
-    window.addEventListener('pointerdown', unlock, { passive: true });
     window.addEventListener('keydown', unlock, { passive: true });
   }
 
@@ -131,7 +160,18 @@ class AstraCatSynth {
       sel.value = curVal;
     }
 
-    this.updateStatusHint(`Уровни: level1–11.mp3 • Боссы: boss.mp3, boss2.mp3`);
+    this.updateStatusHint(`Меню: intro.mp3 • Уровни: level1–11.mp3 • Боссы: boss.mp3, boss2.mp3`);
+  }
+
+  _makeSoftClipCurve(amount = 1.4) {
+    const samples = 44100;
+    const curve = new Float32Array(samples);
+    const norm = Math.tanh(amount);
+    for (let i = 0; i < samples; i++) {
+      const x = (i * 2) / samples - 1;
+      curve[i] = (Math.tanh(x * amount) / norm) * 0.85;
+    }
+    return curve;
   }
 
   init() {
@@ -157,13 +197,20 @@ class AstraCatSynth {
 
     this._createNoiseBuffers();
 
+    // Чистый запас по уровню для полифонии (32 голоса) без перегруза
     this.voiceBus = this.ctx.createGain();
-    this.voiceBus.gain.value = 1.0;
+    this.voiceBus.gain.value = 0.28;
+
+    // Фильтр защиты динамика телефона: отсекает гудящий суб-бас ниже 135 Гц, вызывающий треск корпуса
+    this.speakerProtectFilter = this.ctx.createBiquadFilter();
+    this.speakerProtectFilter.type = 'highpass';
+    this.speakerProtectFilter.frequency.value = 135;
+    this.speakerProtectFilter.Q.value = 0.7;
 
     this.masterLowpass = this.ctx.createBiquadFilter();
     this.masterLowpass.type = 'lowpass';
     this.masterLowpass.frequency.value = this.settings.warmthCutoff;
-    this.masterLowpass.Q.value = 0.55;
+    this.masterLowpass.Q.value = 0.5;
 
     this.delayLeft = this.ctx.createDelay(1.0);
     this.delayRight = this.ctx.createDelay(1.0);
@@ -171,24 +218,31 @@ class AstraCatSynth {
     this.delayRight.delayTime.value = 0.39;
 
     this.delayFeedback = this.ctx.createGain();
-    this.delayFeedback.gain.value = 0.24;
+    this.delayFeedback.gain.value = 0.18;
 
     this.delayWetGain = this.ctx.createGain();
-    this.delayWetGain.gain.value = this.settings.spaceMix * 0.35;
+    this.delayWetGain.gain.value = this.settings.spaceMix * 0.24;
 
     this.merger = this.ctx.createChannelMerger(2);
 
+    // Мягкий аналоговый сатуратор вместо жёсткого цифрового клиппинга
+    this.softClipper = this.ctx.createWaveShaper();
+    this.softClipper.curve = this._makeSoftClipCurve(1.35);
+    this.softClipper.oversample = '2x';
+
+    // Защитный лимитер пиков
     this.compressor = this.ctx.createDynamicsCompressor();
-    this.compressor.threshold.value = -18;
-    this.compressor.knee.value = 12;
-    this.compressor.ratio.value = 10;
-    this.compressor.attack.value = 0.003;
-    this.compressor.release.value = 0.15;
+    this.compressor.threshold.value = -16;
+    this.compressor.knee.value = 6;
+    this.compressor.ratio.value = 12;
+    this.compressor.attack.value = 0.002;
+    this.compressor.release.value = 0.14;
 
     this.masterGain = this.ctx.createGain();
     this.masterGain.gain.value = this.getEffectiveSfxVol();
 
-    this.voiceBus.connect(this.masterLowpass);
+    this.voiceBus.connect(this.speakerProtectFilter);
+    this.speakerProtectFilter.connect(this.masterLowpass);
     this.masterLowpass.connect(this.compressor);
 
     this.masterLowpass.connect(this.delayLeft);
@@ -201,7 +255,8 @@ class AstraCatSynth {
     this.merger.connect(this.delayWetGain);
     this.delayWetGain.connect(this.compressor);
 
-    this.compressor.connect(this.masterGain);
+    this.compressor.connect(this.softClipper);
+    this.softClipper.connect(this.masterGain);
     this.masterGain.connect(this.ctx.destination);
 
     this.isInitialized = true;
@@ -209,7 +264,8 @@ class AstraCatSynth {
 
   getEffectiveSfxVol() {
     if (this.muted || !this.sfxEnabled) return 0.0001;
-    return Math.max(0.0001, Math.min(1.5, this.sfxVolume * 1.45));
+    // Линейно-мягкая кривая громкости с потолком 0.65, чтобы динамик никогда не хрипел даже на 100%
+    return Math.max(0.0001, Math.min(0.65, Math.pow(this.sfxVolume, 1.2) * 0.65));
   }
 
   updateSfxVolume() {
@@ -234,7 +290,7 @@ class AstraCatSynth {
   setSpaceMix(val) {
     this.settings.spaceMix = val;
     if (this.delayWetGain && this.ctx) {
-      this.delayWetGain.gain.setTargetAtTime(val * 0.35, this.ctx.currentTime, 0.04);
+      this.delayWetGain.gain.setTargetAtTime(val * 0.24, this.ctx.currentTime, 0.04);
     }
   }
 
@@ -289,15 +345,15 @@ class AstraCatSynth {
     if (navigator.vibrate) { try { navigator.vibrate(4); } catch (_) {} }
 
     const now = this.ctx.currentTime;
-    const dur = 0.04;
+    const dur = 0.034;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(520, now);
-    osc.frequency.exponentialRampToValueAtTime(220, now + dur);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(360, now);
+    osc.frequency.exponentialRampToValueAtTime(160, now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.16, now + 0.005);
+    gain.gain.linearRampToValueAtTime(0.05, now + 0.006);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(gain);
@@ -311,17 +367,17 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.15;
-    const baseFreq = 540 * pitchMultiplier * (0.96 + Math.random() * 0.08);
+    const dur = 0.11;
+    const baseFreq = 420 * pitchMultiplier * (0.96 + Math.random() * 0.08);
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(baseFreq * 1.45, now);
-    osc.frequency.exponentialRampToValueAtTime(Math.max(160, baseFreq * 0.45), now + dur);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(baseFreq * 1.35, now);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(165, baseFreq * 0.5), now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.24, now + 0.01);
+    gain.gain.linearRampToValueAtTime(0.075, now + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(gain);
@@ -335,22 +391,22 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.30;
+    const dur = 0.22;
 
     const osc = this.ctx.createOscillator();
     const filter = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
 
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(760, now);
-    osc.frequency.exponentialRampToValueAtTime(210, now + dur);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(520, now);
+    osc.frequency.exponentialRampToValueAtTime(190, now + dur);
 
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(1600, now);
-    filter.frequency.exponentialRampToValueAtTime(420, now + dur);
+    filter.frequency.setValueAtTime(980, now);
+    filter.frequency.exponentialRampToValueAtTime(340, now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.24, now + 0.02);
+    gain.gain.linearRampToValueAtTime(0.075, now + 0.018);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(filter);
@@ -365,17 +421,17 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.42;
+    const dur = 0.30;
 
     const sub = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    sub.type = 'triangle';
-    sub.frequency.setValueAtTime(220, now);
-    sub.frequency.exponentialRampToValueAtTime(380, now + dur * 0.55);
-    sub.frequency.exponentialRampToValueAtTime(150, now + dur);
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(190, now);
+    sub.frequency.exponentialRampToValueAtTime(280, now + dur * 0.55);
+    sub.frequency.exponentialRampToValueAtTime(155, now + dur);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.26, now + 0.05);
+    gain.gain.linearRampToValueAtTime(0.085, now + 0.035);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     sub.connect(gain);
@@ -386,31 +442,36 @@ class AstraCatSynth {
   }
 
   playNebulaExplosion() {
+    const nowMs = performance.now();
+    // Защита от одновременного наложения нескольких взрывов в один кадр
+    if (nowMs - this.lastExplosionTime < 80) return;
+    this.lastExplosionTime = nowMs;
+
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.62;
+    const dur = 0.42;
 
     const sub = this.ctx.createOscillator();
-    sub.type = 'triangle';
+    sub.type = 'sine';
     sub.frequency.setValueAtTime(210, now);
-    sub.frequency.exponentialRampToValueAtTime(55, now + dur * 0.75);
+    sub.frequency.exponentialRampToValueAtTime(125, now + dur * 0.8);
 
     const subGain = this.ctx.createGain();
     subGain.gain.setValueAtTime(0.0001, now);
-    subGain.gain.linearRampToValueAtTime(0.34, now + 0.02);
+    subGain.gain.linearRampToValueAtTime(0.095, now + 0.018);
     subGain.gain.exponentialRampToValueAtTime(0.0001, now + dur * 0.85);
 
     const noise = this.ctx.createBufferSource();
     noise.buffer = this.brownNoiseBuffer;
     const lp = this.ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(980, now);
-    lp.frequency.exponentialRampToValueAtTime(160, now + dur);
+    lp.frequency.setValueAtTime(620, now);
+    lp.frequency.exponentialRampToValueAtTime(180, now + dur);
 
     const noiseGain = this.ctx.createGain();
     noiseGain.gain.setValueAtTime(0.0001, now);
-    noiseGain.gain.linearRampToValueAtTime(0.32, now + 0.025);
+    noiseGain.gain.linearRampToValueAtTime(0.085, now + 0.02);
     noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     sub.connect(subGain); subGain.connect(this.voiceBus);
@@ -427,16 +488,16 @@ class AstraCatSynth {
     const now = this.ctx.currentTime;
     const scale = [587.33, 659.25, 783.99, 880.00, 1046.50];
     const freq = scale[Math.floor(Math.random() * scale.length)];
-    const dur = 0.48;
+    const dur = 0.38;
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'triangle';
+    osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, now);
-    osc.frequency.exponentialRampToValueAtTime(freq * 1.25, now + dur * 0.4);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.15, now + dur * 0.4);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.24, now + 0.015);
+    gain.gain.linearRampToValueAtTime(0.085, now + 0.015);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(gain); gain.connect(this.voiceBus);
@@ -448,23 +509,23 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.54;
+    const dur = 0.46;
 
     const osc = this.ctx.createOscillator();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(360, now);
-    osc.frequency.exponentialRampToValueAtTime(580, now + 0.16);
-    osc.frequency.exponentialRampToValueAtTime(380, now + dur);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(340, now);
+    osc.frequency.exponentialRampToValueAtTime(510, now + 0.16);
+    osc.frequency.exponentialRampToValueAtTime(360, now + dur);
 
     const formant = this.ctx.createBiquadFilter();
     formant.type = 'bandpass';
-    formant.Q.value = 3.0;
-    formant.frequency.setValueAtTime(640, now);
-    formant.frequency.exponentialRampToValueAtTime(1120, now + 0.2);
+    formant.Q.value = 1.8;
+    formant.frequency.setValueAtTime(600, now);
+    formant.frequency.exponentialRampToValueAtTime(980, now + 0.2);
 
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.32, now + 0.05);
+    gain.gain.linearRampToValueAtTime(0.11, now + 0.05);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(formant); formant.connect(gain); gain.connect(this.voiceBus);
@@ -476,14 +537,14 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.85;
+    const dur = 0.65;
     [261.63, 329.63, 392.00].forEach((freq) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      osc.type = 'triangle';
+      osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, now);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.12, now + 0.18);
+      gain.gain.linearRampToValueAtTime(0.038, now + 0.14);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
       osc.connect(gain); gain.connect(this.voiceBus);
       osc.start(now); osc.stop(now + dur);
@@ -495,36 +556,42 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.45;
+    const dur = 0.36;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'triangle';
+    osc.type = 'sine';
     osc.frequency.setValueAtTime(220, now);
-    osc.frequency.exponentialRampToValueAtTime(440, now + dur * 0.7);
+    osc.frequency.exponentialRampToValueAtTime(360, now + dur * 0.7);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.24, now + 0.08);
+    gain.gain.linearRampToValueAtTime(0.075, now + 0.07);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
     osc.connect(gain); gain.connect(this.voiceBus);
     osc.start(now); osc.stop(now + dur);
     this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
   }
 
-  sfxMenuTap() { this.playSoftBullet(1.18); }
+  sfxMenuTap() { this.playSoftBullet(1.15); }
   sfxMenuSelect() { this.playStarCollect(); }
   sfxMenuTransition() { this.playPurrBoost(); }
   sfxBuyItem() { this.playCosmicMeow(); setTimeout(() => this.playStarCollect(), 120); }
 
   sfxShootWeapon(pan = 0, baseWeapon = 'droplet') {
     const nowMs = performance.now();
-    if (nowMs - this.lastShotSoundTime < 90) return;
+    if (nowMs - this.lastShotSoundTime < 105) return;
     this.lastShotSoundTime = nowMs;
 
-    if (baseWeapon === 'droplet' || baseWeapon === 'double_shot') this.playSoftBullet(1.05);
+    if (baseWeapon === 'droplet' || baseWeapon === 'double_shot') this.playSoftBullet(1.02);
     else if (baseWeapon === 'rocket_launcher') this.playPlushRocket();
     else this.playWarmLaser();
   }
 
-  sfxHit() { this.playSoftBullet(0.85); }
+  sfxHit() {
+    const nowMs = performance.now();
+    if (nowMs - this.lastHitTime < 65) return;
+    this.lastHitTime = nowMs;
+    this.playSoftBullet(0.84);
+  }
+
   sfxExplosion() { this.playNebulaExplosion(); }
 
   sfxBossExplosion() {
@@ -532,14 +599,14 @@ class AstraCatSynth {
     if (this.muted || !this.sfxEnabled) return;
     try {
       const customBoom = new Audio('music/boss_explode.mp3');
-      customBoom.volume = Math.max(0, Math.min(1, this.sfxVolume * 1.3));
+      customBoom.volume = Math.max(0, Math.min(0.65, this.sfxVolume));
       customBoom.play().catch(() => {});
     } catch (e) {}
   }
 
   sfxIgnite() { this.playPlushRocket(); }
   sfxGravity() { this.playShieldHum(); }
-  sfxDisintegrate() { this.playSoftBullet(1.22); }
+  sfxDisintegrate() { this.playSoftBullet(1.18); }
   sfxUnderwater() { this.playSoftBullet(0.95); }
   sfxCosmicHum() { this.playPurrBoost(); }
   sfxSticky() { this.playSoftBullet(0.8); }
@@ -553,7 +620,6 @@ class AstraCatSynth {
 
   pickNextTrack() {
     if (this.selectedTrack && this.selectedTrack !== 'auto') return this.selectedTrack;
-    // Выбираем только из треков level*.mp3, исключая последние 4 проигранных
     const candidates = this.availableTracks.filter(t => !this.recentTracks.includes(t));
     const pool = candidates.length > 0 ? candidates : this.availableTracks;
     if (pool.length === 0) return 'level1.mp3';
@@ -561,7 +627,6 @@ class AstraCatSynth {
     const chosen = pool[Math.floor(Math.random() * pool.length)];
     this.currentTrackIndex = Math.max(0, this.availableTracks.indexOf(chosen));
     this.recentTracks.push(chosen);
-    // Минимум 4 трека не повторяются подряд
     if (this.recentTracks.length > 4) this.recentTracks.shift();
     return chosen;
   }
@@ -601,13 +666,19 @@ class AstraCatSynth {
 
     if (!forceRestart && this.currentTrackFile === filename) {
       this.bgmAudio.volume = this.getEffectiveMusicVol();
-      if (this.bgmAudio.paused && this.musicEnabled && !this.muted) {
+      if (this.bgmAudio.paused && this.musicEnabled && !this.muted && !this.isPlayRequestInFlight) {
+        this.isPlayRequestInFlight = true;
         const p = this.bgmAudio.play();
-        if (p && typeof p.catch === 'function') {
-          p.catch(() => {
+        if (p && typeof p.then === 'function') {
+          p.then(() => {
+            this.isPlayRequestInFlight = false;
+          }).catch(() => {
+            this.isPlayRequestInFlight = false;
             this.pendingTrack = { file: filename, fallback: fallbackTrack };
             this.updateStatusHint(`Нажми на экран для запуска: ${filename}`);
           });
+        } else {
+          this.isPlayRequestInFlight = false;
         }
       }
       return;
@@ -615,6 +686,7 @@ class AstraCatSynth {
 
     this.currentTrackFile = filename;
     this.fallbackTrackFile = fallbackTrack;
+    this.pendingTrack = null;
 
     try {
       this.bgmAudio.pause();
@@ -622,18 +694,29 @@ class AstraCatSynth {
       this.bgmAudio.load();
       this.bgmAudio.volume = this.getEffectiveMusicVol();
 
-      const playPromise = this.bgmAudio.play();
-      if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(() => {
-          this.pendingTrack = { file: filename, fallback: fallbackTrack };
-          this.updateStatusHint(`Нажми на экран для запуска: ${filename}`);
-        });
+      if (this.musicEnabled && !this.muted) {
+        this.isPlayRequestInFlight = true;
+        const playPromise = this.bgmAudio.play();
+        if (playPromise && typeof playPromise.then === 'function') {
+          playPromise.then(() => {
+            this.isPlayRequestInFlight = false;
+          }).catch(() => {
+            this.isPlayRequestInFlight = false;
+            this.pendingTrack = { file: filename, fallback: fallbackTrack };
+            this.updateStatusHint(`Нажми на экран для запуска: ${filename}`);
+          });
+        } else {
+          this.isPlayRequestInFlight = false;
+        }
       }
-    } catch (e) {}
+    } catch (e) {
+      this.isPlayRequestInFlight = false;
+    }
   }
 
   pauseMusic() {
     this.pausedByGame = true;
+    this.isPlayRequestInFlight = false;
     if (this.bgmAudio) {
       try {
         this.bgmAudio.volume = 0;
@@ -644,17 +727,25 @@ class AstraCatSynth {
 
   resumeMusic() {
     this.pausedByGame = false;
-    if (this.bgmAudio && this.musicEnabled && !this.muted) {
+    if (this.bgmAudio && this.musicEnabled && !this.muted && this.currentTrackFile) {
       try {
         this.bgmAudio.volume = this.getEffectiveMusicVol();
+        this.isPlayRequestInFlight = true;
         const p = this.bgmAudio.play();
-        if (p && typeof p.catch === 'function') p.catch(() => {});
-      } catch (e) {}
+        if (p && typeof p.then === 'function') {
+          p.then(() => { this.isPlayRequestInFlight = false; })
+           .catch(() => { this.isPlayRequestInFlight = false; });
+        } else {
+          this.isPlayRequestInFlight = false;
+        }
+      } catch (e) {
+        this.isPlayRequestInFlight = false;
+      }
     }
   }
 
   startIntroMusic() {
-    this.playTrack('intro.mp3', 'level1.mp3');
+    this.playTrack('intro.mp3', 'level1.mp3', false);
   }
 
   startMusic(mode = 'normal', levelId = 1) {
@@ -663,12 +754,10 @@ class AstraCatSynth {
       return;
     }
     if (mode === 'boss') {
-      // Треки боссов играют ТОЛЬКО при выходе босса
       const bossFile = this.bossTracks[(levelId - 1) % this.bossTracks.length] || 'boss.mp3';
       this.playTrack(bossFile, 'boss.mp3', true);
       return;
     }
-    // В обычном полёте по уровню — только случайные level1..11.mp3 без повторов 4 трека
     this.playTrack(this.pickNextTrack(), 'level1.mp3', true);
   }
 
@@ -677,6 +766,7 @@ class AstraCatSynth {
   }
 
   stopMusic() {
+    this.isPlayRequestInFlight = false;
     if (this.bgmAudio) {
       try {
         this.bgmAudio.pause();
@@ -689,9 +779,15 @@ class AstraCatSynth {
   updateMusicVolume() {
     if (this.bgmAudio) {
       this.bgmAudio.volume = this.getEffectiveMusicVol();
-      if (this.bgmAudio.paused && this.musicEnabled && !this.muted && !this.pausedByGame && this.currentTrackFile) {
+      if (this.bgmAudio.paused && this.musicEnabled && !this.muted && !this.pausedByGame && this.currentTrackFile && !this.isPlayRequestInFlight) {
+        this.isPlayRequestInFlight = true;
         const p = this.bgmAudio.play();
-        if (p && typeof p.catch === 'function') p.catch(() => {});
+        if (p && typeof p.then === 'function') {
+          p.then(() => { this.isPlayRequestInFlight = false; })
+           .catch(() => { this.isPlayRequestInFlight = false; });
+        } else {
+          this.isPlayRequestInFlight = false;
+        }
       }
     }
   }
@@ -714,7 +810,8 @@ class AstraCatSynth {
       const white = Math.random() * 2 - 1;
       brownData[i] = (lastOut + (0.02 * white)) / 1.02;
       lastOut = brownData[i];
-      brownData[i] *= 2.8;
+      // Нормализованная амплитуда без внутреннего клиппинга сэмплов
+      brownData[i] = Math.max(-0.85, Math.min(0.85, brownData[i] * 0.95));
     }
   }
 }
