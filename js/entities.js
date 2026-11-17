@@ -1,3 +1,4 @@
+javascript
 'use strict';
 
 const INK = '#120826';
