@@ -208,10 +208,10 @@
 
 <div class="setting-row">
 <div class="setting-head">
-<span>🎵 Фоновая музыка MP3: <b id="val-music-vol">55%</b></span>
+<span>🎵 Фоновая музыка MP3: <b id="val-music-vol">60%</b></span>
 <button id="toggle-music" class="toggle-chip">ВКЛ</button>
 </div>
-<input id="music-vol" type="range" min="0" max="100" value="55" />
+<input id="music-vol" type="range" min="0" max="100" value="60" autocomplete="off" />
 <div class="setting-head" style="margin-top:8px; margin-bottom:0;">
 <span style="font-size:11.5px;">Трек уровня:</span>
 <select id="track-select" class="neon-select">
@@ -223,30 +223,30 @@
 
 <div class="setting-row">
 <div class="setting-head">
-<span>✨ Громкость ASMR-эффектов: <b id="val-sfx-vol">75%</b></span>
+<span>✨ Громкость ASMR-эффектов: <b id="val-sfx-vol">50%</b></span>
 <button id="toggle-sfx" class="toggle-chip">ВКЛ</button>
 </div>
-<input id="sfx-vol" type="range" min="0" max="100" value="75" />
+<input id="sfx-vol" type="range" min="0" max="100" value="50" autocomplete="off" />
 </div>
 
 <div class="setting-row">
 <div class="setting-head">
 <span>🌙 Бархатность / Приглушённость (LPF)</span>
-<strong id="val-warmth" style="color:#90e0ef; font-size:12px;">2500 Hz</strong>
+<strong id="val-warmth" style="color:#90e0ef; font-size:12px;">1450 Hz</strong>
 </div>
-<input id="ctrl-warmth" type="range" min="650" max="4200" value="2500" />
+<input id="ctrl-warmth" type="range" min="500" max="3200" value="1450" autocomplete="off" />
 
 <div class="setting-head" style="margin-top:8px;">
 <span>🌌 Космическое стерео-эхо (Space)</span>
 <strong id="val-space" style="color:#90e0ef; font-size:12px;">20%</strong>
 </div>
-<input id="ctrl-space" type="range" min="0" max="80" value="20" />
+<input id="ctrl-space" type="range" min="0" max="80" value="20" autocomplete="off" />
 
 <div class="setting-head" style="margin-top:8px;">
 <span>🌀 Психоделическое плавание (LFO Drift)</span>
 <strong id="val-psy" style="color:#90e0ef; font-size:12px;">55%</strong>
 </div>
-<input id="ctrl-psy" type="range" min="0" max="100" value="55" />
+<input id="ctrl-psy" type="range" min="0" max="100" value="55" autocomplete="off" />
 </div>
 
 <div class="btn-row" style="margin-top:12px;">
@@ -310,11 +310,10 @@
 </div>
 </div>
 
-<script src="js/synth.js?v=36"></script>
+<script src="js/synth.js?v=38"></script>
 <script src="js/vfx.js?v=36"></script>
 <script src="js/world3d.js?v=37"></script>
 <script src="js/entities.js?v=36"></script>
 <script src="js/game.js?v=36"></script>
-
 </body>
 </html>
