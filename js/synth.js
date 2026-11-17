@@ -18,7 +18,6 @@ class AstraCatSynth {
     this.musicEnabled = true;
     this.sfxEnabled = true;
     this.musicVolume = 0.55;
-    // Комфортная громкость эффектов (75% по умолчанию, с хорошим запасом до 100%)
     this.sfxVolume = 0.75;
 
     this.settings = {
@@ -198,7 +197,6 @@ class AstraCatSynth {
 
     this._createNoiseBuffers();
 
-    // Плотная и громкая шина голосов
     this.voiceBus = this.ctx.createGain();
     this.voiceBus.gain.value = 1.25;
 
@@ -265,8 +263,8 @@ class AstraCatSynth {
 
   getEffectiveSfxVol() {
     if (this.muted || !this.sfxEnabled) return 0.0001;
-    // Увеличили выходной диапазон: на 75% звучит ярко и громко, на 100% — максимальная мощность
-    return Math.max(0.0001, Math.min(2.2, this.sfxVolume * 2.1));
+    // Базовая внутренняя громкость эффектов уменьшена на 30% (с 2.1 до 1.47)
+    return Math.max(0.0001, Math.min(1.55, this.sfxVolume * 1.47));
   }
 
   updateSfxVolume() {
@@ -417,7 +415,6 @@ class AstraCatSynth {
     gain.gain.linearRampToValueAtTime(0.18, now + 0.015);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
-    // Подключаем напрямую к компрессору, минуя линию задержки (delayLeft/delayRight) — 0% реверба!
     osc.connect(lp);
     lp.connect(gain);
     gain.connect(this.compressor);
@@ -636,7 +633,7 @@ class AstraCatSynth {
     if (this.muted || !this.sfxEnabled) return;
     try {
       const customBoom = new Audio('music/boss_explode.mp3');
-      customBoom.volume = Math.max(0, Math.min(1, this.sfxVolume));
+      customBoom.volume = Math.max(0, Math.min(1, this.sfxVolume * 0.7));
       customBoom.play().catch(() => {});
     } catch (e) {}
   }
