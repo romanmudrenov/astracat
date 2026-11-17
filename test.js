@@ -1,4 +1,3 @@
-javascript
 'use strict';
 
 const resultsList = document.getElementById('results-list');
