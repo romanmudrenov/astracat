@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'astro_cat_hangar_v15';
+  const STORAGE_KEY = 'astro_cat_hangar_v16';
   const BORDER_INK = typeof INK !== 'undefined' ? INK : '#120826';
 
   function loadProgress() {
@@ -15,6 +15,8 @@
         equippedShip: raw.equippedShip || 'shuttle',
         unlockedWeapons: Array.isArray(raw.unlockedWeapons) && raw.unlockedWeapons.length ? raw.unlockedWeapons : ['droplet'],
         equippedWeapon: raw.equippedWeapon || 'droplet',
+        unlockedDrones: Array.isArray(raw.unlockedDrones) && raw.unlockedDrones.length ? raw.unlockedDrones : ['none'],
+        equippedDrone: raw.equippedDrone || 'none',
         loreSeen: Boolean(raw.loreSeen)
       };
     } catch (e) {
@@ -22,6 +24,7 @@
         bestScore: 0, coins: 0, completed: [],
         unlockedShips: ['shuttle'], equippedShip: 'shuttle',
         unlockedWeapons: ['droplet'], equippedWeapon: 'droplet',
+        unlockedDrones: ['none'], equippedDrone: 'none',
         loreSeen: false
       };
     }
@@ -183,12 +186,24 @@
     tryNext();
   }
 
+  // Маппинг стартовых и финальных картинок для всех 6 уровней + заставки
+  const LEVEL_ART_FILES = {
+    1: { in: ['img/level1_in.jpg', 'img/1000036480.jpg'], out: ['img/level1_out.jpg', 'img/1000036494.jpg'] },
+    2: { in: ['img/level2_in.jpg', 'img/1000036482.jpg'], out: ['img/level2_out.jpg', 'img/1000036490.jpg'] },
+    3: { in: ['img/level3_in.jpg', 'img/1000036483.jpg'], out: ['img/level3_out.jpg', 'img/1000036495.jpg'] },
+    4: { in: ['img/level4_in.jpg', 'img/1000036486.jpg'], out: ['img/level4_out.jpg', 'img/1000036491.jpg'] },
+    5: { in: ['img/level5_in.jpg', 'img/1000036485.jpg', 'img/1000036485_2.jpg'], out: ['img/level5_out.jpg', 'img/1000036493.jpg'] },
+    6: { in: ['img/level6_in.jpg', 'img/1000036488.jpg'], out: ['img/level6_out.jpg', 'img/1000036487.jpg'] }
+  };
+
   function setupMenuBackgrounds() {
     const titleBox = document.getElementById('splash-fallback-title');
     if (titleBox) titleBox.style.display = 'none';
-    resolveImageToElement(document.getElementById('splash-bg-img'), ['img/splash.jpg', 'img/1000036349.jpg'], () => {
-      if (titleBox) titleBox.style.display = 'block';
-    });
+    resolveImageToElement(
+      document.getElementById('splash-bg-img'),
+      ['img/splash.jpg', 'img/1000036496.jpg', 'img/1000036349.jpg'],
+      () => { if (titleBox) titleBox.style.display = 'block'; }
+    );
     ['menu-outer-bg', 'hangar-outer-bg', 'lore-outer-bg', 'intro-outer-bg'].forEach(id => {
       resolveImageToElement(document.getElementById(id), ['img/menu_bg.jpg', 'img/1000036350.jpg']);
     });
@@ -230,6 +245,10 @@
     return WEAPONS_CATALOG.find(w => w.id === progress.equippedWeapon) || WEAPONS_CATALOG[0];
   }
 
+  function getActiveDrone() {
+    return DRONES_CATALOG.find(d => d.id === progress.equippedDrone) || DRONES_CATALOG[0];
+  }
+
   function updateCoinsUI() {
     const mEl = document.getElementById('menu-coins');
     const hEl = document.getElementById('hangar-coins');
@@ -238,23 +257,28 @@
   }
 
   // =========================================================================
-  // АНГАР (ВКЛАДКИ КОРАБЛИ / ОРУЖИЕ + ПЛАВНАЯ 2D-ВИЗУАЛИЗАЦИЯ)
+  // АНГАР (3 ВКЛАДКИ: КОРАБЛИ / ОРУЖИЕ / ДРОНЫ + ЖИВАЯ ВИЗУАЛИЗАЦИЯ)
   // =========================================================================
   let hangarShipCanvases = [];
   let hangarWeaponCanvases = [];
+  let hangarDroneCanvases = [];
   let activeHangarTab = 'ships';
 
   const tabShipsBtn = document.getElementById('tab-ships-btn');
   const tabWeaponsBtn = document.getElementById('tab-weapons-btn');
+  const tabDronesBtn = document.getElementById('tab-drones-btn');
   const secShips = document.getElementById('hangar-section-ships');
   const secWeapons = document.getElementById('hangar-section-weapons');
+  const secDrones = document.getElementById('hangar-section-drones');
 
   function switchHangarTab(tab) {
     activeHangarTab = tab;
     if (tabShipsBtn) tabShipsBtn.classList.toggle('active', tab === 'ships');
     if (tabWeaponsBtn) tabWeaponsBtn.classList.toggle('active', tab === 'weapons');
+    if (tabDronesBtn) tabDronesBtn.classList.toggle('active', tab === 'drones');
     if (secShips) secShips.classList.toggle('hidden', tab !== 'ships');
     if (secWeapons) secWeapons.classList.toggle('hidden', tab !== 'weapons');
+    if (secDrones) secDrones.classList.toggle('hidden', tab !== 'drones');
   }
 
   tabShipsBtn?.addEventListener('click', (e) => {
@@ -262,6 +286,9 @@
   });
   tabWeaponsBtn?.addEventListener('click', (e) => {
     e.stopPropagation(); if (synth) synth.sfxMenuSelect(); switchHangarTab('weapons');
+  });
+  tabDronesBtn?.addEventListener('click', (e) => {
+    e.stopPropagation(); if (synth) synth.sfxMenuSelect(); switchHangarTab('drones');
   });
 
   function scrollCarouselToIdx(carouselEl, idx) {
@@ -274,10 +301,12 @@
     updateCoinsUI();
     const shipsCarousel = document.getElementById('ships-carousel');
     const weaponsCarousel = document.getElementById('weapons-carousel');
+    const dronesCarousel = document.getElementById('drones-carousel');
     if (!shipsCarousel || !weaponsCarousel) return;
 
     hangarShipCanvases = [];
     hangarWeaponCanvases = [];
+    hangarDroneCanvases = [];
 
     shipsCarousel.innerHTML = '';
     SHIPS_CATALOG.forEach((ship, idx) => {
@@ -356,12 +385,54 @@
       weaponsCarousel.appendChild(card);
     });
 
+    if (dronesCarousel) {
+      dronesCarousel.innerHTML = '';
+      DRONES_CATALOG.forEach((dr, idx) => {
+        const owned = progress.unlockedDrones.includes(dr.id);
+        const equipped = progress.equippedDrone === dr.id;
+        const card = document.createElement('div');
+        card.className = 'media-card' + (equipped ? ' equipped' : '');
+
+        const btnClass = equipped ? 'active' : (owned ? 'equip' : 'buy');
+        const btnLabel = equipped ? 'АКТИВЕН ✔' : (owned ? 'ВЫБРАТЬ' : `${dr.price} 🐟`);
+
+        card.innerHTML = `
+          <div class="media-viewport">
+            <span class="viewport-badge">ДРОН ${idx + 1}/4</span>
+            <canvas width="260" height="175"></canvas>
+          </div>
+          <div class="media-card-title">🤖 ${dr.name}</div>
+          <div class="media-card-desc">${dr.desc}</div>
+          <button class="shop-action-btn ${btnClass}">${btnLabel}</button>
+        `;
+
+        const cvs = card.querySelector('canvas');
+        hangarDroneCanvases.push({ cvs, ctx: cvs.getContext('2d'), dr, ship: activeShip, idx });
+
+        card.querySelector('button').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (synth) synth.init();
+          if (equipped) { if (synth) synth.sfxMenuTap(); return; }
+          if (owned) {
+            progress.equippedDrone = dr.id; saveProgress(progress);
+            if (synth) synth.sfxMenuSelect(); renderHangar();
+          } else if (progress.coins >= dr.price) {
+            progress.coins -= dr.price; progress.unlockedDrones.push(dr.id); progress.equippedDrone = dr.id;
+            saveProgress(progress); if (synth) synth.sfxBuyItem(); renderHangar();
+          } else if (synth) synth.sfxHurt();
+        });
+        dronesCarousel.appendChild(card);
+      });
+    }
+
     switchHangarTab(activeHangarTab);
     const eqShipIdx = Math.max(0, SHIPS_CATALOG.findIndex(s => s.id === progress.equippedShip));
     const eqWpIdx = Math.max(0, WEAPONS_CATALOG.findIndex(w => w.id === progress.equippedWeapon));
+    const eqDrIdx = Math.max(0, DRONES_CATALOG.findIndex(d => d.id === progress.equippedDrone));
     setTimeout(() => {
       scrollCarouselToIdx(shipsCarousel, eqShipIdx);
       scrollCarouselToIdx(weaponsCarousel, eqWpIdx);
+      scrollCarouselToIdx(dronesCarousel, eqDrIdx);
     }, 30);
   }
 
@@ -397,6 +468,7 @@
 
   setupCarouselControls('ships-carousel', 'ship-prev-btn', 'ship-next-btn', 'ship-counter', SHIPS_CATALOG.length);
   setupCarouselControls('weapons-carousel', 'weapon-prev-btn', 'weapon-next-btn', 'weapon-counter', WEAPONS_CATALOG.length);
+  setupCarouselControls('drones-carousel', 'drone-prev-btn', 'drone-next-btn', 'drone-counter', DRONES_CATALOG.length);
 
   function renderHangarLivePreviews(t) {
     if (hangarOverlay.classList.contains('hidden')) return;
@@ -429,7 +501,7 @@
         drawPlayerShipModel(c, ship, t, 0, { weaponId: progress.equippedWeapon });
         c.restore();
       });
-    } else {
+    } else if (activeHangarTab === 'weapons') {
       hangarWeaponCanvases.forEach(({ cvs, ctx: c, wp, ship, idx }) => {
         const w = cvs.width, h = cvs.height;
         c.clearRect(0, 0, w, h);
@@ -475,6 +547,35 @@
         drawPlayerShipModel(c, ship, t, 0, { weaponId: wp.id });
         c.restore();
       });
+    } else if (activeHangarTab === 'drones') {
+      hangarDroneCanvases.forEach(({ cvs, ctx: c, dr, ship, idx }) => {
+        const w = cvs.width, h = cvs.height;
+        c.clearRect(0, 0, w, h);
+
+        const shipX = w * 0.42, shipY = h * 0.62;
+        c.save();
+        c.translate(shipX, shipY);
+        c.scale(1.25, 1.25);
+        drawPlayerShipModel(c, ship, t, 0, { weaponId: progress.equippedWeapon });
+        c.restore();
+
+        if (dr.id !== 'none') {
+          const dx = shipX + 48 + Math.cos(t * 3 + idx) * 6;
+          const dy = shipY - 12 + Math.sin(t * 4 + idx) * 8;
+          const cycle = (t * 2.2 + idx * 0.3) % 1;
+
+          c.fillStyle = dr.color;
+          c.beginPath();
+          c.arc(dx, dy - 18 - cycle * 75, 4, 0, Math.PI * 2);
+          c.fill();
+
+          c.save();
+          c.translate(dx, dy);
+          c.scale(1.45, 1.45);
+          drawDroneModel(c, dr, t);
+          c.restore();
+        }
+      });
     }
   }
 
@@ -500,10 +601,11 @@
     hangarCloseBtn.addEventListener('click', (e) => { e.stopPropagation(); closeHangarToMenu(); });
     hangarCloseBtn.addEventListener('pointerup', (e) => { e.stopPropagation(); closeHangarToMenu(); });
   }
+
   const LORE_SLIDES = [
     { baseName: 'slide1', rawFallback: 'img/1000036324.jpg', title: 'ПЛАНЕТА КОТОВИЯ-17', text: 'На родной планете Котовия-17 заканчивается еда. Рыбка, колбаска и сметана выдаются только по талонам!' },
     { baseName: 'slide2', rawFallback: 'img/1000036326.jpg', title: 'СЕКРЕТНЫЙ ОТРЯД «АСТРО-КОТ»', text: 'Редж отправляется в дальний космос за провизией для всей планеты!' },
-    { baseName: 'slide3', rawFallback: 'img/1000036323.jpg', title: 'БИТВА С ПОЖИРАТЕЛЯМИ КОСМОСА', text: 'Добывай рыбку 🐟 в боях, открывай 5 кораблей и 5 видов оружия в Ангаре!' }
+    { baseName: 'slide3', rawFallback: 'img/1000036323.jpg', title: 'БИТВА С ПОЖИРАТЕЛЯМИ КОСМОСА', text: 'Добывай рыбку 🐟 в боях, открывай 5 кораблей, 5 видов оружия и дронов в Ангаре!' }
   ];
   let loreSlideIdx = 0;
 
@@ -561,10 +663,12 @@
     const cur = LEVELS[selectedLevelIdx];
     applySiteTheme(cur);
     const ship = getActiveShip();
+    const drone = getActiveDrone();
     const diff = DIFFICULTIES[selectedDiffKey];
     const bossCountLabel = diff.twoBosses ? '2 БОССА ПОДРЯД!' : cur.bossName;
+    const droneLabel = drone.id !== 'none' ? ` + 🤖 ${drone.name.replace(/^\d+\.\s*/, '')}` : '';
     document.getElementById('selected-level-info').innerHTML =
-      `<strong>Уровень ${cur.id}: ${cur.name}</strong> (+${cur.coinReward} 🐟)<br><span>Босс: ${bossCountLabel} • ${ship.name}</span>`;
+      `<strong>Уровень ${cur.id}: ${cur.name}</strong> (+${cur.coinReward} 🐟)<br><span>Босс: ${bossCountLabel} • ${ship.name}${droneLabel}</span>`;
     document.getElementById('start-best').textContent =
       `Рекорд: ${progress.bestScore} • Пройдено: ${progress.completed.length}/${LEVELS.length}`;
   }
@@ -584,7 +688,8 @@
     const lvl = LEVELS[selectedLevelIdx];
     applySiteTheme(lvl);
     if (synth) { synth.init(); synth.sfxMenuTransition(); }
-    resolveImageToElement(document.getElementById('intro-stage-img'), [`img/level${lvl.id}_in.jpg`, 'img/transition_in.jpg', 'img/1000036354.jpg']);
+    const artIn = LEVEL_ART_FILES[lvl.id]?.in || [`img/level${lvl.id}_in.jpg`];
+    resolveImageToElement(document.getElementById('intro-stage-img'), [...artIn, 'img/transition_in.jpg', 'img/1000036354.jpg']);
 
     const diff = DIFFICULTIES[selectedDiffKey];
     document.getElementById('intro-sector-tag').textContent = `УРОВЕНЬ ${lvl.id} • ${diff.label.toUpperCase()}`;
@@ -680,15 +785,15 @@
   muteBtn?.addEventListener('click', (e) => { e.stopPropagation(); if (!synth) return; muteBtn.textContent = synth.toggleMute() ? '🔇' : '🔊'; });
 
   // =========================================================================
-  // ИГРОВОЙ ПРОЦЕСС: РЕЖИССУРА ВОЛН, «РЫБНЫЙ ДОЖДЬ», КВЕСТЫ И 6 ИНТЕРАКТИВОВ
+  // ИГРОВОЙ ПРОЦЕСС + ДРОНЫ-КОМПАНЬОНЫ
   // =========================================================================
   let score = 0, runCoins = 0, kills = 0, combo = 1, comboTimer = 0, wave = 1, waveTimer = 0;
-  let spawnTimer = 0, obstacleTimer = 4.0, propTimer = 6.5, eventTimer = 15.0, activeEvent = null;
+  let spawnTimer = 0, obstacleTimer = 4.0, propTimer = 6.5;
   let screenShake = 0, warningBannerTimer = 0, globalTime = 0, midBossDefeated = false;
   let psySlowTimer = 0, fishRainTimer = 0, fishRainSpawnTimer = 0, formationCounter = 0;
   let activeQuest = null;
 
-  let player = null, bullets = [], enemyBullets = [], enemies = [], obstacles = [], bonuses = [], interactiveProps = [], fishRainItems = [], boss = null;
+  let player = null, droneUnit = null, bullets = [], enemyBullets = [], enemies = [], obstacles = [], bonuses = [], interactiveProps = [], fishRainItems = [], boss = null;
 
   const keys = {};
   const pointer = { active: false, x: 0, y: 0, isTouch: false };
@@ -730,7 +835,7 @@
   document.getElementById('resume-btn')?.addEventListener('click', (e) => { e.stopPropagation(); togglePause(); });
 
   function returnToMenu() {
-    state = 'START'; pointer.active = false; boss = null; enemies = []; obstacles = []; bullets = []; enemyBullets = []; bonuses = []; interactiveProps = []; fishRainItems = []; activeEvent = null;
+    state = 'START'; pointer.active = false; boss = null; droneUnit = null; enemies = []; obstacles = []; bullets = []; enemyBullets = []; bonuses = []; interactiveProps = []; fishRainItems = [];
     if (vfx) vfx.clear(); if (synth) { synth.sfxMenuTap(); synth.startIntroMusic(); }
     [pauseOverlay, endOverlay, settingsOverlay, introOverlay, loreOverlay, hangarOverlay, splashOverlay, pauseBtn].forEach(el => el.classList.add('hidden'));
     renderLevelGrid(); startOverlay.classList.remove('hidden'); syncTopHudVisibility();
@@ -769,12 +874,13 @@
     const diff = DIFFICULTIES[selectedDiffKey];
     const ship = getActiveShip();
     const wp = getActiveBaseWeapon();
+    const dr = getActiveDrone();
 
     applySiteTheme(lvl);
     if (synth) { synth.init(); synth.startMusic('normal', lvl.id); synth.sfxCosmicHum(); }
 
     score = 0; runCoins = 0; kills = 0; combo = 1; comboTimer = 0; wave = 1; waveTimer = 0;
-    spawnTimer = 0.5; obstacleTimer = 3.5; propTimer = 5.0; eventTimer = 14.0; activeEvent = null;
+    spawnTimer = 0.5; obstacleTimer = 3.5; propTimer = 5.0;
     screenShake = 0; warningBannerTimer = 0; midBossDefeated = false; psySlowTimer = 0; fishRainTimer = 0; formationCounter = 0;
 
     initLevelQuest(lvl);
@@ -783,8 +889,16 @@
     player = {
       x: W / 2, y: H - 105, vx: 0, vy: 0, r: 20, hp: totalHp, maxHp: totalHp,
       ship, baseWeapon: wp, invuln: 0, fireCooldown: 0, secondaryWeapon: 'none', secondaryLevel: 1,
-      shield: false, turboTimer: 0, stickyTimer: 0, squashX: 1, squashY: 1, shotCycle: 0
+      shield: false, turboTimer: 0, squashX: 1, squashY: 1, shotCycle: 0
     };
+
+    droneUnit = (dr && dr.id !== 'none') ? {
+      data: dr,
+      x: player.x + 38,
+      y: player.y - 10,
+      fireTimer: 0.4,
+      orbitPhase: 0
+    } : null;
 
     bullets = []; enemyBullets = []; enemies = []; obstacles = []; bonuses = []; interactiveProps = []; fishRainItems = []; boss = null;
     if (vfx) vfx.clear();
@@ -804,13 +918,11 @@
     else startLevel(selectedLevelIdx);
   });
 
-  // Спавн уникального интерактивного объекта для текущего сектора
   function spawnSectorInteractiveProp() {
     const lvl = LEVELS[selectedLevelIdx];
     const pType = lvl.interactiveType || 'mirror_portal';
 
     if (pType === 'mirror_portal') {
-      // Парные зеркальные порталы (левый и правый)
       const yPos = 140 + Math.random() * 140;
       const p1 = { id: Math.random(), pairIdx: 0, type: 'mirror_portal', x: W * 0.22, y: yPos, r: 24, vy: 28, phase: 0, cooldown: 0 };
       const p2 = { id: Math.random(), pairIdx: 1, type: 'mirror_portal', x: W * 0.78, y: yPos, r: 24, vy: 28, phase: 1.5, cooldown: 0 };
@@ -841,7 +953,6 @@
     });
   }
 
-  // Строевой спавн врагов (клин / синусоида / элитные лидеры в коронах)
   function spawnEnemyFormation() {
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
@@ -941,7 +1052,6 @@
       });
     }
 
-    // Веерный психо-залп при сборе Золотой Психо-Споры на 6-м уровне!
     if (psySlowTimer > 0) {
       [-0.35, 0.35].forEach(ang => {
         bullets.push({ kind: 'plasma', x: p.x, y: p.y - 20, vx: Math.sin(ang) * 760, vy: -Math.cos(ang) * 760, r: 7, dmg: 1.1 * dmgScale, color: '#ffd166' });
@@ -997,11 +1107,11 @@
       b.shootTimer = b.phase === 3 ? 0.92 : 1.18;
       [-22, 22].forEach(ex => {
         const eyeAng = Math.atan2(player.y - (b.y - 14), player.x - (b.x + ex));
-        enemyBullets.push({ kind: 'green_spin_star', rot: 0, x: b.x + ex, y: b.y - 14, vx: Math.cos(eyeAng) * (spd * 1.05), vy: Math.sin(eyeAng) * (spd * 1.05), r: 12, color: '#06d6a0' });
+        enemyBullets.push({ kind: 'green_spin_star', rot: 0, x: b.x + ex, y: b.y - 14, vx: Math.cos(eyeAng) * (spd * 1.05), vy: Math.sin(eyeAng) * (spd * 1.05), r: 12, color: '#00f5d4' });
       });
       [-0.28, 0, 0.28].forEach((offsetAng, idx) => {
         const ang = Math.PI / 2 + offsetAng + Math.sin(b.time * 3) * 0.15;
-        enemyBullets.push({ kind: 'psy_wave', hue: (b.time * 180 + idx * 110) % 360, x: b.x, y: b.y + 24, vx: Math.cos(ang) * (spd * 0.95), vy: Math.sin(ang) * (spd * 0.95), ang, r: 20, color: '#ff006e' });
+        enemyBullets.push({ kind: 'psy_wave', hue: idx % 2 === 0 ? 325 : 175, x: b.x, y: b.y + 24, vx: Math.cos(ang) * (spd * 0.95), vy: Math.sin(ang) * (spd * 0.95), ang, r: 20, color: '#ff007f' });
       });
     } else if (lvl.id === 2) {
       if (synth) synth.sfxIgnite();
@@ -1010,7 +1120,7 @@
         const ang = toPlayer + offsetAng;
         enemyBullets.push({ kind: 'fireball', x: b.x, y: b.y + 30, vx: Math.cos(ang) * (spd * 1.12), vy: Math.sin(ang) * (spd * 1.12), r: 12, color: '#ffbe0b' });
       });
-      enemyBullets.push({ kind: 'laser_shuriken', rot: 0, x: b.x, y: b.y + 24, vx: Math.cos(toPlayer) * (spd * 1.22), vy: Math.sin(toPlayer) * (spd * 1.22), r: 14, color: '#ff002b' });
+      enemyBullets.push({ kind: 'laser_shuriken', rot: 0, x: b.x, y: b.y + 24, vx: Math.cos(toPlayer) * (spd * 1.22), vy: Math.sin(toPlayer) * (spd * 1.22), r: 14, color: '#ff006e' });
     } else if (lvl.id === 3) {
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.95 : 1.22;
@@ -1022,7 +1132,7 @@
     } else if (lvl.id === 4) {
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.95 : 1.22;
-      enemyBullets.push({ kind: 'psy_wave', hue: 185, x: b.x, y: b.y + 20, vx: Math.cos(toPlayer) * spd, vy: Math.sin(toPlayer) * spd, ang: toPlayer, r: 24, color: '#9bf6ff' });
+      enemyBullets.push({ kind: 'psy_wave', hue: 185, x: b.x, y: b.y + 20, vx: Math.cos(toPlayer) * spd, vy: Math.sin(toPlayer) * spd, ang: toPlayer, r: 24, color: '#00f5d4' });
       [-45, 45].forEach(ox => {
         const ang = Math.atan2(player.y - (b.y + 55), player.x - (b.x + ox));
         enemyBullets.push({ kind: 'enemy_laser', x: b.x + ox, y: b.y + 55, vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25), ang, r: 6.5, color: '#9bf6ff' });
@@ -1045,7 +1155,6 @@
     }
   }
 
-  // Обработка физики 6 уникальных интерактивных объектов сектора
   function updateInteractiveProps(dt) {
     for (let i = interactiveProps.length - 1; i >= 0; i--) {
       const pr = interactiveProps[i];
@@ -1053,13 +1162,11 @@
       pr.phase += dt * 2.5;
       if (pr.cooldown > 0) pr.cooldown = Math.max(0, pr.cooldown - dt);
 
-      // 1. Взаимодействие с пулями игрока (Порталы, Пиньяты, Цветки-Батуты)
       for (let j = bullets.length - 1; j >= 0; j--) {
         const b = bullets[j];
         if (b.propCooldown > 0) continue;
         if (Math.hypot(b.x - pr.x, b.y - pr.y) < pr.r + b.r) {
           if (pr.type === 'mirror_portal' && pr.partner) {
-            // Телепортация пули во второй портал и наведение в спину врагу
             b.x = pr.partner.x;
             b.y = pr.partner.y;
             b.propCooldown = 0.45;
@@ -1067,11 +1174,10 @@
             if (vfx) vfx.addShockwave(pr.partner.x, pr.partner.y, '#00f5d4', 45, 0.25);
             advanceQuest('props', 1);
           } else if (pr.type === 'pinata_skull') {
-            // Взрыв черепа-пиньяты: конфетти, оглушение врагов и рыбка!
             bullets.splice(j, 1);
             if (synth) synth.sfxVictory();
             if (vfx) {
-              vfx.addRealisticExplosion(pr.x, pr.y, '#ffbe0b', 1.4, '#ff006e', '#06d6a0');
+              vfx.addRealisticExplosion(pr.x, pr.y, '#ffbe0b', 1.4, '#ff006e', '#00f5d4');
               vfx.addPopup(pr.x, pr.y, '🎉 ПИНЬЯТА! ОГЛУШЕНИЕ +80 🐟', '#ffd166', 1.15);
             }
             runCoins += 80;
@@ -1080,7 +1186,6 @@
             interactiveProps.splice(i, 1);
             break;
           } else if (pr.type === 'flower_bumper') {
-            // Рикошет пули в ближайшего врага под углом
             b.propCooldown = 0.35;
             const target = enemies[0] || boss;
             if (target) {
@@ -1100,12 +1205,11 @@
 
       if (!interactiveProps[i]) continue;
 
-      // 2. Взаимодействие с кораблём игрока (Ускорители, Мыльные пузыри, Золотые Психо-споры)
       if (Math.hypot(player.x - pr.x, player.y - pr.y) < player.r + pr.r) {
         if (pr.type === 'candy_booster') {
           player.turboTimer = 4.5;
           if (synth) synth.sfxPurrBoost();
-          if (vfx) vfx.addPopup(pr.x, pr.y, '🌈 РАДУЖНЫЙ УСКОРИТЕЛЬ!', '#ffd166', 1.15);
+          if (vfx) vfx.addPopup(pr.x, pr.y, '🌈 КАРАМЕЛЬНЫЙ УСКОРИТЕЛЬ!', '#ffd166', 1.15);
           advanceQuest('props', 1);
           interactiveProps.splice(i, 1);
           continue;
@@ -1129,7 +1233,6 @@
         }
       }
 
-      // 3. Гигантский мыльный пузырь захватывает мелких врагов
       if (pr.type === 'giant_bubble') {
         for (let k = enemies.length - 1; k >= 0; k--) {
           const en = enemies[k];
@@ -1144,6 +1247,55 @@
       }
 
       if (pr.y > H + 60) interactiveProps.splice(i, 1);
+    }
+  }
+
+  function updateDrone(dt) {
+    if (!droneUnit || !player) return;
+    const dr = droneUnit.data;
+    droneUnit.orbitPhase += dt * 3.2;
+
+    const targetX = player.x + 36 + Math.cos(droneUnit.orbitPhase) * 8;
+    const targetY = player.y - 12 + Math.sin(droneUnit.orbitPhase * 1.3) * 7;
+    droneUnit.x += (targetX - droneUnit.x) * Math.min(1, dt * 10);
+    droneUnit.y += (targetY - droneUnit.y) * Math.min(1, dt * 10);
+
+    // Дрон Архонт притягивает падающую рыбку в радиусе 140px
+    if (dr.id === 'plasma_guard') {
+      for (const fr of fishRainItems) {
+        const d = Math.hypot(droneUnit.x - fr.x, droneUnit.y - fr.y);
+        if (d < 150 && d > 5) {
+          fr.x += ((player.x - fr.x) / d) * 220 * dt;
+          fr.y += ((player.y - fr.y) / d) * 220 * dt;
+        }
+      }
+    }
+
+    if (dr.fireInterval > 0 && (enemies.length > 0 || boss)) {
+      droneUnit.fireTimer -= dt;
+      if (droneUnit.fireTimer <= 0) {
+        droneUnit.fireTimer = dr.fireInterval;
+        let target = boss;
+        let bestDist = boss ? Math.hypot(boss.x - droneUnit.x, boss.y - droneUnit.y) : 9999;
+        for (const e of enemies) {
+          const d = Math.hypot(e.x - droneUnit.x, e.y - droneUnit.y);
+          if (d < bestDist) { bestDist = d; target = e; }
+        }
+        const ang = target ? Math.atan2(target.y - droneUnit.y, target.x - droneUnit.x) : -Math.PI / 2;
+        const spd = dr.id === 'laser_bee' ? 860 : 720;
+
+        bullets.push({
+          kind: dr.id === 'plasma_guard' ? 'player_rocket' : (dr.id === 'laser_bee' ? 'wing_laser' : 'plasma'),
+          homing: dr.id === 'plasma_guard',
+          x: droneUnit.x,
+          y: droneUnit.y - 8,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          r: dr.id === 'plasma_guard' ? 7 : 5.5,
+          dmg: dr.dmg,
+          color: dr.color
+        });
+      }
     }
   }
 
@@ -1181,7 +1333,6 @@
       spawnObstacle();
     }
 
-    // Режиссура 4 волн + бонусный «Рыбный дождь» перед выходом Босса
     const dMult = diff.durationMult || 1.0;
     waveTimer += dt;
     if (!boss) {
@@ -1196,7 +1347,7 @@
         }
       } else if (wave === 3 && waveTimer > 62 * dMult) {
         wave = 4;
-        fishRainTimer = 8.0; // 8 секунд безобидного бонусного «Рыбного дождя»!
+        fishRainTimer = 8.0;
         if (synth) synth.sfxVictory();
         if (vfx) vfx.addPopup(W / 2, H * 0.34, '🐟 БОНУС: РЫБНЫЙ ДОЖДЬ! 🐟', '#ffd166', 1.25);
       } else if (wave === 4 && fishRainTimer <= 0 && waveTimer > 71 * dMult) {
@@ -1213,7 +1364,6 @@
       }
     }
 
-    // Генерация тарелок с рыбкой и сметаной во время «Рыбного дождя»
     if (fishRainTimer > 0) {
       fishRainTimer -= dt;
       fishRainSpawnTimer -= dt;
@@ -1251,7 +1401,6 @@
     const p = player;
     if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
     if (p.turboTimer > 0) p.turboTimer = Math.max(0, p.turboTimer - dt);
-    if (p.stickyTimer > 0) p.stickyTimer = Math.max(0, p.stickyTimer - dt);
     p.squashX += (1 - p.squashX) * Math.min(1, dt * 14);
     p.squashY += (1 - p.squashY) * Math.min(1, dt * 14);
 
@@ -1276,6 +1425,8 @@
     p.x = Math.max(24, Math.min(W - 24, p.x));
     p.y = Math.max(54, Math.min(H - 24, p.y));
     if (world3d) world3d.setCameraFromPlayer(p.x, W);
+
+    updateDrone(dt);
 
     p.fireCooldown -= dt;
     const baseCd = p.turboTimer > 0 ? 0.11 : 0.18;
@@ -1376,7 +1527,7 @@
           } else if (e.kind === 'fractal_ship') {
             enemyBullets.push({ kind: 'mini_spiral', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 10, color: '#00f5d4' });
           } else if (e.kind === 'rubik_cube') {
-            const rCols = ['#ff3366', '#ffd166', '#06d6a0', '#48dbfb'];
+            const rCols = ['#ff007f', '#ccff00', '#00f5d4', '#3a86ff'];
             enemyBullets.push({ kind: 'rubik_square', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25), r: 7.5, color: rCols[Math.floor(Math.random() * rCols.length)] });
           } else if (e.kind === 'skeleton_ship' || e.kind === 'rainbow_spiral' || e.kind === 'crab_ship' || e.kind === 'starfish_ship' || e.kind === 'shroom_starship') {
             const lCol = e.kind === 'shroom_starship' ? '#f72585' : (e.kind === 'starfish_ship' ? '#80ed99' : '#00f5d4');
@@ -1564,7 +1715,8 @@
       if (!progress.completed.includes(lvl.id)) progress.completed.push(lvl.id);
       if (victoryStageBox) {
         victoryStageBox.classList.remove('hidden');
-        resolveImageToElement(document.getElementById('end-stage-img'), [`img/level${lvl.id}_out.jpg`, 'img/transition_out.jpg', 'img/1000036352.jpg']);
+        const artOut = LEVEL_ART_FILES[lvl.id]?.out || [`img/level${lvl.id}_out.jpg`];
+        resolveImageToElement(document.getElementById('end-stage-img'), [...artOut, 'img/transition_out.jpg', 'img/1000036352.jpg']);
       }
     } else {
       if (synth) synth.sfxGameOver();
@@ -1604,6 +1756,13 @@
       ctx.beginPath(); ctx.arc(0, 0, 34, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     }
     ctx.restore();
+
+    if (droneUnit && droneUnit.data && droneUnit.data.id !== 'none') {
+      ctx.save();
+      ctx.translate(droneUnit.x, droneUnit.y);
+      drawDroneModel(ctx, droneUnit.data, globalTime);
+      ctx.restore();
+    }
   }
 
   function drawCatLifeIcon(ctx, x, y, active) {
@@ -1639,7 +1798,6 @@
     const subHud = combo > 1 ? `УРОВЕНЬ ${lvl.id} • ${waveLabel} • x${combo}` : `УРОВЕНЬ ${lvl.id} • ${waveLabel}`;
     ctx.strokeText(subHud, 18, 78); ctx.fillText(subHud, 18, 78);
 
-    // Отображение мини-задания уровня
     if (activeQuest) {
       ctx.fillStyle = activeQuest.done ? '#06d6a0' : '#ffd166';
       ctx.font = '800 11px sans-serif';
@@ -1683,7 +1841,7 @@
       ctx.rotate(eb.rot || 0); ctx.fillStyle = eb.color || '#ffd166'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.8;
       roundRectPath(ctx, -6, -6, 12, 12, 2.5); ctx.fill(); ctx.stroke();
     } else if (eb.kind === 'green_spin_star') {
-      ctx.rotate(eb.rot || 0); ctx.fillStyle = '#06d6a0'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath();
+      ctx.rotate(eb.rot || 0); ctx.fillStyle = '#00f5d4'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath();
       for (let i = 0; i < 5; i++) {
         const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
         ctx.lineTo(Math.cos(a) * (eb.r + 2), Math.sin(a) * (eb.r + 2));
@@ -1691,7 +1849,7 @@
       }
       ctx.closePath(); ctx.fill(); ctx.stroke();
     } else if (eb.kind === 'laser_shuriken') {
-      ctx.rotate(eb.rot || 0); ctx.fillStyle = '#ff002b'; ctx.strokeStyle = '#ffbe0b'; ctx.lineWidth = 2.2; ctx.beginPath();
+      ctx.rotate(eb.rot || 0); ctx.fillStyle = '#ff006e'; ctx.strokeStyle = '#ffbe0b'; ctx.lineWidth = 2.2; ctx.beginPath();
       for (let i = 0; i < 8; i++) {
         const a = (Math.PI * i) / 4, rad = i % 2 === 0 ? eb.r + 2 : eb.r * 0.42;
         if (i === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad); else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
