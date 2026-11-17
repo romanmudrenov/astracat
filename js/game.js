@@ -1,10 +1,10 @@
+javascript
 (() => {
   'use strict';
 
   const STORAGE_KEY = 'astro_cat_hangar_v16';
   const BORDER_INK = typeof INK !== 'undefined' ? INK : '#120826';
 
-  // Загрузка и сохранение прогресса игрока (монеты, корабли, оружие, дроны)
   function loadProgress() {
     try {
       const raw = JSON.parse(
@@ -85,7 +85,6 @@
   window.addEventListener('resize', resize);
   resize();
 
-  // Парящие частицы в меню (рыбки, котики, пончики)
   const menuFloats = Array.from({ length: 8 }, (_, i) => ({
     x: (i + 0.5) / 8,
     y: Math.random(),
@@ -174,7 +173,6 @@
     }, { passive: true });
   });
 
-  // Последовательная проверка кандидатов изображений (поддерживает webp и jpg)
   function resolveImageToElement(imgEl, candidates, onFail = null) {
     if (!imgEl) return;
     let idx = 0;
@@ -254,9 +252,6 @@
     if (hEl) hEl.textContent = `🐟 ${progress.coins}`;
   }
 
-  // =========================================================================
-  // АНГАР (3 ВКЛАДКИ: КОРАБЛИ / ОРУЖИЕ / ДРОНЫ)
-  // =========================================================================
   let hangarShipCanvases = [];
   let hangarWeaponCanvases = [];
   let hangarDroneCanvases = [];
@@ -306,7 +301,6 @@
     hangarWeaponCanvases = [];
     hangarDroneCanvases = [];
 
-    // 1. Карточки кораблей
     shipsCarousel.innerHTML = '';
     SHIPS_CATALOG.forEach((ship, idx) => {
       const owned = progress.unlockedShips.includes(ship.id);
@@ -345,7 +339,6 @@
       shipsCarousel.appendChild(card);
     });
 
-    // 2. Карточки оружия
     weaponsCarousel.innerHTML = '';
     const activeShip = getActiveShip();
     WEAPONS_CATALOG.forEach((wp, idx) => {
@@ -385,7 +378,6 @@
       weaponsCarousel.appendChild(card);
     });
 
-    // 3. Карточки орбитальных дронов
     if (dronesCarousel && typeof DRONES_CATALOG !== 'undefined') {
       dronesCarousel.innerHTML = '';
       DRONES_CATALOG.forEach((drone, idx) => {
@@ -631,9 +623,6 @@
     closeHangarToMenu();
   });
 
-  // =========================================================================
-  // КОМИКС ПРЕДЫСТОРИИ
-  // =========================================================================
   const LORE_SLIDES = [
     { num: 1, title: 'ПЛАНЕТА КОТОВИЯ-17', text: 'На родной планете Котовия-17 заканчивается еда. Рыбка, колбаска и сметана выдаются только по талонам!' },
     { num: 2, title: 'СЕКРЕТНЫЙ ОТРЯД «АСТРО-КОТ»', text: 'Редж отправляется в дальний космос за провизией для всей планеты!' },
@@ -679,9 +668,6 @@
     progress.loreSeen = true; saveProgress(progress); loreOverlay.classList.add('hidden'); renderLevelGrid(); startOverlay.classList.remove('hidden'); syncTopHudVisibility();
   });
 
-  // =========================================================================
-  // ВЫБОР СЕКТОРА И ЗАСТАВКА ПЕРЕД УРОВНЕМ (lvl1_in.jpg ... lvl6_in.jpg)
-  // =========================================================================
   function renderLevelGrid() {
     updateCoinsUI();
     const grid = document.getElementById('levels-grid');
@@ -753,9 +739,6 @@
   document.getElementById('intro-launch-btn')?.addEventListener('click', (e) => { e.stopPropagation(); if (synth) synth.sfxMenuSelect(); startLevel(selectedLevelIdx); });
   document.getElementById('intro-back-btn')?.addEventListener('click', (e) => { e.stopPropagation(); if (synth) synth.sfxMenuTap(); introOverlay.classList.add('hidden'); startOverlay.classList.remove('hidden'); syncTopHudVisibility(); });
 
-  // =========================================================================
-  // НАСТРОЙКИ ЗВУКА ASMR
-  // =========================================================================
   let state = 'START', prevStateBeforeSettings = 'START';
 
   function openSettings() {
@@ -834,9 +817,6 @@
   document.getElementById('test-chord-btn')?.addEventListener('click', (e) => { e.stopPropagation(); if (synth) { synth.init(); synth.playCosmicMeow(); } });
   muteBtn?.addEventListener('click', (e) => { e.stopPropagation(); if (!synth) return; muteBtn.textContent = synth.toggleMute() ? '🔇' : '🔊'; });
 
-  // =========================================================================
-  // ИГРОВОЙ ПРОЦЕСС (ВОЛНЫ, ДРОНЫ, ИНТЕРАКТИВНЫЕ ОБЪЕКТЫ, БОССЫ)
-  // =========================================================================
   let score = 0, runCoins = 0, kills = 0, combo = 1, comboTimer = 0, wave = 1, waveTimer = 0;
   let spawnTimer = 0, obstacleTimer = 4.0, propTimer = 6.5;
   let screenShake = 0, warningBannerTimer = 0, globalTime = 0, midBossDefeated = false;
@@ -1148,7 +1128,6 @@
       });
     }
 
-    // Дополнительные радужные бортовые залпы при активном Карамельном ускорителе (Ур. 3)
     if (p.turboTimer > 0) {
       const rCol = `hsl(${Math.floor(globalTime * 360) % 360}, 100%, 68%)`;
       [-16, 16].forEach(ox => {
@@ -1515,7 +1494,6 @@
     p.y = Math.max(54, Math.min(H - 24, p.y));
     if (world3d) world3d.setCameraFromPlayer(p.x, W);
 
-    // Орбитальное движение и авто-стрельба активного дрона
     if (p.drone) {
       p.droneAngle += dt * 2.7;
       p.droneX = p.x + Math.cos(p.droneAngle) * 42;
