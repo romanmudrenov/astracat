@@ -5,6 +5,7 @@ class AstraCatSynth {
     this.maxVoices = maxVoices;
     this.ctx = null;
     this.isInitialized = false;
+    this.audioUnlocked = false;
 
     this.voices = Array.from({ length: maxVoices }, (_, id) => ({
       id,
@@ -17,6 +18,7 @@ class AstraCatSynth {
     this.musicEnabled = true;
     this.sfxEnabled = true;
     this.musicVolume = 0.55;
+    // Базовая громкость ASMR-эффектов увеличена на +30% (с 0.40 до 0.70)
     this.sfxVolume = 0.70;
 
     this.settings = {
@@ -28,12 +30,14 @@ class AstraCatSynth {
 
     this.brownNoiseBuffer = null;
 
-    // Точный список треков из твоей папки music/
+    // Строго треки с названием level (level1.mp3 — level11.mp3) для случайной ротации на уровнях
     this.availableTracks = [
       'level1.mp3', 'level2.mp3', 'level3.mp3', 'level4.mp3',
       'level5.mp3', 'level6.mp3', 'level7.mp3', 'level8.mp3',
-      'level9.mp3', 'level10.mp3', 'level11.mp3', 'leaving_the_city_early.mp3'
+      'level9.mp3', 'level10.mp3', 'level11.mp3'
     ];
+
+    // Треки боссов (играют ТОЛЬКО при появлении босса)
     this.bossTracks = ['boss.mp3', 'boss2.mp3'];
 
     this.selectedTrack = 'auto';
@@ -56,7 +60,7 @@ class AstraCatSynth {
       if (this.fallbackTrackFile && this.currentTrackFile !== this.fallbackTrackFile) {
         const fb = this.fallbackTrackFile;
         this.fallbackTrackFile = null;
-        this.playTrack(fb, 'level1.mp3');
+        this.playTrack(fb, 'level1.mp3', true);
       }
     });
 
@@ -67,6 +71,24 @@ class AstraCatSynth {
   setupAutoUnlock() {
     const unlock = () => {
       this.init();
+
+      // Принудительная разблокировка Web Audio API на Android Chrome и iOS Safari
+      if (this.ctx) {
+        if (this.ctx.state !== 'running') {
+          this.ctx.resume().catch(() => {});
+        }
+        if (!this.audioUnlocked && this.ctx.state === 'running') {
+          try {
+            const silentBuf = this.ctx.createBuffer(1, 1, 22050);
+            const src = this.ctx.createBufferSource();
+            src.buffer = silentBuf;
+            src.connect(this.ctx.destination);
+            src.start(0);
+            this.audioUnlocked = true;
+          } catch (_) {}
+        }
+      }
+
       if (this.pausedByGame) return;
 
       if (this.pendingTrack) {
@@ -80,9 +102,10 @@ class AstraCatSynth {
       }
     };
 
-    window.addEventListener('pointerdown', unlock, { passive: true });
-    window.addEventListener('touchstart', unlock, { passive: true });
+    // Слушаем touchend и click — именно их мобильный Chrome считает разрешением на звук
+    window.addEventListener('touchend', unlock, { passive: true });
     window.addEventListener('click', unlock, { passive: true });
+    window.addEventListener('pointerup', unlock, { passive: true });
     window.addEventListener('keydown', unlock, { passive: true });
   }
 
@@ -93,33 +116,45 @@ class AstraCatSynth {
 
     if (sel) {
       const curVal = sel.value || 'auto';
-      sel.innerHTML = `<option value="auto">🎲 Авто (${list.length} треков)</option>`;
+      sel.innerHTML = `<option value="auto">🎲 Авто (${list.length} треков level, без повтора 4 ур.)</option>`;
       list.forEach((fname, idx) => {
         const opt = document.createElement('option');
         opt.value = fname;
-        opt.textContent = `Трек ${idx + 1} (${fname})`;
+        opt.textContent = `Уровень ${idx + 1} (${fname})`;
         sel.appendChild(opt);
       });
       sel.value = curVal;
     }
 
     if (hint) {
-      hint.textContent = `Уровней: ${list.length} • Боссов: ${this.bossTracks.length} • Заставка: intro.mp3`;
+      hint.textContent = `Уровней: ${list.length} (level1–11) • Боссов: ${this.bossTracks.length} • Заставка: intro.mp3`;
     }
   }
 
   init() {
     if (this.isInitialized) {
-      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+      if (this.ctx && this.ctx.state !== 'running') {
+        this.ctx.resume().catch(() => {});
+      }
       return;
     }
 
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
-    this.ctx = new AudioCtx();
+
+    try {
+      this.ctx = new AudioCtx();
+    } catch (e) {
+      return;
+    }
+
+    if (this.ctx.state !== 'running') {
+      this.ctx.resume().catch(() => {});
+    }
 
     this._createNoiseBuffers();
 
+    // Усиленная шина голосов (+30% чистой громкости без клиппинга)
     this.voiceBus = this.ctx.createGain();
     this.voiceBus.gain.value = 0.88;
 
@@ -491,6 +526,12 @@ class AstraCatSynth {
 
   sfxBossExplosion() {
     this.playNebulaExplosion();
+    if (this.muted || !this.sfxEnabled) return;
+    try {
+      const customBoom = new Audio('music/boss_explode.mp3');
+      customBoom.volume = Math.max(0, Math.min(1, this.sfxVolume * 1.3));
+      customBoom.play().catch(() => {});
+    } catch (e) {}
   }
 
   sfxIgnite() { this.playPlushRocket(); }
@@ -509,13 +550,16 @@ class AstraCatSynth {
 
   pickNextTrack() {
     if (this.selectedTrack && this.selectedTrack !== 'auto') return this.selectedTrack;
+    // Выбираем только из треков level*.mp3, исключая последние 4 проигранных
     const candidates = this.availableTracks.filter(t => !this.recentTracks.includes(t));
     const pool = candidates.length > 0 ? candidates : this.availableTracks;
     if (pool.length === 0) return 'level1.mp3';
+
     const chosen = pool[Math.floor(Math.random() * pool.length)];
     this.currentTrackIndex = Math.max(0, this.availableTracks.indexOf(chosen));
     this.recentTracks.push(chosen);
-    if (this.recentTracks.length >= 4) this.recentTracks.shift();
+    // Храним историю из 4 треков, чтобы ни один не повторялся минимум 4 трека подряд
+    if (this.recentTracks.length > 4) this.recentTracks.shift();
     return chosen;
   }
 
@@ -552,7 +596,6 @@ class AstraCatSynth {
 
     const path = `music/${filename}`;
 
-    // Если этот же трек уже выбран и не требуется принудительный перезапуск
     if (!forceRestart && this.currentTrackFile === filename) {
       this.bgmAudio.volume = this.getEffectiveMusicVol();
       if (this.bgmAudio.paused && this.musicEnabled && !this.muted) {
@@ -613,13 +656,12 @@ class AstraCatSynth {
       return;
     }
     if (mode === 'boss') {
-      const specificBoss = levelId === 1 ? 'boss.mp3' : `boss${levelId}.mp3`;
-      const fallbackBoss = this.bossTracks.length > 0
-        ? this.bossTracks[(levelId - 1) % this.bossTracks.length]
-        : 'boss.mp3';
-      this.playTrack(specificBoss, fallbackBoss, true);
+      // Треки босса играют ТОЛЬКО при появлении босса
+      const bossFile = this.bossTracks[(levelId - 1) % this.bossTracks.length] || 'boss.mp3';
+      this.playTrack(bossFile, 'boss.mp3', true);
       return;
     }
+    // Во время уровня играют только треки с названием level вразнобой без повторов 4 трека
     this.playTrack(this.pickNextTrack(), 'level1.mp3', true);
   }
 
