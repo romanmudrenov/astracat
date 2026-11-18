@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>ASTRACAT • Космическая Одиссея</title>
-<link rel="stylesheet" href="css/style.css?v=42" />
+<link rel="stylesheet" href="css/style.css?v=44" />
 <style>
   .stage-art-box,
   .stage-art-box.victory-stage-box,
@@ -78,8 +78,7 @@
 <div class="levels-grid six-cols" id="levels-grid"></div>
 
 <div class="selected-level-box" id="selected-level-info">
-<strong>Уровень 1: Туманность Узоров</strong>
-
+<strong>Уровень 1: Туманность Узоров</strong><br>
 <span>Босс: Психо-Марка Оракула</span>
 </div>
 
@@ -210,7 +209,7 @@
 </div>
 </div>
 
-<!-- 6. МЕНЮ НАСТРОЕК ЗВУКА -->
+<!-- 6. МЕНЮ НАСТРОЕК ЗВУКА С БОРТОВЫМ ПЛЕЕРОМ КОРАБЛЯ -->
 <div id="settings-overlay" class="overlay hidden">
 <img id="settings-outer-bg" class="overlay-bg-img" alt="" />
 <div class="card-3d scrollable-card" id="settings-scroll-box">
@@ -222,19 +221,31 @@
 </div>
 <h2>НАСТРОЙКИ ЗВУКА ASMR</h2>
 
-<div class="setting-row">
-<div class="setting-head">
-<span>🎵 Фоновая музыка MP3: <b id="val-music-vol">60%</b></span>
+<div class="setting-row cockpit-player-panel" id="cockpit-player-panel">
+<div class="cockpit-top-bar">
+<span class="cockpit-label">🛸 БОРТОВОЙ АУДИО-МОДУЛЬ</span>
+<div class="cockpit-eq" id="cockpit-eq">
+<span></span><span></span><span></span><span></span><span></span>
+</div>
 <button id="toggle-music" class="toggle-chip">ВКЛ</button>
 </div>
-<input id="music-vol" type="range" min="0" max="100" value="60" autocomplete="off" />
-<div class="setting-head" style="margin-top:8px; margin-bottom:0;">
-<span style="font-size:11.5px;">Трек уровня:</span>
-<select id="track-select" class="neon-select">
-<option value="auto">🎲 Авто (level1–11, без повтора 4 ур.)</option>
-</select>
+
+<div class="cockpit-visor">
+<div class="cockpit-visor-row">
+<button id="cockpit-prev-btn" class="cockpit-nav-btn" title="Предыдущий трек">⏮</button>
+<div class="cockpit-screen">
+<div class="cockpit-track-title" id="cockpit-track-title">Трек 1</div>
+<div class="cockpit-track-sub">АВТО-ПОТОК • БЕЗ ПОВТОРА 4x</div>
 </div>
-<div class="setting-hint" id="tracks-found-hint">Меню: intro.mp3 • Уровни: level1–11.mp3 • Боссы: boss.mp3, boss2.mp3</div>
+<button id="cockpit-next-btn" class="cockpit-nav-btn" title="Следующий трек">⏭</button>
+</div>
+<div class="cockpit-track-grid" id="cockpit-track-grid"></div>
+</div>
+
+<div class="setting-head" style="margin-top:8px;">
+<span>🎵 Громкость музыки: <b id="val-music-vol">60%</b></span>
+</div>
+<input id="music-vol" type="range" min="0" max="100" value="60" autocomplete="off" />
 </div>
 
 <div class="setting-row">
@@ -278,7 +289,7 @@
 <div class="card-3d">
 <div class="card-content">
 <h2>ПОЛЁТ ПРИОСТАНОВЛЕН</h2>
-<p class="subtitle">Музыка выключена на время паузы 🔇
+<p class="subtitle">Музыка выключена на время паузы 🔇<br>
 ПК: <b>WASD / Стрелки</b> + <b>Пробел</b> • Смартфон: <b>палец на экране</b></p>
 <div class="btn-row">
 <button id="resume-btn" class="btn-3d mint">ПРОДОЛЖИТЬ ▶</button>
@@ -326,10 +337,10 @@
 </div>
 </div>
 
-<script src="js/synth.js?v=42"></script>
-<script src="js/vfx.js?v=42"></script>
-<script src="js/world3d.js?v=42"></script>
-<script src="js/entities.js?v=42"></script>
-<script src="js/game.js?v=42"></script>
+<script src="js/synth.js?v=44"></script>
+<script src="js/vfx.js?v=44"></script>
+<script src="js/world3d.js?v=44"></script>
+<script src="js/entities.js?v=44"></script>
+<script src="js/game.js?v=44"></script>
 </body>
 </html>
