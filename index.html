@@ -95,7 +95,7 @@
 </div>
 </div>
 
-<!-- 3. ПОЛНОЭКРАННЫЙ АНГАР -->
+<!-- 3. ПОЛНОЭКРАННЫЙ АНГАР (3 ВКЛАДКИ: КОРАБЛИ / ОРУЖИЕ / ДРОНЫ) -->
 <div id="hangar-overlay" class="overlay fullscreen-overlay hidden">
 <img id="hangar-outer-bg" class="overlay-bg-img" alt="" />
 <div class="card-3d hangar-card fullscreen-hangar">
@@ -108,9 +108,10 @@
 </div>
 <h2>АНГАР КОТОВИИ</h2>
 
-<div class="hangar-tabs-row">
+<div class="hangar-tabs-row three-tabs">
 <button id="tab-ships-btn" class="tab-pill active">🚀 КОРАБЛИ (5)</button>
 <button id="tab-weapons-btn" class="tab-pill">🔫 ОРУЖИЕ (5)</button>
+<button id="tab-drones-btn" class="tab-pill">🛸 ДРОНЫ (3)</button>
 </div>
 </div>
 
@@ -136,6 +137,18 @@
 </div>
 </div>
 <div class="media-carousel" id="weapons-carousel"></div>
+</div>
+
+<div id="hangar-section-drones" class="hangar-section hidden">
+<div class="carousel-header">
+<span class="section-label" style="margin:0;">Боевые дроны-спутники</span>
+<div class="carousel-nav">
+<button id="drone-prev-btn" class="nav-arrow-btn">◀</button>
+<span id="drone-counter" class="nav-counter">1 / 3</span>
+<button id="drone-next-btn" class="nav-arrow-btn">▶</button>
+</div>
+</div>
+<div class="media-carousel" id="drones-carousel"></div>
 </div>
 
 <div class="btn-row" style="margin-top:8px;">
@@ -232,15 +245,15 @@
 <div class="setting-row">
 <div class="setting-head">
 <span>🌙 Бархатность / Приглушённость (LPF)</span>
-<strong id="val-warmth" style="color:#90e0ef; font-size:12px;">1450 Hz</strong>
+<strong id="val-warmth" style="color:#90e0ef; font-size:12px;">1550 Hz</strong>
 </div>
-<input id="ctrl-warmth" type="range" min="500" max="3200" value="1450" autocomplete="off" />
+<input id="ctrl-warmth" type="range" min="500" max="3200" value="1550" autocomplete="off" />
 
 <div class="setting-head" style="margin-top:8px;">
 <span>🌌 Космическое стерео-эхо (Space)</span>
-<strong id="val-space" style="color:#90e0ef; font-size:12px;">20%</strong>
+<strong id="val-space" style="color:#90e0ef; font-size:12px;">22%</strong>
 </div>
-<input id="ctrl-space" type="range" min="0" max="80" value="20" autocomplete="off" />
+<input id="ctrl-space" type="range" min="0" max="80" value="22" autocomplete="off" />
 
 <div class="setting-head" style="margin-top:8px;">
 <span>🌀 Психоделическое плавание (LFO Drift)</span>
@@ -310,10 +323,10 @@
 </div>
 </div>
 
-<script src="js/synth.js?v=40"></script>
+<script src="js/synth.js?v=41"></script>
 <script src="js/vfx.js?v=36"></script>
 <script src="js/world3d.js?v=37"></script>
-<script src="js/entities.js?v=36"></script>
-<script src="js/game.js?v=36"></script>
+<script src="js/entities.js?v=41"></script>
+<script src="js/game.js?v=41"></script>
 </body>
 </html>
