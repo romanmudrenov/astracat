@@ -159,31 +159,14 @@ function getShipHardpoints(shipId) {
 function drawGlossyCircle(ctx, x, y, r, mainCol) {
   ctx.fillStyle = mainCol;
   ctx.strokeStyle = INK;
-  ctx.lineWidth = 2.5;
+  ctx.lineWidth = 3.2;
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
   ctx.fillStyle = 'rgba(18, 8, 38, 0.24)';
   ctx.beginPath(); ctx.arc(x, y + r * 0.14, r * 0.86, 0.15 * Math.PI, 0.85 * Math.PI); ctx.fill();
 
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.52)';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.56)';
   ctx.beginPath(); ctx.ellipse(x - r * 0.28, y - r * 0.36, r * 0.42, r * 0.22, -0.35, 0, Math.PI * 2); ctx.fill();
-}
-
-// Контрастная подложка + мигающий неоновый обод, чтобы враги и боссы не сливались с фоном
-function drawContrastBeacon(ctx, r, neonCol, phase, isBoss = false) {
-  const blink = Math.sin(phase * 9) > 0;
-  ctx.fillStyle = isBoss ? 'rgba(6, 2, 16, 0.78)' : 'rgba(6, 2, 16, 0.68)';
-  ctx.beginPath();
-  ctx.arc(0, 0, r * (isBoss ? 1.28 : 1.26), 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = blink ? '#ffffff' : neonCol;
-  ctx.lineWidth = isBoss ? 3.5 : 2.2;
-  ctx.globalAlpha = blink ? 0.92 : 0.65;
-  ctx.beginPath();
-  ctx.arc(0, 0, r * (isBoss ? 1.18 : 1.16), 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
 }
 
 function drawCartoonEyes(ctx, e, leftX, rightX, eyeY, eyeR, irisCol = '#ff006e', player = null, angry = true) {
@@ -208,7 +191,7 @@ function drawCartoonEyes(ctx, e, leftX, rightX, eyeY, eyeR, irisCol = '#ff006e',
   [leftX, rightX].forEach((ex, idx) => {
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = INK;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.2;
     ctx.beginPath(); ctx.arc(ex, eyeY, eyeR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
     ctx.fillStyle = irisCol;
@@ -222,7 +205,7 @@ function drawCartoonEyes(ctx, e, leftX, rightX, eyeY, eyeR, irisCol = '#ff006e',
 
     if (angry) {
       ctx.strokeStyle = INK;
-      ctx.lineWidth = 2.2;
+      ctx.lineWidth = 2.4;
       ctx.beginPath();
       if (idx === 0) {
         ctx.moveTo(ex - eyeR * 0.95, eyeY - eyeR * 0.95);
@@ -239,7 +222,7 @@ function drawCartoonEyes(ctx, e, leftX, rightX, eyeY, eyeR, irisCol = '#ff006e',
 function drawFangedMouth(ctx, y, w, h) {
   ctx.fillStyle = '#14052b';
   ctx.strokeStyle = INK;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.2;
   roundRectPath(ctx, -w / 2, y, w, h, h * 0.45);
   ctx.fill();
   ctx.stroke();
@@ -260,7 +243,7 @@ function drawEliteCrown(ctx, yTop) {
   ctx.translate(0, yTop);
   ctx.fillStyle = '#ffd166';
   ctx.strokeStyle = INK;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.2;
   ctx.beginPath();
   ctx.moveTo(-11, 0); ctx.lineTo(-13, -11); ctx.lineTo(-5, -5); ctx.lineTo(0, -14); ctx.lineTo(5, -5); ctx.lineTo(13, -11); ctx.lineTo(11, 0);
   ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -281,7 +264,7 @@ function drawDroneModel(ctx, droneId, time, subIdx = 0) {
     ctx.fillStyle = 'rgba(72, 219, 251, 0.25)';
     ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 2); ctx.fill();
 
-    ctx.fillStyle = '#48dbfb'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+    ctx.fillStyle = '#48dbfb'; ctx.strokeStyle = INK; ctx.lineWidth = 2.2;
     ctx.beginPath();
     ctx.moveTo(0, -13); ctx.lineTo(17, 6); ctx.lineTo(7, 4); ctx.lineTo(0, 10); ctx.lineTo(-7, 4); ctx.lineTo(-17, 6);
     ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -300,7 +283,7 @@ function drawDroneModel(ctx, droneId, time, subIdx = 0) {
     ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1;
 
-    ctx.fillStyle = finCol; ctx.strokeStyle = INK; ctx.lineWidth = 1.8;
+    ctx.fillStyle = finCol; ctx.strokeStyle = INK; ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, 8); ctx.lineTo(-6 + wag, 15); ctx.lineTo(0, 12); ctx.lineTo(6 + wag, 15);
     ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -325,7 +308,7 @@ function drawDroneModel(ctx, droneId, time, subIdx = 0) {
     ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2); ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.fillStyle = '#f4a261'; ctx.strokeStyle = INK; ctx.lineWidth = 1.8;
+    ctx.fillStyle = '#f4a261'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(0, -2, 11, Math.PI, 0); ctx.fill(); ctx.stroke();
 
     ctx.fillStyle = '#90e0ef';
@@ -674,7 +657,7 @@ function drawObstacle(ctx, ob) {
 }
 
 // =========================================================================
-// ДЕТАЛИЗИРОВАННЫЕ МИГАЮЩИЕ ВРАГИ (УРОВНИ 1–6) С МАКСИМАЛЬНЫМ КОНТРАСТОМ
+// ДЕТАЛИЗИРОВАННЫЕ МИГАЮЩИЕ ВРАГИ (БЕЗ КРУГОВ ВОКРУГ)
 // =========================================================================
 function drawUniqueEnemy(ctx, e, player = null) {
   ctx.save();
@@ -688,23 +671,14 @@ function drawUniqueEnemy(ctx, e, player = null) {
   const strobe = Math.sin(e.phase * 10) > 0;
   const neonRim = strobe ? '#ffffff' : `hsl(${hue}, 100%, 66%)`;
 
-  drawContrastBeacon(ctx, e.r, neonRim, e.phase, false);
-
-  if (e.isElite) {
-    ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2.4; ctx.setLineDash([5, 4]);
-    ctx.beginPath(); ctx.arc(0, 0, e.r + 9, 0, Math.PI * 2); ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
   // --- УРОВЕНЬ 1: ЗЛОБНАЯ МАРКА, ПСИХО-ПОДСОЛНУХ, КУБИК РУБИКА ---
   if (e.kind === 'mini_stamp') {
     const stampCol = flash ? '#ffffff' : `hsl(${hue}, 95%, 56%)`;
     e.wingCol = stampCol; e.bodyCol = '#14052b';
 
-    // Зубчатые края почтовой марки
     ctx.fillStyle = stampCol;
     ctx.strokeStyle = neonRim;
-    ctx.lineWidth = 2.4;
+    ctx.lineWidth = 3;
     const w = 38, h = 44, hw = 19, hh = 22;
     ctx.beginPath();
     ctx.moveTo(-hw, -hh);
@@ -719,7 +693,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.fill();
     ctx.stroke();
 
-    // Внутреннее окно с психоделической спиралью и почтовым штемпелем
     ctx.fillStyle = '#120529';
     roundRectPath(ctx, -14, -17, 28, 34, 4);
     ctx.fill();
@@ -728,7 +701,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.lineWidth = 1.6;
     ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.stroke();
 
-    // Номинал марки сверху
     ctx.fillStyle = '#ffd166';
     ctx.font = '900 7px sans-serif';
     ctx.textAlign = 'center';
@@ -745,14 +717,13 @@ function drawUniqueEnemy(ctx, e, player = null) {
     const innerPetal = `hsl(${hue}, 100%, 62%)`;
     e.wingCol = petalCol; e.bodyCol = '#3d1e05';
 
-    // 2 ряда мигающих лепестков подсолнуха
     ctx.save();
     ctx.rotate(Math.sin(e.phase * 2) * 0.25);
     for (let k = 0; k < 12; k++) {
       ctx.rotate(Math.PI / 6);
       ctx.fillStyle = k % 2 === 0 ? petalCol : innerPetal;
       ctx.strokeStyle = INK;
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 2.2;
       ctx.beginPath();
       ctx.moveTo(10, 0);
       ctx.quadraticCurveTo(21, -5.5, 27, 0);
@@ -762,7 +733,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     }
     ctx.restore();
 
-    // Тёмно-шоколадная сердцевина с семечками
     drawGlossyCircle(ctx, 0, 0, 14.5, flash ? '#ffffff' : '#3d1e05');
     ctx.fillStyle = '#ffbe0b';
     for (let s = 0; s < 8; s++) {
@@ -780,7 +750,7 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.rotate(Math.sin(e.phase * 1.4) * 0.22);
     const size = 34, half = 17, cell = size / 3;
     const cubeColors = ['#ff3366', '#ffd166', '#06d6a0', '#48dbfb', '#ffffff', '#ff9f1c'];
-    ctx.fillStyle = INK; ctx.strokeStyle = neonRim; ctx.lineWidth = 2.4;
+    ctx.fillStyle = INK; ctx.strokeStyle = neonRim; ctx.lineWidth = 2.8;
     roundRectPath(ctx, -half - 2, -half - 2, size + 4, size + 4, 6); ctx.fill(); ctx.stroke();
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
@@ -799,10 +769,9 @@ function drawUniqueEnemy(ctx, e, player = null) {
     e.wingCol = '#ff006e'; e.bodyCol = '#fff8eb';
     const skullCol = flash ? '#ffffff' : '#fff8eb';
 
-    // Анатомический мексиканский череп Калавера
     ctx.fillStyle = skullCol;
     ctx.strokeStyle = strobe ? '#ffbe0b' : '#ff006e';
-    ctx.lineWidth = 2.6;
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(0, -4, 17, Math.PI * 0.82, Math.PI * 2.18);
     ctx.lineTo(10, 17);
@@ -811,13 +780,11 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.fill();
     ctx.stroke();
 
-    // Узор бархатцев и паутинки на лбу
     ctx.fillStyle = strobe ? '#06d6a0' : '#ff006e';
     ctx.beginPath(); ctx.arc(0, -13, 4, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#3a86ff';
     ctx.beginPath(); ctx.arc(-9, -11, 2.4, 0, Math.PI * 2); ctx.arc(9, -11, 2.4, 0, Math.PI * 2); ctx.fill();
 
-    // Резные глазницы с цветами и злыми зрачками
     [-6.5, 6.5].forEach((ex, idx) => {
       ctx.fillStyle = idx === 0 ? '#ff002b' : '#06d6a0';
       ctx.beginPath(); ctx.arc(ex, -2, 5.8, 0, Math.PI * 2); ctx.fill();
@@ -827,7 +794,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
       ctx.beginPath(); ctx.arc(ex, -2, 1.8, 0, Math.PI * 2); ctx.fill();
     });
 
-    // Нос-сердечко и зубы Калавера
     ctx.fillStyle = INK;
     ctx.beginPath(); ctx.moveTo(0, 3); ctx.lineTo(-2.5, 7); ctx.lineTo(2.5, 7); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = INK; ctx.lineWidth = 1.8;
@@ -845,10 +811,9 @@ function drawUniqueEnemy(ctx, e, player = null) {
     const veinCol = strobe ? '#ffbe0b' : '#ff006e';
     e.wingCol = batCol; e.bodyCol = '#7209b7';
 
-    // Острые перепончатые крылья с когтями и мигающими прожилками
     ctx.fillStyle = batCol;
     ctx.strokeStyle = veinCol;
-    ctx.lineWidth = 2.4;
+    ctx.lineWidth = 2.8;
     ctx.beginPath();
     ctx.moveTo(0, -5);
     ctx.lineTo(-16, -18 + flap * 0.4);
@@ -866,7 +831,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.fill();
     ctx.stroke();
 
-    // Острые уши и клыкастая голова
     ctx.fillStyle = '#560bad';
     ctx.beginPath();
     ctx.moveTo(-7, -8); ctx.lineTo(-10, -21); ctx.lineTo(-2, -11);
@@ -883,9 +847,8 @@ function drawUniqueEnemy(ctx, e, player = null) {
     const legCol = strobe ? '#06d6a0' : '#ff002b';
     e.wingCol = legCol; e.bodyCol = '#14052b';
 
-    // 8 суставчатых неоновых паучьих лап с когтями
     ctx.strokeStyle = legCol;
-    ctx.lineWidth = 2.8;
+    ctx.lineWidth = 3;
     for (let side of [-1, 1]) {
       for (let l = 0; l < 4; l++) {
         const w = Math.sin(e.phase * 7 + l * 1.4) * 5;
@@ -898,13 +861,11 @@ function drawUniqueEnemy(ctx, e, player = null) {
       }
     }
 
-    // Брюшко с мигающим неоновым знаком и головогрудь
     drawGlossyCircle(ctx, 0, -7, 11, flash ? '#ffffff' : '#240046');
     ctx.fillStyle = legCol;
     ctx.beginPath(); ctx.moveTo(0, -13); ctx.lineTo(4, -7); ctx.lineTo(0, -2); ctx.lineTo(-4, -7); ctx.closePath(); ctx.fill();
 
     drawGlossyCircle(ctx, 0, 6, 12, flash ? '#ffffff' : '#3c096c');
-    // 6 злых паучьих глаз + хелицеры
     drawCartoonEyes(ctx, e, -5, 5, 5, 3.8, '#ffbe0b', player, true);
     ctx.fillStyle = '#ff002b';
     ctx.beginPath(); ctx.arc(-3, 0, 1.8, 0, Math.PI * 2); ctx.arc(3, 0, 1.8, 0, Math.PI * 2); ctx.fill();
@@ -916,12 +877,10 @@ function drawUniqueEnemy(ctx, e, player = null) {
   // --- УРОВЕНЬ 3: МАРМЕЛАДНЫЙ ЛЕДЕНЕЦ, САХАРНАЯ ВАТА, ПОНЧИК, АРЛЕКИН ---
   if (e.kind === 'lollipop_ship') {
     e.wingCol = '#ff70a6'; e.bodyCol = '#ffffff';
-    // Полосатая палочка
-    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
     roundRectPath(ctx, -4, 6, 8, 22, 4); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#ff006e'; ctx.fillRect(-3, 11, 6, 4); ctx.fillRect(-3, 19, 6, 4);
 
-    // Мармеладный глянцевый леденец со спиралью
     drawGlossyCircle(ctx, 0, -4, 18.5, flash ? '#ffffff' : '#ff4d6d');
     ctx.strokeStyle = strobe ? '#ffee33' : '#00f5d4';
     ctx.lineWidth = 2.6;
@@ -939,20 +898,17 @@ function drawUniqueEnemy(ctx, e, player = null) {
 
   if (e.kind === 'cotton_candy') {
     e.wingCol = '#ffafcc'; e.bodyCol = '#a2d2ff';
-    // Вафельный рожок снизу
-    ctx.fillStyle = '#f4a261'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+    ctx.fillStyle = '#f4a261'; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
     ctx.beginPath(); ctx.moveTo(-8, 6); ctx.lineTo(8, 6); ctx.lineTo(0, 24); ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Пышное плюшево-мармеладное облако сахарной ваты из 5 пушистых долей
     const puffs = [[-11, 0, 11], [11, 0, 11], [-8, -11, 11], [8, -11, 11], [0, -14, 12], [0, -3, 14]];
     puffs.forEach(([px, py, pr], idx) => {
       const col = idx % 2 === 0 ? '#ff85a1' : '#90e0ef';
       ctx.fillStyle = flash ? '#ffffff' : col;
       ctx.strokeStyle = strobe ? '#ffffff' : INK;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.2;
       ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     });
-    // Сахарные блёстки
     ctx.fillStyle = '#ffee33';
     ctx.beginPath(); ctx.arc(-10, -12, 2.2, 0, Math.PI * 2); ctx.arc(11, -10, 2.2, 0, Math.PI * 2); ctx.fill();
 
@@ -967,7 +923,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     drawGlossyCircle(ctx, 0, 0, 19, flash ? '#ffffff' : '#f4a261');
     ctx.fillStyle = flash ? '#ffffff' : '#ff5964';
     ctx.beginPath(); ctx.arc(0, 0, 15.5, 0, Math.PI * 2); ctx.fill();
-    // Мигающая посыпка
     const spCols = ['#ffee33', '#00f5d4', '#ffffff', '#7209b7'];
     for (let k = 0; k < 8; k++) {
       const a = (Math.PI * 2 * k) / 8 + e.phase;
@@ -982,8 +937,7 @@ function drawUniqueEnemy(ctx, e, player = null) {
 
   if (e.kind === 'clown_ship') {
     e.wingCol = '#00f5d4'; e.bodyCol = '#fff8eb';
-    // Плюшевый воротник-рюши и помпоны
-    ctx.fillStyle = '#ffd166'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+    ctx.fillStyle = '#ffd166'; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
     ctx.beginPath(); ctx.ellipse(0, 12, 19, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.fillStyle = strobe ? '#ff006e' : '#00f5d4';
     ctx.beginPath(); ctx.arc(-17, -7, 6.5, 0, Math.PI * 2); ctx.arc(17, -7, 6.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -1001,8 +955,7 @@ function drawUniqueEnemy(ctx, e, player = null) {
     const spotCol = strobe ? '#00f5d4' : '#ff70a6';
     e.wingCol = octCol; e.bodyCol = spotCol;
 
-    // 6 извивающихся щупалец с присосками
-    ctx.strokeStyle = octCol; ctx.lineWidth = 4.2;
+    ctx.strokeStyle = octCol; ctx.lineWidth = 4.5;
     for (let k = -2.5; k <= 2.5; k += 1) {
       const w = Math.sin(e.phase * 5 + k * 1.4) * 6;
       ctx.beginPath();
@@ -1025,14 +978,12 @@ function drawUniqueEnemy(ctx, e, player = null) {
     const tentCol = strobe ? '#ff70a6' : '#9bf6ff';
     e.wingCol = jCol; e.bodyCol = tentCol;
 
-    // Длинные стрекательные щупальца-ленты
-    ctx.strokeStyle = tentCol; ctx.lineWidth = 2.6;
+    ctx.strokeStyle = tentCol; ctx.lineWidth = 2.8;
     for (let k = -2; k <= 2; k++) {
       const w = Math.sin(e.phase * 6 + k * 1.6) * 7;
       ctx.beginPath(); ctx.moveTo(k * 5, 4); ctx.bezierCurveTo(k * 5 + w, 13, k * 5 - w, 21, k * 5 + w * 0.5, 29); ctx.stroke();
     }
-    // Полупрозрачный неоновый купол медузы
-    ctx.fillStyle = jCol; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.4;
+    ctx.fillStyle = jCol; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.8;
     ctx.beginPath(); ctx.arc(0, 2, 18, Math.PI, 0); ctx.quadraticCurveTo(18, 8, 0, 6); ctx.quadraticCurveTo(-18, 8, -18, 2); ctx.closePath(); ctx.fill(); ctx.stroke();
     drawCartoonEyes(ctx, e, -6, 6, -4, 4.1, '#ff006e', player, true);
     if (e.isElite) drawEliteCrown(ctx, -19);
@@ -1043,14 +994,12 @@ function drawUniqueEnemy(ctx, e, player = null) {
     const sqCol = flash ? '#ffffff' : '#f72585';
     e.wingCol = sqCol; e.bodyCol = '#4cc9f0';
 
-    // 2 длинных ловчих щупальца и 4 коротких
-    ctx.strokeStyle = '#4cc9f0'; ctx.lineWidth = 3;
+    ctx.strokeStyle = '#4cc9f0'; ctx.lineWidth = 3.2;
     [-10, 10].forEach((sx, idx) => {
       const w = Math.sin(e.phase * 6 + idx * 2) * 6;
       ctx.beginPath(); ctx.moveTo(sx * 0.6, 8); ctx.quadraticCurveTo(sx + w, 19, sx * 1.2, 29); ctx.stroke();
     });
-    // Торпедообразная голова-стрела кальмара
-    ctx.fillStyle = sqCol; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
+    ctx.fillStyle = sqCol; ctx.strokeStyle = INK; ctx.lineWidth = 2.8;
     ctx.beginPath();
     ctx.moveTo(0, -24); ctx.lineTo(18, -8); ctx.lineTo(10, -4); ctx.lineTo(11, 10); ctx.lineTo(-11, 10); ctx.lineTo(-10, -4); ctx.lineTo(-18, -8);
     ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -1063,9 +1012,8 @@ function drawUniqueEnemy(ctx, e, player = null) {
   if (e.kind === 'crab_ship') {
     const crCol = flash ? '#ffffff' : '#ff5964';
     e.wingCol = crCol; e.bodyCol = '#ffd166';
-    // Клешни краба сверху
-    [-16, 16].forEach((cx, idx) => {
-      ctx.fillStyle = crCol; ctx.strokeStyle = INK; ctx.lineWidth = 2.2;
+    [-16, 16].forEach(cx => {
+      ctx.fillStyle = crCol; ctx.strokeStyle = INK; ctx.lineWidth = 2.6;
       ctx.beginPath(); ctx.arc(cx, -12, 7.5, 0.2 * Math.PI, 1.8 * Math.PI); ctx.lineTo(cx, -12); ctx.closePath(); ctx.fill(); ctx.stroke();
     });
     drawGlossyCircle(ctx, 0, 2, 16.5, crCol);
@@ -1081,7 +1029,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     const thornCol = strobe ? '#ffee33' : '#ff006e';
     e.wingCol = vCol; e.bodyCol = thornCol;
 
-    // Вьющиеся колючие лианы-плети
     ctx.strokeStyle = vCol; ctx.lineWidth = 5;
     for (let k = 0; k < 6; k++) {
       const a = (Math.PI * 2 * k) / 6 + e.phase * 1.4;
@@ -1100,12 +1047,11 @@ function drawUniqueEnemy(ctx, e, player = null) {
   if (e.kind === 'sprout_hunter') {
     const spCol = flash ? '#ffffff' : '#70e000';
     e.wingCol = spCol; e.bodyCol = '#ff006e';
-    // Стебель-хвост снизу и раскрывающиеся листья-крылья
     ctx.strokeStyle = '#38b000'; ctx.lineWidth = 4.5;
     ctx.beginPath(); ctx.moveTo(0, 8); ctx.quadraticCurveTo(Math.sin(e.phase * 5) * 8, 18, 0, 26); ctx.stroke();
 
     [-1, 1].forEach(side => {
-      ctx.fillStyle = spCol; ctx.strokeStyle = INK; ctx.lineWidth = 2.2;
+      ctx.fillStyle = spCol; ctx.strokeStyle = INK; ctx.lineWidth = 2.6;
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(side * 16, -16, side * 24, -2); ctx.quadraticCurveTo(side * 14, 6, 0, 4); ctx.fill(); ctx.stroke();
     });
     drawGlossyCircle(ctx, 0, -2, 14.5, flash ? '#ffffff' : '#ff006e');
@@ -1120,7 +1066,7 @@ function drawUniqueEnemy(ctx, e, player = null) {
     e.wingCol = fCol; e.bodyCol = '#38b000';
     for (let k = 0; k < 5; k++) {
       ctx.rotate((Math.PI * 2) / 5);
-      ctx.fillStyle = fCol; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+      ctx.fillStyle = fCol; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
       ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(18, -7); ctx.lineTo(25, 0); ctx.lineTo(18, 7); ctx.closePath(); ctx.fill(); ctx.stroke();
     }
     drawGlossyCircle(ctx, 0, 0, 13.5, flash ? '#ffffff' : '#2d6a4f');
@@ -1136,32 +1082,28 @@ function drawUniqueEnemy(ctx, e, player = null) {
     const tentCol = strobe ? '#00f5d4' : '#ffbe0b';
     e.wingCol = capCol; e.bodyCol = tentCol;
 
-    // 6 извивающихся щупалец из-под шляпки вместо ножки
-    ctx.strokeStyle = tentCol; ctx.lineWidth = 3.6;
+    ctx.strokeStyle = tentCol; ctx.lineWidth = 3.8;
     for (let k = -2.5; k <= 2.5; k += 1) {
       const w = Math.sin(e.phase * 6 + k * 1.5) * 6;
       ctx.beginPath(); ctx.moveTo(k * 4.5, 2); ctx.quadraticCurveTo(k * 6 + w, 15, k * 7.5 - w * 0.5, 26); ctx.stroke();
     }
-    // Психоделическая шляпка гриба
-    ctx.fillStyle = capCol; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.4;
+    ctx.fillStyle = capCol; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.8;
     ctx.beginPath(); ctx.arc(0, 2, 20, Math.PI, 0); ctx.quadraticCurveTo(20, 8, 0, 6); ctx.quadraticCurveTo(-20, 8, -20, 2); ctx.closePath(); ctx.fill(); ctx.stroke();
     drawCartoonEyes(ctx, e, -6, 6, -4, 4.2, '#14052b', player, true);
     if (e.isElite) drawEliteCrown(ctx, -20);
     ctx.restore(); return;
   }
 
-  // Злобные мухоморы и психо-грибы (Ур. 6)
   const capCol = e.kind === 'psy_mushroom' ? `hsl(${hue}, 100%, 56%)` : (strobe ? '#ff002b' : '#d90429');
   e.wingCol = capCol; e.bodyCol = '#fff8eb';
   const breathe = 1 + Math.sin(e.phase * 4.5) * 0.06;
   ctx.scale(breathe, 2 - breathe);
 
-  ctx.fillStyle = flash ? '#ffffff' : '#fff8eb'; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
+  ctx.fillStyle = flash ? '#ffffff' : '#fff8eb'; ctx.strokeStyle = INK; ctx.lineWidth = 2.8;
   roundRectPath(ctx, -8.5, 0, 17, 21, 7); ctx.fill(); ctx.stroke();
-  // Юбочка мухомора
   ctx.fillStyle = '#ffd6a5'; ctx.fillRect(-10, 6, 20, 3.5);
 
-  ctx.fillStyle = flash ? '#ffffff' : capCol; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.4;
+  ctx.fillStyle = flash ? '#ffffff' : capCol; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.8;
   ctx.beginPath(); ctx.arc(0, 2, 21, Math.PI, 0); ctx.quadraticCurveTo(22, 9, 0, 7); ctx.quadraticCurveTo(-22, 9, -21, 2); ctx.closePath(); ctx.fill(); ctx.stroke();
 
   ctx.fillStyle = '#ffffff';
@@ -1173,7 +1115,7 @@ function drawUniqueEnemy(ctx, e, player = null) {
 }
 
 // =========================================================================
-// 6 ДЕТАЛИЗИРОВАННЫХ СТРАШНЫХ БОССОВ С КОНЕЧНОСТЯМИ И МИГАНИЕМ
+// 6 ДЕТАЛИЗИРОВАННЫХ СТРАШНЫХ БОССОВ С КОНЕЧНОСТЯМИ И МИГАНИЕМ (БЕЗ КРУГОВ)
 // =========================================================================
 function drawUniqueBoss(ctx, b, lvl, player, H) {
   const bScale = b.bossScale || 1.0;
@@ -1205,11 +1147,8 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   const hue = Math.floor((b.time * 130) % 360);
   const strobe = Math.sin(b.time * 11) > 0;
 
-  drawContrastBeacon(ctx, 62, strobe ? '#ffffff' : lvl.accent, b.time, true);
-
   // 1. БОСС УР. 1 — ЗЛОБНАЯ АРХИ-МАРКА С 4 КОНЕЧНОСТЯМИ-МАНИПУЛЯТОРАМИ
   if (lvl.id === 1) {
-    // 4 шарнирные кибер-конечности с когтями по бокам
     for (let side of [-1, 1]) {
       [-24, 22].forEach((ay, idx) => {
         const swing = Math.sin(b.time * 5 + idx * 1.5 + side) * 14;
@@ -1220,7 +1159,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
         ctx.lineTo(side * 82, ay - 16 + swing);
         ctx.lineTo(side * 96, ay + 12 - swing);
         ctx.stroke();
-        // Энерго-клешня на конце
         ctx.fillStyle = '#ffd166';
         ctx.beginPath(); ctx.arc(side * 96, ay + 12 - swing, 7, 0, Math.PI * 2); ctx.fill();
       });
@@ -1229,7 +1167,7 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     const stampW = 122, stampH = 136, halfW = 61, halfH = 68;
     ctx.fillStyle = flash ? '#ffffff' : `hsl(${hue}, 95%, 56%)`;
     ctx.strokeStyle = strobe ? '#ffffff' : '#00f5d4';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 4.5;
     ctx.beginPath(); ctx.moveTo(-halfW, -halfH);
     for (let i = 0; i < 8; i++) ctx.arc(-halfW + (stampW * (i + 0.5)) / 8, -halfH, 4.5, Math.PI, 0, true);
     ctx.lineTo(halfW, -halfH);
@@ -1249,7 +1187,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     [-22, 22].forEach((ex, idx) => {
       ctx.fillStyle = '#ffffff'; ctx.strokeStyle = INK; ctx.lineWidth = 3.2; ctx.beginPath(); ctx.arc(ex, -14, 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = idx === 0 ? '#06d6a0' : '#ff006e'; ctx.beginPath(); ctx.arc(ex + lookX, -13, 7.5, 0, Math.PI * 2); ctx.fill();
-      // Злые брови
       ctx.strokeStyle = '#ff002b'; ctx.lineWidth = 4.5;
       ctx.beginPath(); ctx.moveTo(ex - (idx === 0 ? 14 : -14), -29); ctx.lineTo(ex + (idx === 0 ? 12 : -12), -21); ctx.stroke();
     });
@@ -1268,10 +1205,9 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
         ctx.beginPath(); ctx.moveTo(side * 42, baseY); ctx.lineTo(side * 76, baseY - 24 + wave); ctx.lineTo(side * 96, baseY + 26 - wave); ctx.stroke();
       }
     }
-    ctx.fillStyle = flash ? '#ffffff' : '#fff8eb'; ctx.strokeStyle = strobe ? '#ffbe0b' : '#ff002b'; ctx.lineWidth = 4;
+    ctx.fillStyle = flash ? '#ffffff' : '#fff8eb'; ctx.strokeStyle = strobe ? '#ffbe0b' : '#ff002b'; ctx.lineWidth = 4.5;
     ctx.beginPath(); ctx.arc(0, -14, 52, Math.PI * 0.82, Math.PI * 2.18); ctx.lineTo(26, 52); ctx.lineTo(-26, 52); ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Праздничный узор бархатцев на лбу черепа
     ctx.fillStyle = '#ff006e'; ctx.beginPath(); ctx.arc(0, -42, 10, 0, Math.PI * 2); ctx.fill();
     [-21, 21].forEach((ex, idx) => {
       ctx.fillStyle = idx === 0 ? '#06d6a0' : '#3a86ff'; ctx.beginPath(); ctx.arc(ex, -6, 18, 0, Math.PI * 2); ctx.fill();
@@ -1284,7 +1220,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
 
   // 3. БОСС УР. 3 — РАДУЖНАЯ МИГАЮЩАЯ ВКУСНЯШКА (ХЕВИНКА) С РУКАМИ И НОГАМИ
   if (lvl.id === 3) {
-    // Пружинящие ноги в ярких ботинках снизу
     [-26, 26].forEach((lx, idx) => {
       const step = Math.sin(b.time * 7 + idx * Math.PI) * 10;
       ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 9;
@@ -1293,7 +1228,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       roundRectPath(ctx, lx * 1.15 - 14, 68 + step, 28, 15, 7); ctx.fill(); ctx.stroke();
     });
 
-    // Мультяшные руки с когтистыми перчатками по бокам
     [-1, 1].forEach(side => {
       const armWave = Math.sin(b.time * 6 + side) * 16;
       ctx.strokeStyle = '#90e0ef'; ctx.lineWidth = 10;
@@ -1302,15 +1236,13 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.beginPath(); ctx.arc(side * 92, 16 - armWave, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     });
 
-    // Свеча-пушка сверху
     ctx.fillStyle = '#00f5d4'; ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
     roundRectPath(ctx, -7, -76, 14, 22, 4); ctx.fill(); ctx.stroke();
     ctx.fillStyle = strobe ? '#ffee33' : '#ff5964';
     ctx.beginPath(); ctx.arc(0, -84, 9, 0, Math.PI * 2); ctx.fill();
 
-    // Пышный радужно-мармеладный корпус-пончик с мигающей глазурью
     const bodyRainbow = flash ? '#ffffff' : `hsl(${hue}, 95%, 60%)`;
-    ctx.fillStyle = '#f4a261'; ctx.strokeStyle = strobe ? '#ffffff' : INK; ctx.lineWidth = 4;
+    ctx.fillStyle = '#f4a261'; ctx.strokeStyle = strobe ? '#ffffff' : INK; ctx.lineWidth = 4.5;
     ctx.beginPath(); ctx.arc(0, 0, 58, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.fillStyle = bodyRainbow;
     ctx.beginPath(); ctx.arc(0, 0, 48, 0, Math.PI * 2); ctx.fill();
@@ -1331,16 +1263,14 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       const tCol = `hsl(${(seaHue + i * 42) % 360}, 98%, 66%)`;
       ctx.strokeStyle = tCol; ctx.lineWidth = 10;
       ctx.beginPath(); ctx.moveTo(t * 14, 22); ctx.quadraticCurveTo(t * 18 + waveX, 56, t * 22 - waveX * 0.5, 84); ctx.stroke();
-      // Светящиеся присоски
       ctx.fillStyle = '#ffffff';
       ctx.beginPath(); ctx.arc(t * 17 + waveX * 0.6, 52, 3, 0, Math.PI * 2); ctx.fill();
     }
     ctx.fillStyle = flash ? '#ffffff' : `hsl(${seaHue}, 94%, 64%)`;
     ctx.strokeStyle = strobe ? '#ffffff' : '#9bf6ff';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 4.5;
     ctx.beginPath(); ctx.arc(0, -4, 54, Math.PI, 0); ctx.quadraticCurveTo(58, 32, 0, 34); ctx.quadraticCurveTo(-58, 32, -54, -4); ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Третий психо-глаз на лбу
     ctx.fillStyle = '#ffee33'; ctx.beginPath(); ctx.arc(0, -30, 8, 0, Math.PI * 2); ctx.fill();
     [-20, 20].forEach(ex => {
       ctx.fillStyle = '#ffffff'; ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ex, -8, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -1352,7 +1282,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
 
   // 5. БОСС УР. 5 — ПОДСОЛНУХ СО ЩУПАЛЬЦАМИ-ЛИАНАМИ
   if (lvl.id === 5) {
-    // 6 колючих растительных щупалец
     for (let v = 0; v < 6; v++) {
       const t = v - 2.5, whipX = Math.sin(b.time * 5 + v * 1.2) * 30;
       ctx.strokeStyle = v % 2 === 0 ? '#38b000' : '#ccff33';
@@ -1367,7 +1296,7 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.beginPath(); ctx.moveTo(0, 32); ctx.quadraticCurveTo(14, 60, 0, 76); ctx.quadraticCurveTo(-14, 60, 0, 32); ctx.fill(); ctx.stroke();
     }
     ctx.restore();
-    ctx.fillStyle = flash ? '#ffffff' : '#3d1e05'; ctx.strokeStyle = strobe ? '#ffffff' : '#80ed99'; ctx.lineWidth = 4;
+    ctx.fillStyle = flash ? '#ffffff' : '#3d1e05'; ctx.strokeStyle = strobe ? '#ffffff' : '#80ed99'; ctx.lineWidth = 4.5;
     ctx.beginPath(); ctx.arc(0, 0, 42, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     [-16, 16].forEach(ex => {
       ctx.fillStyle = '#fee440'; ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
@@ -1379,7 +1308,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   }
 
   // 6. БОСС УР. 6 — ПОЛУ-МУХОМОР, ПОЛУ-СКОЛОПЕНДРА
-  // Сегментированное тело сколопендры снизу с 6 парами быстрых ножек-когтей
   for (let seg = 4; seg >= 0; seg--) {
     const sy = 18 + seg * 15;
     const sx = Math.sin(b.time * 7 + seg * 0.9) * 14;
@@ -1401,9 +1329,8 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.beginPath(); ctx.ellipse(sx, sy, 22 - seg * 1.5, 11, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   }
 
-  // Гигантская ядовитая шляпка мухомора сверху
   const capCol = flash ? '#ffffff' : (strobe ? '#ff002b' : `hsl(${hue}, 100%, 54%)`);
-  ctx.fillStyle = capCol; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4;
+  ctx.fillStyle = capCol; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4.5;
   ctx.beginPath(); ctx.arc(0, 2, 66, Math.PI, 0); ctx.quadraticCurveTo(70, 20, 0, 14); ctx.quadraticCurveTo(-70, 20, -66, 2); ctx.closePath(); ctx.fill(); ctx.stroke();
 
   [[-36, -24, 9], [36, -24, 9], [0, -44, 11], [-18, -36, 6], [18, -36, 6]].forEach(([sx, sy, sr]) => {
