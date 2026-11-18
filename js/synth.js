@@ -6,6 +6,7 @@ class AstraCatSynth {
     this.ctx = null;
     this.isInitialized = false;
     this.audioUnlocked = false;
+    this.samplesLoaded = false;
 
     this.voices = Array.from({ length: maxVoices }, (_, id) => ({
       id,
@@ -14,22 +15,31 @@ class AstraCatSynth {
       stopFn: null
     }));
 
+    // Декодированные буферы пользовательских сэмплов
+    this.buffers = {};
+
     this.muted = false;
     this.musicEnabled = true;
     this.sfxEnabled = true;
 
-    // Стартовые значения громкости: музыка 60%, эффекты 50%
+    // Стартовые значения ползунков: музыка 60%, эффекты 50%
     this.musicVolume = 0.60;
     this.sfxVolume = 0.50;
 
     this.settings = {
       masterVolume: 0.50,
-      warmthCutoff: 1450,
-      spaceMix: 0.20,
+      warmthCutoff: 1550,
+      spaceMix: 0.22,
       psyDrift: 0.55
     };
 
     this.brownNoiseBuffer = null;
+
+    // Тёплая низкая пентатоника (Hz) — без высоких писклявых частот
+    this.warmScale = [146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63];
+    this.collectStep = 0;
+    this.woodStep = 0;
+    this.shotStep = 0;
 
     // Треки уровней (level1.mp3 — level11.mp3) для случайной ротации без повтора минимум 4 треков
     this.availableTracks = [
@@ -61,6 +71,7 @@ class AstraCatSynth {
     this.lastExplosionTime = 0;
     this.lastHitTime = 0;
     this.lastPortalTime = 0;
+    this.lastCoinSampleTime = 0;
 
     this.bgmAudio.addEventListener('playing', () => {
       this.isPlayRequestInFlight = false;
@@ -91,7 +102,6 @@ class AstraCatSynth {
     this.setupAutoUnlock();
   }
 
-  // Принудительно выставляем слайдеры в настройках (музыка 60%, эффекты 50%) при старте
   syncDefaultSlidersUI() {
     const musicSlider = document.getElementById('music-vol');
     const musicVal = document.getElementById('val-music-vol');
@@ -200,6 +210,9 @@ class AstraCatSynth {
       if (this.ctx && this.ctx.state !== 'running') {
         this.ctx.resume().catch(() => {});
       }
+      if (!this.samplesLoaded) {
+        this.loadSfxAssets();
+      }
       return;
     }
 
@@ -219,7 +232,7 @@ class AstraCatSynth {
     this._createNoiseBuffers();
 
     this.voiceBus = this.ctx.createGain();
-    this.voiceBus.gain.value = 1.15;
+    this.voiceBus.gain.value = 1.22;
 
     // Фильтр защиты динамика телефона от инфра-баса ниже 105 Гц
     this.speakerProtectFilter = this.ctx.createBiquadFilter();
@@ -240,10 +253,10 @@ class AstraCatSynth {
     this.delayRight.delayTime.value = 0.22;
 
     this.delayFeedback = this.ctx.createGain();
-    this.delayFeedback.gain.value = 0.08;
+    this.delayFeedback.gain.value = 0.09;
 
     this.delayWetGain = this.ctx.createGain();
-    this.delayWetGain.gain.value = this.settings.spaceMix * 0.14;
+    this.delayWetGain.gain.value = this.settings.spaceMix * 0.16;
 
     this.merger = this.ctx.createChannelMerger(2);
 
@@ -281,12 +294,72 @@ class AstraCatSynth {
     this.masterGain.connect(this.ctx.destination);
 
     this.isInitialized = true;
+    this.loadSfxAssets();
+  }
+
+  // =========================================================================
+  // ЗАГРУЗКА И ПОЛИФОНИЧЕСКОЕ ВОСПРОИЗВЕДЕНИЕ СЭМПЛОВ (С АВТОПОДБОРОМ ИМЁН)
+  // =========================================================================
+  async loadSfxAssets() {
+    if (!this.ctx || this.samplesLoaded) return;
+    this.samplesLoaded = true;
+
+    const assetMap = {
+      meow:         ['music/meow.mp3', 'music/1_mp3.mp3'],
+      coin:         ['music/coin.mp3', 'music/68cde119a4ed465.mp3'],
+      powerup:      ['music/powerup.mp3', 'music/9c9caa1ca9b1c21.mp3'],
+      laser:        ['music/laser.mp3', 'music/48b5aca031fd44a.mp3'],
+      blaster:      ['music/blaster.mp3', 'music/24f110d27ad0929.mp3'],
+      boom_small:   ['music/boom_small.mp3', 'music/c0647023ca0a00c.mp3'],
+      boss_alarm:   ['music/boss_alarm.mp3', 'music/6d91dda56e9b0c1.mp3'],
+      boss_explode: ['music/boss_explode.mp3', 'music/370b925a30aca01.mp3']
+    };
+
+    const entries = Object.entries(assetMap);
+    await Promise.all(entries.map(async ([key, candidates]) => {
+      for (const url of candidates) {
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) continue;
+          const arrayBuf = await resp.arrayBuffer();
+          const audioBuf = await this.ctx.decodeAudioData(arrayBuf);
+          this.buffers[key] = audioBuf;
+          break;
+        } catch (_) {}
+      }
+    }));
+  }
+
+  playSample(name, { volume = 0.5, pitch = 1.0, pitchJitter = 0.04, dry = false } = {}) {
+    if (!this.ctx || this.muted || !this.sfxEnabled) return false;
+    const buf = this.buffers[name];
+    if (!buf) return false;
+
+    const now = this.ctx.currentTime;
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+
+    const jitter = 1 + (Math.random() * 2 - 1) * pitchJitter;
+    const rate = Math.max(0.65, Math.min(1.45, pitch * jitter));
+    src.playbackRate.setValueAtTime(rate, now);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(volume, now);
+
+    src.connect(gain);
+    // Через voiceBus сэмпл получает бархатный фильтр (LPF) и защиту динамика
+    gain.connect(dry ? this.compressor : this.voiceBus);
+
+    const dur = buf.duration / rate;
+    src.start(now);
+    this.allocateVoice(dur, () => { try { src.stop(); } catch (_) {} });
+    return true;
   }
 
   getEffectiveSfxVol() {
     if (this.muted || !this.sfxEnabled) return 0.0001;
-    // Базовая громкость эффектов уменьшена на 30% (1.47 * 0.7 ≈ 1.03)
-    return Math.max(0.0001, Math.min(1.10, this.sfxVolume * 1.03));
+    // Базовая громкость эффектов увеличена на 20%
+    return Math.max(0.0001, Math.min(1.38, this.sfxVolume * 1.24));
   }
 
   updateSfxVolume() {
@@ -311,7 +384,7 @@ class AstraCatSynth {
   setSpaceMix(val) {
     this.settings.spaceMix = val;
     if (this.delayWetGain && this.ctx) {
-      this.delayWetGain.gain.setTargetAtTime(val * 0.14, this.ctx.currentTime, 0.04);
+      this.delayWetGain.gain.setTargetAtTime(val * 0.16, this.ctx.currentTime, 0.04);
     }
   }
 
@@ -357,93 +430,118 @@ class AstraCatSynth {
   }
 
   // =========================================================================
-  // БАРХАТНЫЕ ТЕКСТУРЫ ЗВУКА: КАПЛИ, СТУК ПО ДЕРЕВУ И ВОЛНОВЫЕ ЭФФЕКТЫ
+  // БАРХАТНЫЕ АСМР-ТЕКСТУРЫ: КАПЛИ, ДЕРЕВЯННАЯ МАРИМБА И ВОЛНОВЫЕ ПЕРЕЛИВЫ
   // =========================================================================
 
-  // 1. Мягкий стук по дереву (маримба / деревянный брусок без высоких частот)
-  playWoodTap(pitch = 1.0, volumeScale = 1.0) {
+  // 1. Тёплый стук по дереву (щелчки меню, скролл, попадания по броне)
+  playWoodTap(pitch = 1.0, volumeScale = 1.0, exactFreq = null) {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.085;
-    const baseFreq = Math.min(310, Math.max(150, 235 * pitch * (0.96 + Math.random() * 0.08)));
+    const dur = 0.095;
+
+    const scaleMults = [0.88, 0.96, 1.04, 1.12, 1.18];
+    const stepMult = scaleMults[this.woodStep % scaleMults.length];
+    this.woodStep++;
+
+    const rawFreq = exactFreq || (215 * pitch * stepMult);
+    const baseFreq = Math.min(315, Math.max(145, rawFreq));
 
     const bodyOsc = this.ctx.createOscillator();
-    const overtoneOsc = this.ctx.createOscillator();
+    const barOsc = this.ctx.createOscillator();
     const lp = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
 
     bodyOsc.type = 'sine';
-    bodyOsc.frequency.setValueAtTime(baseFreq * 1.18, now);
-    bodyOsc.frequency.exponentialRampToValueAtTime(baseFreq * 0.58, now + dur);
+    bodyOsc.frequency.setValueAtTime(baseFreq * 1.16, now);
+    bodyOsc.frequency.exponentialRampToValueAtTime(baseFreq * 0.56, now + dur);
 
-    overtoneOsc.type = 'triangle';
-    overtoneOsc.frequency.setValueAtTime(baseFreq * 2.1, now);
-    overtoneOsc.frequency.exponentialRampToValueAtTime(baseFreq * 1.3, now + dur * 0.5);
+    barOsc.type = 'triangle';
+    barOsc.frequency.setValueAtTime(baseFreq * 2.0, now);
+    barOsc.frequency.exponentialRampToValueAtTime(baseFreq * 1.35, now + dur * 0.55);
 
-    const overtoneGain = this.ctx.createGain();
-    overtoneGain.gain.setValueAtTime(0.08, now);
-    overtoneGain.gain.exponentialRampToValueAtTime(0.0001, now + dur * 0.45);
+    const barGain = this.ctx.createGain();
+    barGain.gain.setValueAtTime(0.09, now);
+    barGain.gain.exponentialRampToValueAtTime(0.0001, now + dur * 0.48);
 
     lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(640, now);
-    lp.Q.value = 0.6;
+    lp.frequency.setValueAtTime(680, now);
+    lp.Q.value = 0.65;
 
-    const peak = 0.24 * volumeScale;
+    const peak = 0.28 * volumeScale;
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.linearRampToValueAtTime(peak, now + 0.005);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     bodyOsc.connect(lp);
-    overtoneOsc.connect(overtoneGain);
-    overtoneGain.connect(lp);
+    barOsc.connect(barGain);
+    barGain.connect(lp);
     lp.connect(gain);
     gain.connect(this.voiceBus);
 
     bodyOsc.start(now);
-    overtoneOsc.start(now);
+    barOsc.start(now);
     bodyOsc.stop(now + dur + 0.01);
-    overtoneOsc.stop(now + dur + 0.01);
+    barOsc.stop(now + dur + 0.01);
 
     this.allocateVoice(dur, () => {
-      try { bodyOsc.stop(); overtoneOsc.stop(); } catch (_) {}
+      try { bodyOsc.stop(); barOsc.stop(); } catch (_) {}
     });
   }
 
-  // 2. Бархатная водяная капля (глубокий пузырёк без писка)
-  playWaterDroplet(pitch = 1.0, volumeScale = 1.0) {
+  // 2. Бархатная водяная капля с двойным переливом
+  playWaterDroplet(pitch = 1.0, volumeScale = 1.0, exactFreq = null) {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.14;
-    const startFreq = Math.min(270, Math.max(150, 205 * pitch * (0.95 + Math.random() * 0.1)));
-    const endFreq = Math.min(350, startFreq * 1.48);
+    const dur = 0.16;
+
+    const drift = 1 + (Math.random() - 0.5) * 0.06 * (0.4 + this.settings.psyDrift);
+    const rawFreq = exactFreq || (195 * pitch * drift);
+    const startFreq = Math.min(285, Math.max(145, rawFreq));
+    const peakFreq = Math.min(365, startFreq * 1.44);
 
     const osc = this.ctx.createOscillator();
+    const subHarmonic = this.ctx.createOscillator();
     const lp = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(startFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(endFreq, now + dur * 0.72);
-    osc.frequency.exponentialRampToValueAtTime(startFreq * 1.15, now + dur);
+    osc.frequency.setValueAtTime(startFreq * 0.92, now);
+    osc.frequency.exponentialRampToValueAtTime(peakFreq, now + dur * 0.68);
+    osc.frequency.exponentialRampToValueAtTime(startFreq * 1.18, now + dur);
+
+    subHarmonic.type = 'sine';
+    subHarmonic.frequency.setValueAtTime(startFreq * 0.5, now);
+    subHarmonic.frequency.exponentialRampToValueAtTime(peakFreq * 0.5, now + dur * 0.72);
+
+    const subGain = this.ctx.createGain();
+    subGain.gain.setValueAtTime(0.11, now);
+    subGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(680, now);
-    lp.Q.value = 0.5;
+    lp.frequency.setValueAtTime(720, now);
+    lp.Q.value = 0.55;
 
-    const peak = 0.26 * volumeScale;
+    const peak = 0.30 * volumeScale;
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(peak, now + 0.014);
+    gain.gain.linearRampToValueAtTime(peak, now + 0.015);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(lp);
+    subHarmonic.connect(subGain);
+    subGain.connect(lp);
     lp.connect(gain);
     gain.connect(this.voiceBus);
 
     osc.start(now);
+    subHarmonic.start(now);
     osc.stop(now + dur + 0.01);
-    this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
+    subHarmonic.stop(now + dur + 0.01);
+
+    this.allocateVoice(dur, () => {
+      try { osc.stop(); subHarmonic.stop(); } catch (_) {}
+    });
   }
 
   sfxScrollTick() {
@@ -451,16 +549,21 @@ class AstraCatSynth {
     if (nowMs - this.lastScrollTickTime < 55) return;
     this.lastScrollTickTime = nowMs;
     if (navigator.vibrate) { try { navigator.vibrate(4); } catch (_) {} }
-    this.playWoodTap(0.95, 0.75);
+    this.playWoodTap(0.95, 0.80);
   }
 
-  // Выстрелы капельной плазмой (мягкий приглушённый бульк)
+  // Выстрелы капельной плазмой: 4 мягких тональных интервала по кругу
   playSoftBullet(pitchMultiplier = 1.0) {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.11;
-    const baseFreq = Math.min(310, 265 * pitchMultiplier * (0.96 + Math.random() * 0.08));
+    const dur = 0.115;
+
+    const intervals = [0.92, 1.0, 1.08, 0.96];
+    const mult = intervals[this.shotStep % intervals.length];
+    this.shotStep++;
+
+    const baseFreq = Math.min(315, 255 * pitchMultiplier * mult);
 
     const osc = this.ctx.createOscillator();
     const lp = this.ctx.createBiquadFilter();
@@ -471,11 +574,11 @@ class AstraCatSynth {
     osc.frequency.exponentialRampToValueAtTime(Math.max(115, baseFreq * 0.48), now + dur);
 
     lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(700, now);
+    lp.frequency.setValueAtTime(720, now);
     lp.Q.value = 0.45;
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.24, now + 0.01);
+    gain.gain.linearRampToValueAtTime(0.26, now + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(lp);
@@ -496,23 +599,24 @@ class AstraCatSynth {
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
 
     const now = this.ctx.currentTime;
-    const dur = 0.095;
-    const startFreq = 210 + Math.random() * 30;
+    const dur = 0.105;
+    const note = this.warmScale[this.collectStep % 4];
+    this.collectStep++;
 
     const osc = this.ctx.createOscillator();
     const lp = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(startFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(startFreq * 1.42, now + dur);
+    osc.frequency.setValueAtTime(note, now);
+    osc.frequency.exponentialRampToValueAtTime(note * 1.38, now + dur);
 
     lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(660, now);
+    lp.frequency.setValueAtTime(680, now);
     lp.Q.value = 0.4;
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.18, now + 0.014);
+    gain.gain.linearRampToValueAtTime(0.21, now + 0.014);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(lp);
@@ -524,66 +628,85 @@ class AstraCatSynth {
     this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
   }
 
-  // Бархатный волновой импульс
+  // Бархатный хорус-волновой импульс для волновых пушек
   playWarmLaser() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.19;
+    const dur = 0.21;
+    const startNote = this.warmScale[(this.shotStep + 2) % 5] * 1.15;
 
-    const osc = this.ctx.createOscillator();
-    const lp = this.ctx.createBiquadFilter();
-    const gain = this.ctx.createGain();
+    [0, 3.5].forEach((detuneHz) => {
+      const osc = this.ctx.createOscillator();
+      const lp = this.ctx.createBiquadFilter();
+      const gain = this.ctx.createGain();
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(310, now);
-    osc.frequency.exponentialRampToValueAtTime(135, now + dur);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(startNote + detuneHz, now);
+      osc.frequency.exponentialRampToValueAtTime(132 + detuneHz, now + dur);
 
-    lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(680, now);
-    lp.Q.value = 0.5;
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(700, now);
+      lp.Q.value = 0.5;
 
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.24, now + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 0.016);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
-    osc.connect(lp);
-    lp.connect(gain);
-    gain.connect(this.voiceBus);
-    osc.start(now);
-    osc.stop(now + dur + 0.02);
-    this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
+      osc.connect(lp);
+      lp.connect(gain);
+      gain.connect(this.voiceBus);
+      osc.start(now);
+      osc.stop(now + dur + 0.02);
+      this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
+    });
   }
 
   playPlushRocket() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.26;
+    const dur = 0.27;
 
     const sub = this.ctx.createOscillator();
+    const fifth = this.ctx.createOscillator();
     const lp = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
+
     sub.type = 'sine';
-    sub.frequency.setValueAtTime(165, now);
-    sub.frequency.exponentialRampToValueAtTime(220, now + dur * 0.5);
+    sub.frequency.setValueAtTime(155, now);
+    sub.frequency.exponentialRampToValueAtTime(215, now + dur * 0.5);
     sub.frequency.exponentialRampToValueAtTime(125, now + dur);
 
+    fifth.type = 'sine';
+    fifth.frequency.setValueAtTime(232, now);
+    fifth.frequency.exponentialRampToValueAtTime(310, now + dur * 0.5);
+    fifth.frequency.exponentialRampToValueAtTime(185, now + dur);
+
+    const fifthGain = this.ctx.createGain();
+    fifthGain.gain.value = 0.35;
+
     lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(600, now);
+    lp.frequency.setValueAtTime(620, now);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.25, now + 0.03);
+    gain.gain.linearRampToValueAtTime(0.26, now + 0.03);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     sub.connect(lp);
+    fifth.connect(fifthGain);
+    fifthGain.connect(lp);
     lp.connect(gain);
     gain.connect(this.voiceBus);
+
     sub.start(now);
+    fifth.start(now);
     sub.stop(now + dur + 0.02);
-    this.allocateVoice(dur, () => { try { sub.stop(); } catch (_) {} });
+    fifth.stop(now + dur + 0.02);
+    this.allocateVoice(dur, () => { try { sub.stop(); fifth.stop(); } catch (_) {} });
   }
 
+  // Взрыв врагов: бархатный саб-бас + твой сэмпл boom_small.mp3
   playNebulaExplosion() {
     const nowMs = performance.now();
     if (nowMs - this.lastExplosionTime < 75) return;
@@ -591,8 +714,12 @@ class AstraCatSynth {
 
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
+
+    // Подключаем живой мини-взрыв с лёгкой вариацией высоты тона
+    this.playSample('boom_small', { volume: 0.44, pitch: 0.98, pitchJitter: 0.08 });
+
     const now = this.ctx.currentTime;
-    const dur = 0.42;
+    const dur = 0.38;
 
     const sub = this.ctx.createOscillator();
     sub.type = 'sine';
@@ -601,7 +728,7 @@ class AstraCatSynth {
 
     const subGain = this.ctx.createGain();
     subGain.gain.setValueAtTime(0.0001, now);
-    subGain.gain.linearRampToValueAtTime(0.30, now + 0.015);
+    subGain.gain.linearRampToValueAtTime(0.26, now + 0.015);
     subGain.gain.exponentialRampToValueAtTime(0.0001, now + dur * 0.85);
 
     const noise = this.ctx.createBufferSource();
@@ -613,7 +740,7 @@ class AstraCatSynth {
 
     const noiseGain = this.ctx.createGain();
     noiseGain.gain.setValueAtTime(0.0001, now);
-    noiseGain.gain.linearRampToValueAtTime(0.26, now + 0.02);
+    noiseGain.gain.linearRampToValueAtTime(0.20, now + 0.02);
     noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     sub.connect(subGain); subGain.connect(this.voiceBus);
@@ -624,60 +751,115 @@ class AstraCatSynth {
     this.allocateVoice(dur, () => { try { sub.stop(); noise.stop(); } catch (_) {} });
   }
 
-  // Сбор бонусов и рыбок: бархатная капля + мягкий стук по дереву (полностью без писка!)
+  // Сбор рыбок и монеток: мелодические капли + мягкий звон coin.mp3
   playStarCollect() {
-    const pitches = [0.88, 0.96, 1.04, 1.12];
-    const p = pitches[Math.floor(Math.random() * pitches.length)];
-    this.playWaterDroplet(p, 1.0);
-    this.playWoodTap(p * 0.92, 0.72);
+    const note = this.warmScale[this.collectStep % this.warmScale.length];
+    this.collectStep++;
+
+    this.playWaterDroplet(1.0, 0.95, note);
+    this.playWoodTap(1.0, 0.70, note * 0.75);
+
+    const nowMs = performance.now();
+    if (nowMs - this.lastCoinSampleTime >= 75) {
+      this.lastCoinSampleTime = nowMs;
+      this.playSample('coin', { volume: 0.34, pitch: 0.98, pitchJitter: 0.05 });
+    }
   }
 
+  // Мяуканье кота: твой живой сэмпл meow.mp3 + мягкий тёплый аккорд
   playCosmicMeow() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
+
+    const hasMeowSample = this.playSample('meow', { volume: 0.65, pitch: 1.0, pitchJitter: 0.03 });
+    if (hasMeowSample) return;
+
+    // Резервный АСМР-синтез, если файл ещё не загружен
     const now = this.ctx.currentTime;
-    const dur = 0.34;
+    const dur = 0.36;
 
     const osc = this.ctx.createOscillator();
+    const fifth = this.ctx.createOscillator();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(240, now);
-    osc.frequency.exponentialRampToValueAtTime(315, now + 0.12);
-    osc.frequency.exponentialRampToValueAtTime(245, now + dur);
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(293.66, now + 0.13);
+    osc.frequency.exponentialRampToValueAtTime(246.94, now + dur);
+
+    fifth.type = 'sine';
+    fifth.frequency.setValueAtTime(164.81, now);
+    fifth.frequency.exponentialRampToValueAtTime(220.00, now + 0.13);
+    fifth.frequency.exponentialRampToValueAtTime(196.00, now + dur);
+
+    const fifthGain = this.ctx.createGain();
+    fifthGain.gain.value = 0.45;
 
     const softFilter = this.ctx.createBiquadFilter();
     softFilter.type = 'lowpass';
     softFilter.Q.value = 0.5;
-    softFilter.frequency.setValueAtTime(660, now);
+    softFilter.frequency.setValueAtTime(680, now);
 
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.26, now + 0.035);
+    gain.gain.linearRampToValueAtTime(0.28, now + 0.035);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     osc.connect(softFilter);
+    fifth.connect(fifthGain);
+    fifthGain.connect(softFilter);
     softFilter.connect(gain);
     gain.connect(this.voiceBus);
+
     osc.start(now);
+    fifth.start(now);
     osc.stop(now + dur);
-    this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
+    fifth.stop(now + dur);
+    this.allocateVoice(dur, () => { try { osc.stop(); fifth.stop(); } catch (_) {} });
   }
 
-  // Мягкая низкая волна щита (без высоких обертонов)
+  // Тёплый низкий волновой аккорд щита (Fmaj7 в малой октаве)
   playShieldHum() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
     const now = this.ctx.currentTime;
-    const dur = 0.36;
-    [196.00, 246.94, 293.66].forEach((freq) => {
+    const dur = 0.40;
+    [174.61, 220.00, 261.63, 329.63].forEach((freq, idx) => {
       const osc = this.ctx.createOscillator();
       const lp = this.ctx.createBiquadFilter();
       const gain = this.ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.setValueAtTime(freq, now + idx * 0.025);
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(660, now);
+      gain.gain.setValueAtTime(0.0001, now + idx * 0.025);
+      gain.gain.linearRampToValueAtTime(0.095, now + idx * 0.025 + 0.045);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      osc.connect(lp);
+      lp.connect(gain);
+      gain.connect(this.voiceBus);
+      osc.start(now + idx * 0.025);
+      osc.stop(now + dur + 0.02);
+      this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
+    });
+  }
+
+  // Бархатный волновой перелив с гармонической квинтой
+  playPurrBoost() {
+    this.init();
+    if (!this.ctx || this.muted || !this.sfxEnabled) return;
+    const now = this.ctx.currentTime;
+    const dur = 0.32;
+
+    [164.81, 246.94].forEach((base, i) => {
+      const osc = this.ctx.createOscillator();
+      const lp = this.ctx.createBiquadFilter();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(base, now);
+      osc.frequency.exponentialRampToValueAtTime(base * 1.48, now + dur * 0.72);
       lp.type = 'lowpass';
       lp.frequency.setValueAtTime(640, now);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.10, now + 0.04);
+      gain.gain.linearRampToValueAtTime(i === 0 ? 0.22 : 0.12, now + 0.04);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
       osc.connect(lp);
       lp.connect(gain);
@@ -688,83 +870,89 @@ class AstraCatSynth {
     });
   }
 
-  // Бархатный волновой перелив
-  playPurrBoost() {
-    this.init();
-    if (!this.ctx || this.muted || !this.sfxEnabled) return;
-    const now = this.ctx.currentTime;
-    const dur = 0.30;
-    const osc = this.ctx.createOscillator();
-    const lp = this.ctx.createBiquadFilter();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(175, now);
-    osc.frequency.exponentialRampToValueAtTime(260, now + dur * 0.7);
-    lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(620, now);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.24, now + 0.04);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-    osc.connect(lp);
-    lp.connect(gain);
-    gain.connect(this.voiceBus);
-    osc.start(now);
-    osc.stop(now + dur);
-    this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
+  // Щелчки и переходы меню — чистый бархатный АСМР
+  sfxMenuTap() { this.playWoodTap(1.05, 0.95); }
+  sfxMenuSelect() {
+    const note = this.warmScale[this.collectStep % 5];
+    this.collectStep++;
+    this.playWaterDroplet(1.0, 1.0, note);
   }
-
-  sfxMenuTap() { this.playWoodTap(1.05, 0.9); }
-  sfxMenuSelect() { this.playWaterDroplet(1.0, 0.95); }
   sfxMenuTransition() { this.playPurrBoost(); }
+
   sfxBuyItem() {
-    this.playWoodTap(0.95, 1.0);
-    setTimeout(() => this.playWaterDroplet(1.08, 1.0), 110);
+    this.playWoodTap(1.0, 1.0, 220.00);
+    setTimeout(() => this.playCosmicMeow(), 90);
+    setTimeout(() => this.playSample('coin', { volume: 0.40, pitch: 1.05 }), 220);
   }
 
+  // Стрельба: волновые пушки и базовая капля остаются чистым АСМР, к двойному и электро-залпу добавлены сэмплы
   sfxShootWeapon(pan = 0, baseWeapon = 'droplet') {
     const nowMs = performance.now();
     if (nowMs - this.lastShotSoundTime < 100) return;
     this.lastShotSoundTime = nowMs;
 
-    if (baseWeapon === 'droplet' || baseWeapon === 'double_shot') this.playSoftBullet(0.98);
-    else if (baseWeapon === 'rocket_launcher') this.playPlushRocket();
-    else this.playWarmLaser();
+    if (baseWeapon === 'droplet') {
+      this.playSoftBullet(0.98);
+    } else if (baseWeapon === 'double_shot') {
+      this.playSoftBullet(1.04);
+      this.playSample('blaster', { volume: 0.24, pitch: 1.0, pitchJitter: 0.05 });
+    } else if (baseWeapon === 'rocket_launcher') {
+      this.playPlushRocket();
+    } else if (baseWeapon === 'electric_arc') {
+      this.playWarmLaser();
+      this.playSample('laser', { volume: 0.26, pitch: 0.96, pitchJitter: 0.06 });
+    } else {
+      // Волновая пушка (wave_amp) — чистый бархатный АСМР-волновой звук
+      this.playWarmLaser();
+    }
   }
 
   sfxHit() {
     const nowMs = performance.now();
     if (nowMs - this.lastHitTime < 65) return;
     this.lastHitTime = nowMs;
-    this.playWoodTap(0.84, 0.85);
+    this.playWoodTap(0.86, 0.90);
   }
 
   sfxExplosion() { this.playNebulaExplosion(); }
 
   sfxBossExplosion() {
     this.playNebulaExplosion();
-    if (this.muted || !this.sfxEnabled) return;
-    try {
-      const customBoom = new Audio('music/boss_explode.mp3');
-      customBoom.volume = Math.max(0, Math.min(1, this.sfxVolume * 0.49));
-      customBoom.play().catch(() => {});
-    } catch (e) {}
+    this.playSample('boss_explode', { volume: 0.78, pitch: 0.98, pitchJitter: 0.03 });
   }
 
   sfxIgnite() { this.playPlushRocket(); }
   sfxGravity() { this.playPortalPass(); }
-  sfxDisintegrate() { this.playWaterDroplet(0.92, 0.85); }
-  sfxUnderwater() { this.playWaterDroplet(0.88, 0.9); }
+  sfxDisintegrate() { this.playWaterDroplet(0.92, 0.90); }
+  sfxUnderwater() { this.playWaterDroplet(0.88, 0.95); }
   sfxCosmicHum() { this.playPurrBoost(); }
-  sfxSticky() { this.playWoodTap(0.82, 0.85); }
+  sfxSticky() { this.playWoodTap(0.82, 0.90); }
+
+  // Волновые атаки — чистый бархатный АСМР
   sfxWave() { this.playWarmLaser(); }
-  sfxPowerup() { this.playStarCollect(); }
+
+  // Подбор боевых бонусов: бархатная капля + сэмпл powerup.mp3
+  sfxPowerup() {
+    const note = this.warmScale[(this.collectStep + 2) % this.warmScale.length];
+    this.collectStep++;
+    this.playWaterDroplet(1.0, 0.95, note);
+    this.playSample('powerup', { volume: 0.36, pitch: 1.0, pitchJitter: 0.04 });
+  }
+
   sfxShieldBlock() { this.playShieldHum(); }
   sfxHurt() { this.playWarmLaser(); }
-  sfxBossAlarm() { this.playShieldHum(); }
+
+  // Тревога босса: низкий щит + космический сэмпл boss_alarm.mp3
+  sfxBossAlarm() {
+    this.playShieldHum();
+    this.playSample('boss_alarm', { volume: 0.45, pitch: 0.98, pitchJitter: 0.02 });
+  }
+
   sfxVictory() {
     this.playCosmicMeow();
-    setTimeout(() => this.playWaterDroplet(1.06, 1.0), 160);
+    setTimeout(() => this.playSample('powerup', { volume: 0.42, pitch: 1.02 }), 220);
   }
+
   sfxGameOver() { this.playNebulaExplosion(); }
 
   pickNextTrack() {
@@ -804,7 +992,8 @@ class AstraCatSynth {
 
   getEffectiveMusicVol() {
     if (this.muted || !this.musicEnabled || this.pausedByGame) return 0;
-    return Math.max(0, Math.min(1, this.musicVolume));
+    // Базовая громкость музыки снижена на 15% (множитель 0.85)
+    return Math.max(0, Math.min(0.85, this.musicVolume * 0.85));
   }
 
   playTrack(filename, fallbackTrack = null, forceRestart = false) {
