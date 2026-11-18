@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'astro_cat_hangar_v15';
+  const STORAGE_KEY = 'astro_cat_hangar_v16';
   const BORDER_INK = typeof INK !== 'undefined' ? INK : '#120826';
 
   function loadProgress() {
@@ -15,6 +15,8 @@
         equippedShip: raw.equippedShip || 'shuttle',
         unlockedWeapons: Array.isArray(raw.unlockedWeapons) && raw.unlockedWeapons.length ? raw.unlockedWeapons : ['droplet'],
         equippedWeapon: raw.equippedWeapon || 'droplet',
+        unlockedDrones: Array.isArray(raw.unlockedDrones) && raw.unlockedDrones.length ? raw.unlockedDrones : ['none'],
+        equippedDrone: raw.equippedDrone || 'none',
         loreSeen: Boolean(raw.loreSeen)
       };
     } catch (e) {
@@ -22,6 +24,7 @@
         bestScore: 0, coins: 0, completed: [],
         unlockedShips: ['shuttle'], equippedShip: 'shuttle',
         unlockedWeapons: ['droplet'], equippedWeapon: 'droplet',
+        unlockedDrones: ['none'], equippedDrone: 'none',
         loreSeen: false
       };
     }
@@ -230,6 +233,10 @@
     return WEAPONS_CATALOG.find(w => w.id === progress.equippedWeapon) || WEAPONS_CATALOG[0];
   }
 
+  function getActiveDrone() {
+    return DRONES_CATALOG.find(d => d.id === progress.equippedDrone) || DRONES_CATALOG[0];
+  }
+
   function updateCoinsUI() {
     const mEl = document.getElementById('menu-coins');
     const hEl = document.getElementById('hangar-coins');
@@ -238,23 +245,28 @@
   }
 
   // =========================================================================
-  // АНГАР (ВКЛАДКИ КОРАБЛИ / ОРУЖИЕ + ПЛАВНАЯ 2D-ВИЗУАЛИЗАЦИЯ)
+  // АНГАР (3 ВКЛАДКИ: КОРАБЛИ / ОРУЖИЕ / ДРОНЫ + ЖИВОЙ ПРЕДПРОСМОТР)
   // =========================================================================
   let hangarShipCanvases = [];
   let hangarWeaponCanvases = [];
+  let hangarDroneCanvases = [];
   let activeHangarTab = 'ships';
 
   const tabShipsBtn = document.getElementById('tab-ships-btn');
   const tabWeaponsBtn = document.getElementById('tab-weapons-btn');
+  const tabDronesBtn = document.getElementById('tab-drones-btn');
   const secShips = document.getElementById('hangar-section-ships');
   const secWeapons = document.getElementById('hangar-section-weapons');
+  const secDrones = document.getElementById('hangar-section-drones');
 
   function switchHangarTab(tab) {
     activeHangarTab = tab;
     if (tabShipsBtn) tabShipsBtn.classList.toggle('active', tab === 'ships');
     if (tabWeaponsBtn) tabWeaponsBtn.classList.toggle('active', tab === 'weapons');
+    if (tabDronesBtn) tabDronesBtn.classList.toggle('active', tab === 'drones');
     if (secShips) secShips.classList.toggle('hidden', tab !== 'ships');
     if (secWeapons) secWeapons.classList.toggle('hidden', tab !== 'weapons');
+    if (secDrones) secDrones.classList.toggle('hidden', tab !== 'drones');
   }
 
   tabShipsBtn?.addEventListener('click', (e) => {
@@ -262,6 +274,9 @@
   });
   tabWeaponsBtn?.addEventListener('click', (e) => {
     e.stopPropagation(); if (synth) synth.sfxMenuSelect(); switchHangarTab('weapons');
+  });
+  tabDronesBtn?.addEventListener('click', (e) => {
+    e.stopPropagation(); if (synth) synth.sfxMenuSelect(); switchHangarTab('drones');
   });
 
   function scrollCarouselToIdx(carouselEl, idx) {
@@ -274,10 +289,12 @@
     updateCoinsUI();
     const shipsCarousel = document.getElementById('ships-carousel');
     const weaponsCarousel = document.getElementById('weapons-carousel');
-    if (!shipsCarousel || !weaponsCarousel) return;
+    const dronesCarousel = document.getElementById('drones-carousel');
+    if (!shipsCarousel || !weaponsCarousel || !dronesCarousel) return;
 
     hangarShipCanvases = [];
     hangarWeaponCanvases = [];
+    hangarDroneCanvases = [];
 
     shipsCarousel.innerHTML = '';
     SHIPS_CATALOG.forEach((ship, idx) => {
@@ -356,12 +373,56 @@
       weaponsCarousel.appendChild(card);
     });
 
+    dronesCarousel.innerHTML = '';
+    const purchasableDrones = DRONES_CATALOG.filter(d => d.id !== 'none');
+    purchasableDrones.forEach((dr, idx) => {
+      const owned = progress.unlockedDrones.includes(dr.id);
+      const equipped = progress.equippedDrone === dr.id;
+      const card = document.createElement('div');
+      card.className = 'media-card' + (equipped ? ' equipped' : '');
+
+      const btnClass = equipped ? 'active' : (owned ? 'equip' : 'buy');
+      const btnLabel = equipped ? 'СНЯТЬ ДРОНА ✔' : (owned ? 'АКТИВИРОВАТЬ' : `${dr.price} 🐟`);
+
+      card.innerHTML = `
+        <div class="media-viewport">
+          <span class="viewport-badge">ДРОН ${idx + 1}/3</span>
+          <canvas width="260" height="175"></canvas>
+        </div>
+        <div class="media-card-title">🛸 ${dr.name}</div>
+        <div class="media-card-desc">${dr.desc}</div>
+        <button class="shop-action-btn ${btnClass}">${btnLabel}</button>
+      `;
+
+      const cvs = card.querySelector('canvas');
+      hangarDroneCanvases.push({ cvs, ctx: cvs.getContext('2d'), dr, ship: activeShip, idx });
+
+      card.querySelector('button').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (synth) synth.init();
+        if (equipped) {
+          progress.equippedDrone = 'none'; saveProgress(progress);
+          if (synth) synth.sfxMenuTap(); renderHangar(); return;
+        }
+        if (owned) {
+          progress.equippedDrone = dr.id; saveProgress(progress);
+          if (synth) synth.sfxMenuSelect(); renderHangar();
+        } else if (progress.coins >= dr.price) {
+          progress.coins -= dr.price; progress.unlockedDrones.push(dr.id); progress.equippedDrone = dr.id;
+          saveProgress(progress); if (synth) synth.sfxBuyItem(); renderHangar();
+        } else if (synth) synth.sfxHurt();
+      });
+      dronesCarousel.appendChild(card);
+    });
+
     switchHangarTab(activeHangarTab);
     const eqShipIdx = Math.max(0, SHIPS_CATALOG.findIndex(s => s.id === progress.equippedShip));
     const eqWpIdx = Math.max(0, WEAPONS_CATALOG.findIndex(w => w.id === progress.equippedWeapon));
+    const eqDrIdx = Math.max(0, purchasableDrones.findIndex(d => d.id === progress.equippedDrone));
     setTimeout(() => {
       scrollCarouselToIdx(shipsCarousel, eqShipIdx);
       scrollCarouselToIdx(weaponsCarousel, eqWpIdx);
+      scrollCarouselToIdx(dronesCarousel, eqDrIdx);
     }, 30);
   }
 
@@ -397,6 +458,7 @@
 
   setupCarouselControls('ships-carousel', 'ship-prev-btn', 'ship-next-btn', 'ship-counter', SHIPS_CATALOG.length);
   setupCarouselControls('weapons-carousel', 'weapon-prev-btn', 'weapon-next-btn', 'weapon-counter', WEAPONS_CATALOG.length);
+  setupCarouselControls('drones-carousel', 'drone-prev-btn', 'drone-next-btn', 'drone-counter', 3);
 
   function renderHangarLivePreviews(t) {
     if (hangarOverlay.classList.contains('hidden')) return;
@@ -429,7 +491,7 @@
         drawPlayerShipModel(c, ship, t, 0, { weaponId: progress.equippedWeapon });
         c.restore();
       });
-    } else {
+    } else if (activeHangarTab === 'weapons') {
       hangarWeaponCanvases.forEach(({ cvs, ctx: c, wp, ship, idx }) => {
         const w = cvs.width, h = cvs.height;
         c.clearRect(0, 0, w, h);
@@ -475,6 +537,56 @@
         drawPlayerShipModel(c, ship, t, 0, { weaponId: wp.id });
         c.restore();
       });
+    } else if (activeHangarTab === 'drones') {
+      hangarDroneCanvases.forEach(({ cvs, ctx: c, dr, ship, idx }) => {
+        const w = cvs.width, h = cvs.height;
+        c.clearRect(0, 0, w, h);
+
+        const shipX = w / 2, shipY = h * 0.72;
+        const cycle = (t * 2.2 + idx * 0.3) % 1;
+
+        // Корабль игрока внизу для наглядности орбиты дронов
+        c.save();
+        c.translate(shipX, shipY);
+        c.scale(1.15, 1.15);
+        drawPlayerShipModel(c, ship, t, 0, {});
+        c.restore();
+
+        if (dr.id === 'wing_vanguard') {
+          const dx = shipX + Math.sin(t * 3.2) * 28;
+          const dy = shipY - 52 + Math.cos(t * 2.5) * 6;
+          c.fillStyle = '#48dbfb';
+          c.beginPath(); c.ellipse(dx, dy - 16 - cycle * 65, 3.5, 8, 0, 0, Math.PI * 2); c.fill();
+          c.save(); c.translate(dx, dy); c.scale(1.35, 1.35);
+          drawDroneModel(c, dr.id, t, 0);
+          c.restore();
+        } else if (dr.id === 'twin_fishes') {
+          [0, 1].forEach(fIdx => {
+            const ang = t * 2.8 + fIdx * Math.PI;
+            const dx = shipX + Math.cos(ang) * 56;
+            const dy = shipY - 12 + Math.sin(ang) * 24;
+            c.strokeStyle = '#f15bb5'; c.lineWidth = 3;
+            c.beginPath(); c.arc(dx, dy - 16 - cycle * 55, 12, Math.PI * 1.15, Math.PI * 1.85); c.stroke();
+            c.save(); c.translate(dx, dy); c.scale(1.25, 1.25);
+            drawDroneModel(c, dr.id, t, fIdx);
+            c.restore();
+          });
+        } else if (dr.id === 'cat_bowl') {
+          const dx = shipX - 52 + Math.sin(t * 2.4) * 10;
+          const dy = shipY - 24 + Math.cos(t * 3.1) * 8;
+          // Длинный электро-разряд вверх
+          c.strokeStyle = '#fee440'; c.lineWidth = 3.2;
+          c.beginPath();
+          c.moveTo(dx, dy - 14);
+          c.lineTo(dx - 6, dy - 42);
+          c.lineTo(dx + 6, dy - 72);
+          c.lineTo(dx, 10);
+          c.stroke();
+          c.save(); c.translate(dx, dy); c.scale(1.35, 1.35);
+          drawDroneModel(c, dr.id, t, 0);
+          c.restore();
+        }
+      });
     }
   }
 
@@ -500,10 +612,11 @@
     hangarCloseBtn.addEventListener('click', (e) => { e.stopPropagation(); closeHangarToMenu(); });
     hangarCloseBtn.addEventListener('pointerup', (e) => { e.stopPropagation(); closeHangarToMenu(); });
   }
+
   const LORE_SLIDES = [
     { baseName: 'slide1', rawFallback: 'img/1000036324.jpg', title: 'ПЛАНЕТА КОТОВИЯ-17', text: 'На родной планете Котовия-17 заканчивается еда. Рыбка, колбаска и сметана выдаются только по талонам!' },
     { baseName: 'slide2', rawFallback: 'img/1000036326.jpg', title: 'СЕКРЕТНЫЙ ОТРЯД «АСТРО-КОТ»', text: 'Редж отправляется в дальний космос за провизией для всей планеты!' },
-    { baseName: 'slide3', rawFallback: 'img/1000036323.jpg', title: 'БИТВА С ПОЖИРАТЕЛЯМИ КОСМОСА', text: 'Добывай рыбку 🐟 в боях, открывай 5 кораблей и 5 видов оружия в Ангаре!' }
+    { baseName: 'slide3', rawFallback: 'img/1000036323.jpg', title: 'БИТВА С ПОЖИРАТЕЛЯМИ КОСМОСА', text: 'Добывай рыбку 🐟 в боях, открывай 5 кораблей, 5 видов оружия и 3 боевых дронов в Ангаре!' }
   ];
   let loreSlideIdx = 0;
 
@@ -561,10 +674,12 @@
     const cur = LEVELS[selectedLevelIdx];
     applySiteTheme(cur);
     const ship = getActiveShip();
+    const drone = getActiveDrone();
     const diff = DIFFICULTIES[selectedDiffKey];
     const bossCountLabel = diff.twoBosses ? '2 БОССА ПОДРЯД!' : cur.bossName;
+    const droneTag = drone.id !== 'none' ? ` • 🛸 ${drone.name.replace(/^\d+\.\s*/, '')}` : '';
     document.getElementById('selected-level-info').innerHTML =
-      `<strong>Уровень ${cur.id}: ${cur.name}</strong> (+${cur.coinReward} 🐟)<br><span>Босс: ${bossCountLabel} • ${ship.name}</span>`;
+      `<strong>Уровень ${cur.id}: ${cur.name}</strong> (+${cur.coinReward} 🐟)<br><span>Босс: ${bossCountLabel} • ${ship.name}${droneTag}</span>`;
     document.getElementById('start-best').textContent =
       `Рекорд: ${progress.bestScore} • Пройдено: ${progress.completed.length}/${LEVELS.length}`;
   }
@@ -683,15 +798,14 @@
   muteBtn?.addEventListener('click', (e) => { e.stopPropagation(); if (!synth) return; muteBtn.textContent = synth.toggleMute() ? '🔇' : '🔊'; });
 
   // =========================================================================
-  // ИГРОВОЙ ПРОЦЕСС: РЕЖИССУРА ВОЛН, «РЫБНЫЙ ДОЖДЬ», КВЕСТЫ И 6 ИНТЕРАКТИВОВ
+  // ИГРОВОЙ ПРОЦЕСС + УПРАВЛЕНИЕ 3 БОЕВЫМИ ДРОНАМИ В БОЮ
   // =========================================================================
   let score = 0, runCoins = 0, kills = 0, combo = 1, comboTimer = 0, wave = 1, waveTimer = 0;
-  let spawnTimer = 0, obstacleTimer = 4.0, propTimer = 6.5, eventTimer = 15.0, activeEvent = null;
-  let screenShake = 0, warningBannerTimer = 0, globalTime = 0, midBossDefeated = false;
+  let spawnTimer = 0, obstacleTimer = 4.0, propTimer = 6.5, screenShake = 0, warningBannerTimer = 0, globalTime = 0, midBossDefeated = false;
   let psySlowTimer = 0, fishRainTimer = 0, fishRainSpawnTimer = 0, formationCounter = 0;
   let activeQuest = null;
 
-  let player = null, bullets = [], enemyBullets = [], enemies = [], obstacles = [], bonuses = [], interactiveProps = [], fishRainItems = [], boss = null;
+  let player = null, activeDrones = [], bullets = [], enemyBullets = [], enemies = [], obstacles = [], bonuses = [], interactiveProps = [], fishRainItems = [], boss = null;
 
   const keys = {};
   const pointer = { active: false, x: 0, y: 0, isTouch: false };
@@ -733,7 +847,7 @@
   document.getElementById('resume-btn')?.addEventListener('click', (e) => { e.stopPropagation(); togglePause(); });
 
   function returnToMenu() {
-    state = 'START'; pointer.active = false; boss = null; enemies = []; obstacles = []; bullets = []; enemyBullets = []; bonuses = []; interactiveProps = []; fishRainItems = []; activeEvent = null;
+    state = 'START'; pointer.active = false; boss = null; enemies = []; obstacles = []; bullets = []; enemyBullets = []; bonuses = []; interactiveProps = []; fishRainItems = []; activeDrones = [];
     if (vfx) vfx.clear(); if (synth) { synth.sfxMenuTap(); synth.startIntroMusic(); }
     [pauseOverlay, endOverlay, settingsOverlay, introOverlay, loreOverlay, hangarOverlay, splashOverlay, pauseBtn].forEach(el => el.classList.add('hidden'));
     renderLevelGrid(); startOverlay.classList.remove('hidden'); syncTopHudVisibility();
@@ -765,6 +879,32 @@
   });
   window.addEventListener('pointerup', () => { pointer.active = false; });
 
+  function initActiveDrones() {
+    activeDrones = [];
+    const dr = getActiveDrone();
+    if (!dr || dr.id === 'none' || !player) return;
+
+    if (dr.id === 'wing_vanguard') {
+      // Дрон 1: Крыло-Перехватчик — летит впереди и таранит врагов
+      activeDrones.push({
+        id: 'wing_vanguard', subIdx: 0, x: player.x, y: player.y - 68, r: 15,
+        fireTimer: 0.4, ramCooldown: 0, phase: 0
+      });
+    } else if (dr.id === 'twin_fishes') {
+      // Дрон 2: Рыбки-Близнецы — 2 рыбки кружат вокруг корабля
+      activeDrones.push(
+        { id: 'twin_fishes', subIdx: 0, x: player.x - 45, y: player.y, r: 12, fireTimer: 0.55, angle: 0 },
+        { id: 'twin_fishes', subIdx: 1, x: player.x + 45, y: player.y, r: 12, fireTimer: 0.85, angle: Math.PI }
+      );
+    } else if (dr.id === 'cat_bowl') {
+      // Дрон 3: Космо-Миска — магнит рыбки/бонусов, подлечивание кормом и длинные электро-удары
+      activeDrones.push({
+        id: 'cat_bowl', subIdx: 0, x: player.x - 44, y: player.y - 18, r: 15,
+        fireTimer: 0.65, healTimer: 11.0, phase: 0
+      });
+    }
+  }
+
   function startLevel(idx) {
     resize();
     selectedLevelIdx = idx;
@@ -777,7 +917,7 @@
     if (synth) { synth.init(); synth.startMusic('normal', lvl.id); synth.sfxCosmicHum(); }
 
     score = 0; runCoins = 0; kills = 0; combo = 1; comboTimer = 0; wave = 1; waveTimer = 0;
-    spawnTimer = 0.5; obstacleTimer = 3.5; propTimer = 5.0; eventTimer = 14.0; activeEvent = null;
+    spawnTimer = 0.5; obstacleTimer = 3.5; propTimer = 5.0;
     screenShake = 0; warningBannerTimer = 0; midBossDefeated = false; psySlowTimer = 0; fishRainTimer = 0; formationCounter = 0;
 
     initLevelQuest(lvl);
@@ -788,6 +928,8 @@
       ship, baseWeapon: wp, invuln: 0, fireCooldown: 0, secondaryWeapon: 'none', secondaryLevel: 1,
       shield: false, turboTimer: 0, stickyTimer: 0, squashX: 1, squashY: 1, shotCycle: 0
     };
+
+    initActiveDrones();
 
     bullets = []; enemyBullets = []; enemies = []; obstacles = []; bonuses = []; interactiveProps = []; fishRainItems = []; boss = null;
     if (vfx) vfx.clear();
@@ -807,13 +949,11 @@
     else startLevel(selectedLevelIdx);
   });
 
-  // Спавн уникального интерактивного объекта для текущего сектора
   function spawnSectorInteractiveProp() {
     const lvl = LEVELS[selectedLevelIdx];
     const pType = lvl.interactiveType || 'mirror_portal';
 
     if (pType === 'mirror_portal') {
-      // Парные зеркальные порталы (левый и правый)
       const yPos = 140 + Math.random() * 140;
       const p1 = { id: Math.random(), pairIdx: 0, type: 'mirror_portal', x: W * 0.22, y: yPos, r: 24, vy: 28, phase: 0, cooldown: 0 };
       const p2 = { id: Math.random(), pairIdx: 1, type: 'mirror_portal', x: W * 0.78, y: yPos, r: 24, vy: 28, phase: 1.5, cooldown: 0 };
@@ -844,7 +984,6 @@
     });
   }
 
-  // Строевой спавн врагов (клин / синусоида / элитные лидеры в коронах)
   function spawnEnemyFormation() {
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
@@ -944,7 +1083,6 @@
       });
     }
 
-    // Веерный психо-залп при сборе Золотой Психо-Споры на 6-м уровне!
     if (psySlowTimer > 0) {
       [-0.35, 0.35].forEach(ang => {
         bullets.push({ kind: 'plasma', x: p.x, y: p.y - 20, vx: Math.sin(ang) * 760, vy: -Math.cos(ang) * 760, r: 7, dmg: 1.1 * dmgScale, color: '#ffd166' });
@@ -969,6 +1107,126 @@
       (lv2 ? [-18, 0, 18] : [-14, 14]).forEach(ox => bullets.push({ kind: 'electric_bolt', chainLightning: true, x: p.x + ox, y: p.y - 22, vx: 0, vy: -880, r: 8, dmg: 1.35 * dmgScale, color: '#fee440' }));
     } else if (p.secondaryWeapon === 'wave_cannon') {
       bullets.push({ kind: 'wave_pulse', pierce: lv2 ? 4 : 3, x: p.x, y: p.y - 24, vx: 0, vy: -640, r: lv2 ? 32 : 24, dmg: 1.65 * dmgScale, color: '#f15bb5' });
+    }
+  }
+
+  // =========================================================================
+  // ОБНОВЛЕНИЕ ДВИЖЕНИЯ, СТРЕЛЬБЫ И СПЕЦСПОСОБНОСТЕЙ 3-Х ДРОНОВ
+  // =========================================================================
+  function updateActiveDrones(dt) {
+    if (!player || !activeDrones.length) return;
+    const isFiring = Boolean(keys['Space'] || keys['KeyZ'] || pointer.active);
+
+    for (const dr of activeDrones) {
+      if (dr.id === 'wing_vanguard') {
+        // 1. Крыло-Перехватчик: летит впереди, забирает часть HP у врагов тараном и стреляет пулькой
+        dr.phase += dt * 3.2;
+        if (dr.ramCooldown > 0) dr.ramCooldown = Math.max(0, dr.ramCooldown - dt);
+
+        const targetX = player.x + Math.sin(dr.phase) * 34;
+        const targetY = Math.max(70, player.y - 72 + Math.cos(dr.phase * 1.4) * 8);
+        dr.x += (targetX - dr.x) * Math.min(1, dt * 10);
+        dr.y += (targetY - dr.y) * Math.min(1, dt * 10);
+
+        // Таранный удар по врагам (забирает 35% макс. HP врага)
+        if (dr.ramCooldown <= 0) {
+          for (const e of enemies) {
+            if (Math.hypot(e.x - dr.x, e.y - dr.y) < e.r + dr.r) {
+              const drain = Math.max(1.2, e.maxHp * 0.35);
+              e.hp -= drain;
+              e.hitFlash = 1;
+              dr.ramCooldown = 0.45;
+              if (synth) synth.sfxHit();
+              if (vfx) {
+                vfx.addHitSparks(dr.x, dr.y, '#48dbfb', 10);
+                vfx.addPopup(dr.x, dr.y - 12, '⚡ ТАРАН!', '#48dbfb', 0.95);
+              }
+              break;
+            }
+          }
+        }
+
+        // Перехват вражеских пуль щитом крыла
+        for (let k = enemyBullets.length - 1; k >= 0; k--) {
+          const eb = enemyBullets[k];
+          if (Math.hypot(eb.x - dr.x, eb.y - dr.y) < dr.r + eb.r) {
+            enemyBullets.splice(k, 1);
+            if (vfx) vfx.addHitSparks(dr.x, dr.y, '#72efdd', 6);
+            break;
+          }
+        }
+
+        // Оружие дрона 1: плазменная пулька
+        dr.fireTimer -= dt;
+        if (isFiring && dr.fireTimer <= 0) {
+          dr.fireTimer = 0.34;
+          if (synth) synth.sfxDroneShoot('bullet');
+          bullets.push({ kind: 'plasma', x: dr.x, y: dr.y - 14, vx: 0, vy: -840, r: 5.5, dmg: 0.85, color: '#48dbfb' });
+        }
+      } else if (dr.id === 'twin_fishes') {
+        // 2. Рыбки-Близнецы: кружат вокруг корабля и стреляют волновой пушкой
+        dr.angle += dt * 3.1;
+        const targetX = player.x + Math.cos(dr.angle) * 52;
+        const targetY = player.y + Math.sin(dr.angle) * 28;
+        dr.x += (targetX - dr.x) * Math.min(1, dt * 14);
+        dr.y += (targetY - dr.y) * Math.min(1, dt * 14);
+
+        dr.fireTimer -= dt;
+        if (isFiring && dr.fireTimer <= 0) {
+          dr.fireTimer = 0.56;
+          if (synth) synth.sfxDroneShoot('wave');
+          const col = dr.subIdx === 0 ? '#ff70a6' : '#72efdd';
+          bullets.push({ kind: 'wave_pulse', pierce: 2, x: dr.x, y: dr.y - 12, vx: 0, vy: -660, r: 16, dmg: 0.95, color: col });
+        }
+      } else if (dr.id === 'cat_bowl') {
+        // 3. Космо-Миска: магнит рыбки/бонусов, подкормка (+1 HP) и длинные электро-разряды
+        dr.phase += dt * 2.6;
+        const targetX = player.x - 46 + Math.sin(dr.phase) * 10;
+        const targetY = player.y - 22 + Math.cos(dr.phase * 1.3) * 8;
+        dr.x += (targetX - dr.x) * Math.min(1, dt * 11);
+        dr.y += (targetY - dr.y) * Math.min(1, dt * 11);
+
+        // Магнитное притягивание рыбок и бонусов в радиусе 220 px
+        fishRainItems.forEach(fr => {
+          const d = Math.hypot(player.x - fr.x, player.y - fr.y);
+          if (d < 230 && d > 1) {
+            fr.x += ((player.x - fr.x) / d) * 340 * dt;
+            fr.y += ((player.y - fr.y) / d) * 340 * dt;
+          }
+        });
+        bonuses.forEach(bn => {
+          const d = Math.hypot(player.x - bn.x, player.y - bn.y);
+          if (d < 230 && d > 1) {
+            bn.x += ((player.x - bn.x) / d) * 320 * dt;
+            bn.y += ((player.y - bn.y) / d) * 320 * dt;
+          }
+        });
+
+        // Спецспособность: каждые 12 сек подкармливает кота и восстанавливает +1 HP
+        dr.healTimer -= dt;
+        if (dr.healTimer <= 0) {
+          dr.healTimer = 12.0;
+          if (player.hp < player.maxHp) {
+            player.hp++;
+            if (synth) synth.sfxDroneSpecial();
+            if (vfx) {
+              vfx.addShockwave(dr.x, dr.y, '#fee440', 65, 0.35);
+              vfx.addPopup(dr.x, dr.y - 16, '🍲 КОСМО-КОРМ: +1 HP!', '#80ed99', 1.05);
+            }
+          }
+        }
+
+        // Оружие дрона 3: длинные электро-разряды с цепной молнией
+        dr.fireTimer -= dt;
+        if (isFiring && dr.fireTimer <= 0) {
+          dr.fireTimer = 0.58;
+          if (synth) synth.sfxDroneShoot('electric');
+          bullets.push({
+            kind: 'electric_bolt', longBolt: true, chainLightning: true,
+            x: dr.x, y: dr.y - 16, vx: 0, vy: -940, r: 8, dmg: 1.45, color: '#fee440'
+          });
+        }
+      }
     }
   }
 
@@ -1048,7 +1306,6 @@
     }
   }
 
-  // Обработка физики 6 уникальных интерактивных объектов сектора
   function updateInteractiveProps(dt) {
     for (let i = interactiveProps.length - 1; i >= 0; i--) {
       const pr = interactiveProps[i];
@@ -1056,13 +1313,11 @@
       pr.phase += dt * 2.5;
       if (pr.cooldown > 0) pr.cooldown = Math.max(0, pr.cooldown - dt);
 
-      // 1. Взаимодействие с пулями игрока (Порталы, Пиньяты, Цветки-Батуты)
       for (let j = bullets.length - 1; j >= 0; j--) {
         const b = bullets[j];
         if (b.propCooldown > 0) continue;
         if (Math.hypot(b.x - pr.x, b.y - pr.y) < pr.r + b.r) {
           if (pr.type === 'mirror_portal' && pr.partner) {
-            // Телепортация пули во второй портал и наведение в спину врагу
             b.x = pr.partner.x;
             b.y = pr.partner.y;
             b.propCooldown = 0.45;
@@ -1070,7 +1325,6 @@
             if (vfx) vfx.addShockwave(pr.partner.x, pr.partner.y, '#00f5d4', 45, 0.25);
             advanceQuest('props', 1);
           } else if (pr.type === 'pinata_skull') {
-            // Взрыв черепа-пиньяты: конфетти, оглушение врагов и рыбка!
             bullets.splice(j, 1);
             if (synth) synth.sfxVictory();
             if (vfx) {
@@ -1083,7 +1337,6 @@
             interactiveProps.splice(i, 1);
             break;
           } else if (pr.type === 'flower_bumper') {
-            // Рикошет пули в ближайшего врага под углом
             b.propCooldown = 0.35;
             const target = enemies[0] || boss;
             if (target) {
@@ -1103,7 +1356,6 @@
 
       if (!interactiveProps[i]) continue;
 
-      // 2. Взаимодействие с кораблём игрока (Ускорители, Мыльные пузыри, Золотые Психо-споры)
       if (Math.hypot(player.x - pr.x, player.y - pr.y) < player.r + pr.r) {
         if (pr.type === 'candy_booster') {
           player.turboTimer = 4.5;
@@ -1132,7 +1384,6 @@
         }
       }
 
-      // 3. Гигантский мыльный пузырь захватывает мелких врагов
       if (pr.type === 'giant_bubble') {
         for (let k = enemies.length - 1; k >= 0; k--) {
           const en = enemies[k];
@@ -1184,7 +1435,6 @@
       spawnObstacle();
     }
 
-    // Режиссура 4 волн + бонусный «Рыбный дождь» перед выходом Босса
     const dMult = diff.durationMult || 1.0;
     waveTimer += dt;
     if (!boss) {
@@ -1199,7 +1449,7 @@
         }
       } else if (wave === 3 && waveTimer > 62 * dMult) {
         wave = 4;
-        fishRainTimer = 8.0; // 8 секунд безобидного бонусного «Рыбного дождя»!
+        fishRainTimer = 8.0;
         if (synth) synth.sfxVictory();
         if (vfx) vfx.addPopup(W / 2, H * 0.34, '🐟 БОНУС: РЫБНЫЙ ДОЖДЬ! 🐟', '#ffd166', 1.25);
       } else if (wave === 4 && fishRainTimer <= 0 && waveTimer > 71 * dMult) {
@@ -1216,7 +1466,6 @@
       }
     }
 
-    // Генерация тарелок с рыбкой и сметаной во время «Рыбного дождя»
     if (fishRainTimer > 0) {
       fishRainTimer -= dt;
       fishRainSpawnTimer -= dt;
@@ -1287,6 +1536,8 @@
       p.squashX = 1.12; p.squashY = 0.90;
       firePlayerWeapon(p);
     }
+
+    updateActiveDrones(dt);
 
     for (let i = obstacles.length - 1; i >= 0; i--) {
       const ob = obstacles[i];
@@ -1414,25 +1665,27 @@
           if (b.pierce && b.pierce > 0) b.pierce--;
           else bullets.splice(j, 1);
 
-          if (e.hp <= 0) {
-            if (synth) synth.sfxExplosion();
-            if (vfx) vfx.addRealisticExplosion(e.x, e.y, lvl.accent, 1.05, e.wingCol, e.bodyCol);
-
-            score += Math.round(e.points * combo * diff.scoreMult);
-            const earnedFood = Math.round(e.coinValue * (p.ship.coinMult || 1));
-            runCoins += earnedFood; kills++; combo = Math.min(5, combo + 1); comboTimer = 3.2;
-            advanceQuest('kills', 1);
-
-            const label = e.isElite ? `👑 ЭЛИТА! +${earnedFood} 🐟` : `+${earnedFood} ${['🐟', '🍖', '🥛'][kills % 3]}`;
-            if (vfx) vfx.addPopup(e.x, e.y, label, e.isElite ? '#ffd166' : '#ffd6a5', e.isElite ? 1.15 : 1.0);
-            maybeDropFoodBonus(e.x, e.y, e.isElite);
-            enemies.splice(i, 1); screenShake = Math.max(screenShake, 7);
-          } else if (synth) synth.sfxHit();
-          break;
+          if (e.hp <= 0) break;
+          else if (synth) synth.sfxHit();
         }
       }
 
-      if (!enemies[i]) continue;
+      if (e.hp <= 0) {
+        if (synth) synth.sfxExplosion();
+        if (vfx) vfx.addRealisticExplosion(e.x, e.y, lvl.accent, 1.05, e.wingCol, e.bodyCol);
+
+        score += Math.round(e.points * combo * diff.scoreMult);
+        const earnedFood = Math.round(e.coinValue * (p.ship.coinMult || 1));
+        runCoins += earnedFood; kills++; combo = Math.min(5, combo + 1); comboTimer = 3.2;
+        advanceQuest('kills', 1);
+
+        const label = e.isElite ? `👑 ЭЛИТА! +${earnedFood} 🐟` : `+${earnedFood} ${['🐟', '🍖', '🥛'][kills % 3]}`;
+        if (vfx) vfx.addPopup(e.x, e.y, label, e.isElite ? '#ffd166' : '#ffd6a5', e.isElite ? 1.15 : 1.0);
+        maybeDropFoodBonus(e.x, e.y, e.isElite);
+        enemies.splice(i, 1); screenShake = Math.max(screenShake, 7);
+        continue;
+      }
+
       if (Math.hypot(p.x - e.x, p.y - e.y) < p.r + e.r - 4) {
         if (vfx) vfx.addRealisticExplosion(e.x, e.y, '#ff5964', 1.1, e.wingCol, e.bodyCol);
         enemies.splice(i, 1); damagePlayer(); continue;
@@ -1624,6 +1877,16 @@
     ctx.restore();
   }
 
+  function drawActiveDrones() {
+    if (!activeDrones.length || state === 'GAMEOVER' || state === 'START') return;
+    for (const dr of activeDrones) {
+      ctx.save();
+      ctx.translate(dr.x, dr.y);
+      drawDroneModel(ctx, dr.id, globalTime, dr.subIdx);
+      ctx.restore();
+    }
+  }
+
   function drawCatLifeIcon(ctx, x, y, active) {
     ctx.save(); ctx.translate(x, y); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     ctx.fillStyle = active ? '#ffb703' : 'rgba(255, 255, 255, 0.18)';
@@ -1657,7 +1920,6 @@
     const subHud = combo > 1 ? `УРОВЕНЬ ${lvl.id} • ${waveLabel} • x${combo}` : `УРОВЕНЬ ${lvl.id} • ${waveLabel}`;
     ctx.strokeText(subHud, 18, 78); ctx.fillText(subHud, 18, 78);
 
-    // Отображение мини-задания уровня
     if (activeQuest) {
       ctx.fillStyle = activeQuest.done ? '#06d6a0' : '#ffd166';
       ctx.font = '800 11px sans-serif';
@@ -1757,7 +2019,10 @@
     for (const e of enemies) drawUniqueEnemy(ctx, e, player);
     if (boss) drawUniqueBoss(ctx, boss, lvl, player, H);
     for (const eb of enemyBullets) drawEnemyBullet(ctx, eb);
-    if (player && state !== 'GAMEOVER' && state !== 'START') drawPlayer(player);
+    if (player && state !== 'GAMEOVER' && state !== 'START') {
+      drawPlayer(player);
+      drawActiveDrones();
+    }
     if (vfx) vfx.renderForeground(ctx, W, H);
     drawHUD();
     ctx.restore();
