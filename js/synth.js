@@ -15,14 +15,12 @@ class AstraCatSynth {
       stopFn: null
     }));
 
-    // Декодированные буферы пользовательских сэмплов
     this.buffers = {};
 
     this.muted = false;
     this.musicEnabled = true;
     this.sfxEnabled = true;
 
-    // Стартовые значения ползунков: музыка 60%, эффекты 50%
     this.musicVolume = 0.60;
     this.sfxVolume = 0.50;
 
@@ -35,20 +33,17 @@ class AstraCatSynth {
 
     this.brownNoiseBuffer = null;
 
-    // Тёплая низкая пентатоника (Hz) — без высоких писклявых частот
     this.warmScale = [146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63];
     this.collectStep = 0;
     this.woodStep = 0;
     this.shotStep = 0;
 
-    // Треки уровней (level1.mp3 — level11.mp3) для случайной ротации без повтора минимум 4 треков
     this.availableTracks = [
       'level1.mp3', 'level2.mp3', 'level3.mp3', 'level4.mp3',
       'level5.mp3', 'level6.mp3', 'level7.mp3', 'level8.mp3',
       'level9.mp3', 'level10.mp3', 'level11.mp3'
     ];
 
-    // Треки боссов — включаются ТОЛЬКО при появлении босса
     this.bossTracks = ['boss.mp3', 'boss2.mp3'];
 
     this.selectedTrack = 'auto';
@@ -65,9 +60,9 @@ class AstraCatSynth {
     this.isPlayRequestInFlight = false;
     this.pausedByGame = false;
 
-    // Защита от наложения одинаковых звуков в один момент времени
     this.lastScrollTickTime = 0;
     this.lastShotSoundTime = 0;
+    this.lastDroneShotTime = 0;
     this.lastExplosionTime = 0;
     this.lastHitTime = 0;
     this.lastPortalTime = 0;
@@ -234,19 +229,16 @@ class AstraCatSynth {
     this.voiceBus = this.ctx.createGain();
     this.voiceBus.gain.value = 1.22;
 
-    // Фильтр защиты динамика телефона от инфра-баса ниже 105 Гц
     this.speakerProtectFilter = this.ctx.createBiquadFilter();
     this.speakerProtectFilter.type = 'highpass';
     this.speakerProtectFilter.frequency.value = 105;
     this.speakerProtectFilter.Q.value = 0.5;
 
-    // Общий бархатный фильтр высоких частот
     this.masterLowpass = this.ctx.createBiquadFilter();
     this.masterLowpass.type = 'lowpass';
     this.masterLowpass.frequency.value = this.settings.warmthCutoff;
     this.masterLowpass.Q.value = 0.45;
 
-    // Короткое мягкое стерео-эхо для волновых эффектов
     this.delayLeft = this.ctx.createDelay(1.0);
     this.delayRight = this.ctx.createDelay(1.0);
     this.delayLeft.delayTime.value = 0.16;
@@ -260,7 +252,6 @@ class AstraCatSynth {
 
     this.merger = this.ctx.createChannelMerger(2);
 
-    // Мягкий ограничитель пиков без треска
     this.softClipper = this.ctx.createWaveShaper();
     this.softClipper.curve = this._makeSoftClipCurve(1.15);
     this.softClipper.oversample = '2x';
@@ -297,40 +288,36 @@ class AstraCatSynth {
     this.loadSfxAssets();
   }
 
-  // =========================================================================
-  // ЗАГРУЗКА И ПОЛИФОНИЧЕСКОЕ ВОСПРОИЗВЕДЕНИЕ СЭМПЛОВ (С АВТОПОДБОРОМ ИМЁН)
-  // =========================================================================
   async loadSfxAssets() {
     if (!this.ctx || this.samplesLoaded) return;
     this.samplesLoaded = true;
 
-    const assetMap = {
-      meow:         ['music/meow.mp3', 'music/1_mp3.mp3'],
-      coin:         ['music/coin.mp3', 'music/68cde119a4ed465.mp3'],
-      powerup:      ['music/powerup.mp3', 'music/9c9caa1ca9b1c21.mp3'],
-      laser:        ['music/laser.mp3', 'music/48b5aca031fd44a.mp3'],
-      blaster:      ['music/blaster.mp3', 'music/24f110d27ad0929.mp3'],
-      boom_small:   ['music/boom_small.mp3', 'music/c0647023ca0a00c.mp3'],
-      boss_alarm:   ['music/boss_alarm.mp3', 'music/6d91dda56e9b0c1.mp3'],
-      boss_explode: ['music/boss_explode.mp3', 'music/370b925a30aca01.mp3']
+    const files = {
+      meow:         'music/meow.mp3',
+      coin:         'music/coin.mp3',
+      powerup:      'music/powerup.mp3',
+      laser:        'music/laser.mp3',
+      blaster:      'music/blaster.mp3',
+      boom_small:   'music/boom_small.mp3',
+      boss_alarm:   'music/boss_alarm.mp3',
+      boss_explode: 'music/boss_explode.mp3',
+      electric:     'music/electric.mp3',
+      drone_bullet: 'music/drone_bullet.mp3',
+      drone_wave:   'music/drone_wave.mp3',
+      rocket_boom:  'music/rocket_boom.mp3'
     };
 
-    const entries = Object.entries(assetMap);
-    await Promise.all(entries.map(async ([key, candidates]) => {
-      for (const url of candidates) {
-        try {
-          const resp = await fetch(url);
-          if (!resp.ok) continue;
-          const arrayBuf = await resp.arrayBuffer();
-          const audioBuf = await this.ctx.decodeAudioData(arrayBuf);
-          this.buffers[key] = audioBuf;
-          break;
-        } catch (_) {}
-      }
+    await Promise.all(Object.entries(files).map(async ([key, url]) => {
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) return;
+        const arrayBuf = await resp.arrayBuffer();
+        this.buffers[key] = await this.ctx.decodeAudioData(arrayBuf);
+      } catch (_) {}
     }));
   }
 
-  playSample(name, { volume = 0.5, pitch = 1.0, pitchJitter = 0.04, dry = false } = {}) {
+  playSample(name, { volume = 0.5, pitch = 1.0, pitchJitter = 0.04, dry = false, offset = 0, duration = null } = {}) {
     if (!this.ctx || this.muted || !this.sfxEnabled) return false;
     const buf = this.buffers[name];
     if (!buf) return false;
@@ -347,18 +334,25 @@ class AstraCatSynth {
     gain.gain.setValueAtTime(volume, now);
 
     src.connect(gain);
-    // Через voiceBus сэмпл получает бархатный фильтр (LPF) и защиту динамика
     gain.connect(dry ? this.compressor : this.voiceBus);
 
-    const dur = buf.duration / rate;
-    src.start(now);
-    this.allocateVoice(dur, () => { try { src.stop(); } catch (_) {} });
+    const availDur = Math.max(0.05, buf.duration - offset);
+    const playDur = duration ? Math.min(availDur, duration) : availDur;
+
+    if (duration) {
+      gain.gain.setValueAtTime(volume, now + Math.max(0.01, playDur - 0.04));
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + playDur);
+      src.start(now, offset, playDur);
+    } else {
+      src.start(now, offset);
+    }
+
+    this.allocateVoice(playDur / rate, () => { try { src.stop(); } catch (_) {} });
     return true;
   }
 
   getEffectiveSfxVol() {
     if (this.muted || !this.sfxEnabled) return 0.0001;
-    // Базовая громкость эффектов увеличена на 20%
     return Math.max(0.0001, Math.min(1.38, this.sfxVolume * 1.24));
   }
 
@@ -429,11 +423,6 @@ class AstraCatSynth {
     return count;
   }
 
-  // =========================================================================
-  // БАРХАТНЫЕ АСМР-ТЕКСТУРЫ: КАПЛИ, ДЕРЕВЯННАЯ МАРИМБА И ВОЛНОВЫЕ ПЕРЕЛИВЫ
-  // =========================================================================
-
-  // 1. Тёплый стук по дереву (щелчки меню, скролл, попадания по броне)
   playWoodTap(pitch = 1.0, volumeScale = 1.0, exactFreq = null) {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -489,7 +478,6 @@ class AstraCatSynth {
     });
   }
 
-  // 2. Бархатная водяная капля с двойным переливом
   playWaterDroplet(pitch = 1.0, volumeScale = 1.0, exactFreq = null) {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -552,7 +540,6 @@ class AstraCatSynth {
     this.playWoodTap(0.95, 0.80);
   }
 
-  // Выстрелы капельной плазмой: 4 мягких тональных интервала по кругу
   playSoftBullet(pitchMultiplier = 1.0) {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -589,7 +576,6 @@ class AstraCatSynth {
     this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
   }
 
-  // Мягкая сухая капля для пролёта пуль через зеркальные порталы
   playPortalPass() {
     const nowMs = performance.now();
     if (nowMs - this.lastPortalTime < 115) return;
@@ -628,7 +614,6 @@ class AstraCatSynth {
     this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
   }
 
-  // Бархатный хорус-волновой импульс для волновых пушек
   playWarmLaser() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -665,6 +650,9 @@ class AstraCatSynth {
   playPlushRocket() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
+
+    this.playSample('rocket_boom', { volume: 0.28, pitch: 1.08, pitchJitter: 0.06, duration: 0.45 });
+
     const now = this.ctx.currentTime;
     const dur = 0.27;
 
@@ -690,7 +678,7 @@ class AstraCatSynth {
     lp.frequency.setValueAtTime(620, now);
 
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.26, now + 0.03);
+    gain.gain.linearRampToValueAtTime(0.24, now + 0.03);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
     sub.connect(lp);
@@ -706,7 +694,6 @@ class AstraCatSynth {
     this.allocateVoice(dur, () => { try { sub.stop(); fifth.stop(); } catch (_) {} });
   }
 
-  // Взрыв врагов: бархатный саб-бас + твой сэмпл boom_small.mp3
   playNebulaExplosion() {
     const nowMs = performance.now();
     if (nowMs - this.lastExplosionTime < 75) return;
@@ -715,8 +702,7 @@ class AstraCatSynth {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
 
-    // Подключаем живой мини-взрыв с лёгкой вариацией высоты тона
-    this.playSample('boom_small', { volume: 0.44, pitch: 0.98, pitchJitter: 0.08 });
+    this.playSample('boom_small', { volume: 0.42, pitch: 0.98, pitchJitter: 0.08 });
 
     const now = this.ctx.currentTime;
     const dur = 0.38;
@@ -751,7 +737,6 @@ class AstraCatSynth {
     this.allocateVoice(dur, () => { try { sub.stop(); noise.stop(); } catch (_) {} });
   }
 
-  // Сбор рыбок и монеток: мелодические капли + мягкий звон coin.mp3
   playStarCollect() {
     const note = this.warmScale[this.collectStep % this.warmScale.length];
     this.collectStep++;
@@ -766,7 +751,6 @@ class AstraCatSynth {
     }
   }
 
-  // Мяуканье кота: твой живой сэмпл meow.mp3 + мягкий тёплый аккорд
   playCosmicMeow() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -774,7 +758,6 @@ class AstraCatSynth {
     const hasMeowSample = this.playSample('meow', { volume: 0.65, pitch: 1.0, pitchJitter: 0.03 });
     if (hasMeowSample) return;
 
-    // Резервный АСМР-синтез, если файл ещё не загружен
     const now = this.ctx.currentTime;
     const dur = 0.36;
 
@@ -816,7 +799,6 @@ class AstraCatSynth {
     this.allocateVoice(dur, () => { try { osc.stop(); fifth.stop(); } catch (_) {} });
   }
 
-  // Тёплый низкий волновой аккорд щита (Fmaj7 в малой октаве)
   playShieldHum() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -842,7 +824,6 @@ class AstraCatSynth {
     });
   }
 
-  // Бархатный волновой перелив с гармонической квинтой
   playPurrBoost() {
     this.init();
     if (!this.ctx || this.muted || !this.sfxEnabled) return;
@@ -870,7 +851,6 @@ class AstraCatSynth {
     });
   }
 
-  // Щелчки и переходы меню — чистый бархатный АСМР
   sfxMenuTap() { this.playWoodTap(1.05, 0.95); }
   sfxMenuSelect() {
     const note = this.warmScale[this.collectStep % 5];
@@ -885,26 +865,45 @@ class AstraCatSynth {
     setTimeout(() => this.playSample('coin', { volume: 0.40, pitch: 1.05 }), 220);
   }
 
-  // Стрельба: волновые пушки и базовая капля остаются чистым АСМР, к двойному и электро-залпу добавлены сэмплы
   sfxShootWeapon(pan = 0, baseWeapon = 'droplet') {
     const nowMs = performance.now();
-    if (nowMs - this.lastShotSoundTime < 100) return;
+    if (nowMs - this.lastShotSoundTime < 105) return;
     this.lastShotSoundTime = nowMs;
 
     if (baseWeapon === 'droplet') {
       this.playSoftBullet(0.98);
     } else if (baseWeapon === 'double_shot') {
       this.playSoftBullet(1.04);
-      this.playSample('blaster', { volume: 0.24, pitch: 1.0, pitchJitter: 0.05 });
+      this.playSample('drone_bullet', { volume: 0.22, pitch: 1.0, pitchJitter: 0.05 });
     } else if (baseWeapon === 'rocket_launcher') {
       this.playPlushRocket();
     } else if (baseWeapon === 'electric_arc') {
+      this.playSample('electric', { volume: 0.36, pitch: 0.96, pitchJitter: 0.06, duration: 0.42 });
       this.playWarmLaser();
-      this.playSample('laser', { volume: 0.26, pitch: 0.96, pitchJitter: 0.06 });
     } else {
-      // Волновая пушка (wave_amp) — чистый бархатный АСМР-волновой звук
       this.playWarmLaser();
     }
+  }
+
+  sfxDroneShoot(droneWeapon = 'bullet') {
+    const nowMs = performance.now();
+    if (nowMs - this.lastDroneShotTime < 150) return;
+    this.lastDroneShotTime = nowMs;
+
+    if (droneWeapon === 'bullet') {
+      this.playSample('drone_bullet', { volume: 0.18, pitch: 1.12, pitchJitter: 0.06 });
+      this.playSoftBullet(1.15);
+    } else if (droneWeapon === 'wave') {
+      this.playSample('drone_wave', { volume: 0.18, pitch: 0.95, pitchJitter: 0.05, offset: 0.04, duration: 0.32 });
+      this.playWarmLaser();
+    } else if (droneWeapon === 'electric') {
+      this.playSample('electric', { volume: 0.28, pitch: 0.92, pitchJitter: 0.05, duration: 0.48 });
+    }
+  }
+
+  sfxDroneSpecial() {
+    this.playPurrBoost();
+    this.playSample('powerup', { volume: 0.26, pitch: 0.95 });
   }
 
   sfxHit() {
@@ -918,7 +917,8 @@ class AstraCatSynth {
 
   sfxBossExplosion() {
     this.playNebulaExplosion();
-    this.playSample('boss_explode', { volume: 0.78, pitch: 0.98, pitchJitter: 0.03 });
+    this.playSample('rocket_boom', { volume: 0.45, pitch: 0.92 });
+    this.playSample('boss_explode', { volume: 0.72, pitch: 0.98, pitchJitter: 0.03 });
   }
 
   sfxIgnite() { this.playPlushRocket(); }
@@ -927,11 +927,8 @@ class AstraCatSynth {
   sfxUnderwater() { this.playWaterDroplet(0.88, 0.95); }
   sfxCosmicHum() { this.playPurrBoost(); }
   sfxSticky() { this.playWoodTap(0.82, 0.90); }
-
-  // Волновые атаки — чистый бархатный АСМР
   sfxWave() { this.playWarmLaser(); }
 
-  // Подбор боевых бонусов: бархатная капля + сэмпл powerup.mp3
   sfxPowerup() {
     const note = this.warmScale[(this.collectStep + 2) % this.warmScale.length];
     this.collectStep++;
@@ -942,7 +939,6 @@ class AstraCatSynth {
   sfxShieldBlock() { this.playShieldHum(); }
   sfxHurt() { this.playWarmLaser(); }
 
-  // Тревога босса: низкий щит + космический сэмпл boss_alarm.mp3
   sfxBossAlarm() {
     this.playShieldHum();
     this.playSample('boss_alarm', { volume: 0.45, pitch: 0.98, pitchJitter: 0.02 });
@@ -992,7 +988,6 @@ class AstraCatSynth {
 
   getEffectiveMusicVol() {
     if (this.muted || !this.musicEnabled || this.pausedByGame) return 0;
-    // Базовая громкость музыки снижена на 15% (множитель 0.85)
     return Math.max(0, Math.min(0.85, this.musicVolume * 0.85));
   }
 
