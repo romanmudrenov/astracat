@@ -971,7 +971,7 @@
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
     const hpScale = lvl.hpMult * diff.enemyHp;
-    const types = lvl.enemyTypes || ['fractal_ship', 'mini_stamp', 'rubik_cube'];
+    const types = lvl.enemyTypes || ['mini_stamp', 'sunflower_lsd', 'rubik_cube'];
 
     formationCounter++;
     const isVFormation = (wave === 1 && formationCounter % 2 === 0);
@@ -983,7 +983,7 @@
       const offsetY = isVFormation ? -Math.abs(k - 1) * 32 : 0;
       const typeIdx = Math.floor(Math.random() * types.length);
       const kind = types[typeIdx];
-      const isMiniBoss = kind.startsWith('mini_');
+      const isMiniBoss = kind.startsWith('mini_') || ['sunflower_lsd', 'cotton_candy', 'squid_ship', 'vine_beast', 'tentacle_shroom'].includes(kind);
       const isElite = (wave >= 2 && k === 0 && Math.random() < 0.28);
 
       const baseHp = (isMiniBoss ? 5 : 2.6) * (isElite ? 1.8 : 1.0);
@@ -1594,23 +1594,29 @@
           const ang = Math.atan2(p.y - e.y, p.x - e.x);
           const spd = 225 * diff.bulletSpeed;
 
-          if (e.kind === 'evil_flyagaric') {
+          if (e.kind === 'evil_flyagaric' || e.kind === 'psy_mushroom') {
             for (let s = 0; s < 6; s++) {
               const sa = e.phase + (Math.PI * 2 * s) / 6;
-              enemyBullets.push({ x: e.x, y: e.y + 8, vx: Math.cos(sa) * (spd * 0.85), vy: Math.sin(sa) * (spd * 0.85), r: 7, color: '#ffbe0b' });
+              enemyBullets.push({ kind: 'mini_mushroom_shot', hue: (e.phase * 160 + s * 60) % 360, rot: 0, x: e.x, y: e.y + 8, vx: Math.cos(sa) * (spd * 0.85), vy: Math.sin(sa) * (spd * 0.85), r: 9, color: '#ffbe0b' });
             }
-          } else if (e.kind === 'fractal_ship') {
-            enemyBullets.push({ kind: 'mini_spiral', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 10, color: '#00f5d4' });
+          } else if (e.kind === 'sunflower_lsd' || e.kind === 'fractal_ship') {
+            enemyBullets.push({ kind: 'mini_spiral', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 10, color: '#ffd166' });
           } else if (e.kind === 'rubik_cube') {
             const rCols = ['#ff3366', '#ffd166', '#06d6a0', '#48dbfb'];
             enemyBullets.push({ kind: 'rubik_square', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25), r: 7.5, color: rCols[Math.floor(Math.random() * rCols.length)] });
-          } else if (e.kind === 'skeleton_ship' || e.kind === 'rainbow_spiral' || e.kind === 'crab_ship' || e.kind === 'starfish_ship' || e.kind === 'shroom_starship') {
-            const lCol = e.kind === 'shroom_starship' ? '#f72585' : (e.kind === 'starfish_ship' ? '#80ed99' : '#00f5d4');
-            enemyBullets.push({ kind: 'enemy_laser', x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 1.42), vy: Math.sin(ang) * (spd * 1.42), ang, r: 6.5, color: lCol });
-          } else if (e.kind === 'bat_ship' || e.kind === 'spider_ship' || e.kind === 'lollipop_ship' || e.kind === 'octopus_ship' || e.kind === 'octopus_bio' || e.kind === 'bacteria_shroom') {
-            enemyBullets.push({ kind: 'enemy_missile', homing: true, life: 2.7, x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 0.88), vy: Math.sin(ang) * (spd * 0.88), r: 8.5, color: '#ff5964' });
-          } else if (e.kind === 'manta_wave' || e.kind === 'jellyfish_ship' || e.kind === 'polyp_mushroom') {
-            enemyBullets.push({ kind: 'psy_wave', hue: 145, x: e.x, y: e.y + 18, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, ang, r: 18, color: lvl.accent });
+          } else if (e.kind === 'mini_donut' || e.kind === 'clown_ship') {
+            enemyBullets.push({ kind: 'thrown_donut', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 10, color: '#ff70a6' });
+          } else if (e.kind === 'vine_beast') {
+            enemyBullets.push({ kind: 'vine_whip', x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 1.15), vy: Math.sin(ang) * (spd * 1.15), ang, r: 10, color: '#80ed99' });
+          } else if (e.kind === 'mini_flower') {
+            enemyBullets.push({ kind: 'laser_flower', rot: 0, x: e.x, y: e.y + 18, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 12, color: '#ff006e' });
+          } else if (['mini_stamp', 'mini_skull', 'skeleton_ship', 'squid_ship', 'crab_ship', 'starfish_ship'].includes(e.kind)) {
+            const lCol = e.kind === 'squid_ship' ? '#f72585' : (e.kind === 'starfish_ship' ? '#80ed99' : '#00f5d4');
+            enemyBullets.push({ kind: 'enemy_laser', x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 1.38), vy: Math.sin(ang) * (spd * 1.38), ang, r: 6.5, color: lCol });
+          } else if (['bat_ship', 'spider_ship', 'lollipop_ship', 'cotton_candy', 'octopus_ship', 'sprout_hunter', 'tentacle_shroom'].includes(e.kind)) {
+            enemyBullets.push({ kind: 'enemy_missile', homing: true, life: 2.6, x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 0.90), vy: Math.sin(ang) * (spd * 0.90), r: 8.5, color: '#ff5964' });
+          } else if (e.kind === 'jellyfish_ocean') {
+            enemyBullets.push({ kind: 'psy_wave', hue: 185, x: e.x, y: e.y + 18, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, ang, r: 18, color: '#9bf6ff' });
           } else {
             const bCol = `hsl(${Math.floor(e.phase * 140) % 360}, 100%, 64%)`;
             enemyBullets.push({ x: e.x, y: e.y + e.r * 0.7, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 7.5, color: bCol });
