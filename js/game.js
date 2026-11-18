@@ -6,7 +6,8 @@
 
   function loadProgress() {
     try {
-      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      const rawV16 = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      const raw = rawV16 || JSON.parse(localStorage.getItem('astro_cat_hangar_v15') || '{}');
       return {
         bestScore: raw.bestScore || 0,
         coins: typeof raw.coins === 'number' ? raw.coins : 0,
@@ -244,9 +245,6 @@
     if (hEl) hEl.textContent = `🐟 ${progress.coins}`;
   }
 
-  // =========================================================================
-  // АНГАР (3 ВКЛАДКИ: КОРАБЛИ / ОРУЖИЕ / ДРОНЫ + ЖИВОЙ ПРЕДПРОСМОТР)
-  // =========================================================================
   let hangarShipCanvases = [];
   let hangarWeaponCanvases = [];
   let hangarDroneCanvases = [];
@@ -545,7 +543,6 @@
         const shipX = w / 2, shipY = h * 0.72;
         const cycle = (t * 2.2 + idx * 0.3) % 1;
 
-        // Корабль игрока внизу для наглядности орбиты дронов
         c.save();
         c.translate(shipX, shipY);
         c.scale(1.15, 1.15);
@@ -574,7 +571,6 @@
         } else if (dr.id === 'cat_bowl') {
           const dx = shipX - 52 + Math.sin(t * 2.4) * 10;
           const dy = shipY - 24 + Math.cos(t * 3.1) * 8;
-          // Длинный электро-разряд вверх
           c.strokeStyle = '#fee440'; c.lineWidth = 3.2;
           c.beginPath();
           c.moveTo(dx, dy - 14);
@@ -722,7 +718,7 @@
   let state = 'START', prevStateBeforeSettings = 'START';
 
   function openSettings() {
-    if (synth) { synth.init(); synth.sfxMenuTap(); }
+    if (synth) { synth.init(); synth.sfxMenuTap(); synth.renderCockpitTrackGrid?.(); }
     prevStateBeforeSettings = state;
     if (state === 'PLAYING') { state = 'PAUSED'; if (synth) synth.pauseMusic(); }
     settingsOverlay.classList.remove('hidden'); syncTopHudVisibility();
@@ -746,13 +742,6 @@
     toggleMusicBtn.textContent = synth.musicEnabled ? 'ВКЛ' : 'ВЫКЛ';
     toggleMusicBtn.classList.toggle('off', !synth.musicEnabled);
     synth.updateMusicVolume(); synth.sfxMenuTap();
-  });
-
-  document.getElementById('track-select')?.addEventListener('change', (e) => {
-    if (!synth) return; synth.init(); synth.sfxMenuSelect();
-    synth.selectedTrack = e.target.value;
-    if (synth.selectedTrack !== 'auto') synth.playTrack(synth.selectedTrack);
-    else if (state === 'PLAYING') synth.startMusic('normal');
   });
 
   const toggleSfxBtn = document.getElementById('toggle-sfx');
@@ -797,9 +786,6 @@
   document.getElementById('test-chord-btn')?.addEventListener('click', (e) => { e.stopPropagation(); if (synth) { synth.init(); synth.playCosmicMeow(); } });
   muteBtn?.addEventListener('click', (e) => { e.stopPropagation(); if (!synth) return; muteBtn.textContent = synth.toggleMute() ? '🔇' : '🔊'; });
 
-  // =========================================================================
-  // ИГРОВОЙ ПРОЦЕСС + УПРАВЛЕНИЕ 3 БОЕВЫМИ ДРОНАМИ В БОЮ
-  // =========================================================================
   let score = 0, runCoins = 0, kills = 0, combo = 1, comboTimer = 0, wave = 1, waveTimer = 0;
   let spawnTimer = 0, obstacleTimer = 4.0, propTimer = 6.5, screenShake = 0, warningBannerTimer = 0, globalTime = 0, midBossDefeated = false;
   let psySlowTimer = 0, fishRainTimer = 0, fishRainSpawnTimer = 0, formationCounter = 0;
@@ -885,19 +871,16 @@
     if (!dr || dr.id === 'none' || !player) return;
 
     if (dr.id === 'wing_vanguard') {
-      // Дрон 1: Крыло-Перехватчик — летит впереди и таранит врагов
       activeDrones.push({
         id: 'wing_vanguard', subIdx: 0, x: player.x, y: player.y - 68, r: 15,
         fireTimer: 0.4, ramCooldown: 0, phase: 0
       });
     } else if (dr.id === 'twin_fishes') {
-      // Дрон 2: Рыбки-Близнецы — 2 рыбки кружат вокруг корабля
       activeDrones.push(
         { id: 'twin_fishes', subIdx: 0, x: player.x - 45, y: player.y, r: 12, fireTimer: 0.55, angle: 0 },
         { id: 'twin_fishes', subIdx: 1, x: player.x + 45, y: player.y, r: 12, fireTimer: 0.85, angle: Math.PI }
       );
     } else if (dr.id === 'cat_bowl') {
-      // Дрон 3: Космо-Миска — магнит рыбки/бонусов, подлечивание кормом и длинные электро-удары
       activeDrones.push({
         id: 'cat_bowl', subIdx: 0, x: player.x - 44, y: player.y - 18, r: 15,
         fireTimer: 0.65, healTimer: 11.0, phase: 0
@@ -1104,22 +1087,19 @@
     if (p.secondaryWeapon === 'fractal_shuriken') {
       (lv2 ? [-0.26, 0, 0.26] : [-0.18, 0.18]).forEach(ang => bullets.push({ kind: 'fractal_shuriken', homing: true, x: p.x, y: p.y - 20, vx: Math.sin(ang) * 620, vy: -Math.cos(ang) * 620, rot: 0, r: 10, dmg: 1.35 * dmgScale, color: '#00f5d4' }));
     } else if (p.secondaryWeapon === 'electric_shock') {
+      if (synth && baseId !== 'electric_arc') synth.playCyberElectric(0.75);
       (lv2 ? [-18, 0, 18] : [-14, 14]).forEach(ox => bullets.push({ kind: 'electric_bolt', chainLightning: true, x: p.x + ox, y: p.y - 22, vx: 0, vy: -880, r: 8, dmg: 1.35 * dmgScale, color: '#fee440' }));
     } else if (p.secondaryWeapon === 'wave_cannon') {
       bullets.push({ kind: 'wave_pulse', pierce: lv2 ? 4 : 3, x: p.x, y: p.y - 24, vx: 0, vy: -640, r: lv2 ? 32 : 24, dmg: 1.65 * dmgScale, color: '#f15bb5' });
     }
   }
 
-  // =========================================================================
-  // ОБНОВЛЕНИЕ ДВИЖЕНИЯ, СТРЕЛЬБЫ И СПЕЦСПОСОБНОСТЕЙ 3-Х ДРОНОВ
-  // =========================================================================
   function updateActiveDrones(dt) {
     if (!player || !activeDrones.length) return;
     const isFiring = Boolean(keys['Space'] || keys['KeyZ'] || pointer.active);
 
     for (const dr of activeDrones) {
       if (dr.id === 'wing_vanguard') {
-        // 1. Крыло-Перехватчик: летит впереди, забирает часть HP у врагов тараном и стреляет пулькой
         dr.phase += dt * 3.2;
         if (dr.ramCooldown > 0) dr.ramCooldown = Math.max(0, dr.ramCooldown - dt);
 
@@ -1128,7 +1108,6 @@
         dr.x += (targetX - dr.x) * Math.min(1, dt * 10);
         dr.y += (targetY - dr.y) * Math.min(1, dt * 10);
 
-        // Таранный удар по врагам (забирает 35% макс. HP врага)
         if (dr.ramCooldown <= 0) {
           for (const e of enemies) {
             if (Math.hypot(e.x - dr.x, e.y - dr.y) < e.r + dr.r) {
@@ -1146,7 +1125,6 @@
           }
         }
 
-        // Перехват вражеских пуль щитом крыла
         for (let k = enemyBullets.length - 1; k >= 0; k--) {
           const eb = enemyBullets[k];
           if (Math.hypot(eb.x - dr.x, eb.y - dr.y) < dr.r + eb.r) {
@@ -1156,7 +1134,6 @@
           }
         }
 
-        // Оружие дрона 1: плазменная пулька
         dr.fireTimer -= dt;
         if (isFiring && dr.fireTimer <= 0) {
           dr.fireTimer = 0.34;
@@ -1164,7 +1141,6 @@
           bullets.push({ kind: 'plasma', x: dr.x, y: dr.y - 14, vx: 0, vy: -840, r: 5.5, dmg: 0.85, color: '#48dbfb' });
         }
       } else if (dr.id === 'twin_fishes') {
-        // 2. Рыбки-Близнецы: кружат вокруг корабля и стреляют волновой пушкой
         dr.angle += dt * 3.1;
         const targetX = player.x + Math.cos(dr.angle) * 52;
         const targetY = player.y + Math.sin(dr.angle) * 28;
@@ -1179,14 +1155,12 @@
           bullets.push({ kind: 'wave_pulse', pierce: 2, x: dr.x, y: dr.y - 12, vx: 0, vy: -660, r: 16, dmg: 0.95, color: col });
         }
       } else if (dr.id === 'cat_bowl') {
-        // 3. Космо-Миска: магнит рыбки/бонусов, подкормка (+1 HP) и длинные электро-разряды
         dr.phase += dt * 2.6;
         const targetX = player.x - 46 + Math.sin(dr.phase) * 10;
         const targetY = player.y - 22 + Math.cos(dr.phase * 1.3) * 8;
         dr.x += (targetX - dr.x) * Math.min(1, dt * 11);
         dr.y += (targetY - dr.y) * Math.min(1, dt * 11);
 
-        // Магнитное притягивание рыбок и бонусов в радиусе 220 px
         fishRainItems.forEach(fr => {
           const d = Math.hypot(player.x - fr.x, player.y - fr.y);
           if (d < 230 && d > 1) {
@@ -1202,7 +1176,6 @@
           }
         });
 
-        // Спецспособность: каждые 12 сек подкармливает кота и восстанавливает +1 HP
         dr.healTimer -= dt;
         if (dr.healTimer <= 0) {
           dr.healTimer = 12.0;
@@ -1216,7 +1189,6 @@
           }
         }
 
-        // Оружие дрона 3: длинные электро-разряды с цепной молнией
         dr.fireTimer -= dt;
         if (isFiring && dr.fireTimer <= 0) {
           dr.fireTimer = 0.58;
