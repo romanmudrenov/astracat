@@ -889,7 +889,6 @@
   }
 
   function getWaveSpeedMult() {
-    // Нарастающая скорость боя с каждой новой волной: 1.0 -> 1.22 -> 1.44 -> 1.68
     return 1 + (Math.min(4, wave) - 1) * 0.22;
   }
 
@@ -941,7 +940,6 @@
     else startLevel(selectedLevelIdx);
   });
 
-  // Спавн новой интерактивной фишки для каждого из 6 секторов
   function spawnSectorInteractiveProp() {
     const lvl = LEVELS[selectedLevelIdx];
     const pType = lvl.interactiveType || 'prism_kaleidoscope';
@@ -950,15 +948,12 @@
       type: pType,
       x,
       y: -38,
-      r: 25,
+      r: 26,
       vy: 74 * getWaveSpeedMult(),
-      phase: Math.random() * Math.PI * 2,
-      charges: pType === 'flytrap_jaw' ? 2 : 1,
-      cooldown: 0
+      phase: Math.random() * Math.PI * 2
     });
   }
 
-  // 18 уникальных мигающих препятствий (по 3 на каждый уровень 1–6)
   function spawnObstacle() {
     const lvl = LEVELS[selectedLevelIdx];
     const x = 56 + Math.random() * (W - 112);
@@ -968,13 +963,13 @@
       horror:     ['mexican_skull_bones', 'donkey_pinata', 'blinking_sombrero'],
       rainbow:    ['cotton_candy_storm', 'pastel_donut', 'pastel_fractal'],
       underwater: ['moving_seaweed', 'spiral_seashell', 'pink_corals'],
-      organic:    ['living_flower', 'plant_cell', 'spiky_plant'],
+      organic:    ['rasta_hemp_leaf', 'reggae_vinyl', 'rasta_sun_shades'],
       mushroom:   ['fly_agaric_obs', 'psilocybin_shroom', 'round_psy_shroom']
     };
 
     const pool = shapesByTheme[lvl.theme] || shapesByTheme.lsd;
     const shape = pool[Math.floor(Math.random() * pool.length)];
-    const rotatingShapes = ['om_star', 'spinning_mandala', 'pastel_donut', 'pastel_fractal', 'plant_cell', 'round_psy_shroom'];
+    const rotatingShapes = ['om_star', 'spinning_mandala', 'pastel_donut', 'pastel_fractal', 'reggae_vinyl', 'round_psy_shroom'];
 
     obstacles.push({
       shape,
@@ -1007,7 +1002,7 @@
       const offsetY = isVFormation ? -Math.abs(k - 1) * 32 : 0;
       const typeIdx = Math.floor(Math.random() * types.length);
       const kind = types[typeIdx];
-      const isMiniBoss = kind.startsWith('mini_') || ['sunflower_lsd', 'cotton_candy', 'squid_ship', 'vine_beast', 'tentacle_shroom'].includes(kind);
+      const isMiniBoss = kind.startsWith('mini_') || ['sunflower_lsd', 'cotton_candy', 'squid_ship', 'rasta_djembe', 'tentacle_shroom'].includes(kind);
       const isElite = (wave >= 2 && k === 0 && Math.random() < 0.28);
 
       const baseHp = (isMiniBoss ? 5 : 2.6) * (isElite ? 1.8 : 1.0);
@@ -1271,7 +1266,6 @@
     if (lvl.id === 1) {
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.90 : 1.15;
-      // Колёса-мандалы велосипеда Хофмана или глаза-штемпели
       const oxList = b.isMidBoss ? [-16, 16] : [-26, 26];
       oxList.forEach(ex => {
         const ang = Math.atan2(player.y - (b.y + 18), player.x - (b.x + ex));
@@ -1316,14 +1310,15 @@
         });
       }
     } else if (lvl.id === 5) {
+      // Раста-боссы: Дредастый Хамелеон и Мега-Лев Джа
       if (synth) synth.sfxWave();
-      b.shootTimer = b.phase === 3 ? 0.92 : 1.18;
-      [-0.28, 0.28].forEach(offsetAng => {
+      b.shootTimer = b.phase === 3 ? 0.88 : 1.15;
+      [-0.26, 0.26].forEach((offsetAng, idx) => {
         const ang = toPlayer + offsetAng;
-        enemyBullets.push({ kind: 'laser_flower', rot: 0, x: b.x, y: b.y + 24, vx: Math.cos(ang) * (spd * 0.92), vy: Math.sin(ang) * (spd * 0.92), r: 16, color: '#ff006e' });
+        enemyBullets.push({ kind: 'psy_wave', hue: idx === 0 ? 350 : 145, x: b.x, y: b.y + 26, vx: Math.cos(ang) * (spd * 0.96), vy: Math.sin(ang) * (spd * 0.96), ang, r: 22, color: idx === 0 ? '#ff4d6d' : '#06d6a0' });
       });
       if (!b.isMidBoss) {
-        enemyBullets.push({ kind: 'vine_whip', x: b.x, y: b.y + 30, vx: Math.cos(toPlayer) * (spd * 1.18), vy: Math.sin(toPlayer) * (spd * 1.18), ang: toPlayer, r: 11, color: '#80ed99' });
+        enemyBullets.push({ kind: 'enemy_missile', homing: true, life: 2.8, x: b.x, y: b.y + 34, vx: Math.cos(toPlayer) * (spd * 0.95), vy: Math.sin(toPlayer) * (spd * 0.95), r: 10, color: '#ffd166' });
       }
     } else {
       if (synth) synth.sfxWave();
@@ -1336,180 +1331,150 @@
     }
   }
 
-  // Логика 6 новых интерактивных объектов сектора
+  // Единая функция активации бонусного объекта сектора (работает И от выстрела, И от касания!)
+  function activateSectorProp(pr) {
+    if (pr.type === 'prism_kaleidoscope') {
+      const rayCols = ['#f3c4fb', '#bdb2ff', '#a0c4ff', '#fdffb6', '#ffc6ff'];
+      [-0.48, -0.24, 0, 0.24, 0.48].forEach((ang, rIdx) => {
+        bullets.push({
+          kind: 'plasma', propCooldown: 0.4,
+          x: pr.x, y: pr.y - 10,
+          vx: Math.sin(ang) * 780, vy: -Math.cos(ang) * 780,
+          r: 7.5, dmg: 1.45, color: rayCols[rIdx]
+        });
+      });
+      if (synth) synth.sfxStarCollect();
+      if (vfx) {
+        vfx.addShockwave(pr.x, pr.y, '#f3c4fb', 80, 0.35);
+        vfx.addPopup(pr.x, pr.y, '💎 ПРИЗМА: 5 ЛУЧЕЙ!', '#f3c4fb', 1.1);
+      }
+      if (world3d) world3d.triggerPulse(pr.x, pr.y, '#f3c4fb');
+    } else if (pr.type === 'fiesta_drum') {
+      for (let ebIdx = enemyBullets.length - 1; ebIdx >= 0; ebIdx--) {
+        if (Math.hypot(enemyBullets[ebIdx].x - pr.x, enemyBullets[ebIdx].y - pr.y) < 240) {
+          enemyBullets.splice(ebIdx, 1);
+        }
+      }
+      enemies.forEach(en => {
+        if (Math.hypot(en.x - pr.x, en.y - pr.y) < 240) {
+          en.hp -= 5.0; en.hitFlash = 1;
+        }
+      });
+      if (synth) synth.sfxExplosion();
+      if (vfx) {
+        vfx.addRealisticExplosion(pr.x, pr.y, '#ffbe0b', 1.5, '#ff006e', '#ffbe0b');
+        vfx.addPopup(pr.x, pr.y, '🥁 ОГНЕННАЯ ВОЛНА ФИЕСТЫ!', '#ffd166', 1.15);
+      }
+      if (world3d) world3d.triggerPulse(pr.x, pr.y, '#ffd6a5');
+    } else if (pr.type === 'marshmallow_bomb') {
+      let converted = 0;
+      for (let ebIdx = enemyBullets.length - 1; ebIdx >= 0; ebIdx--) {
+        const eb = enemyBullets[ebIdx];
+        if (Math.hypot(eb.x - pr.x, eb.y - pr.y) < 270) {
+          fishRainItems.push({ x: eb.x, y: eb.y, vy: 135, emoji: '🍬', phase: Math.random() * 6 });
+          enemyBullets.splice(ebIdx, 1);
+          converted++;
+        }
+      }
+      if (converted === 0) {
+        for (let c = 0; c < 3; c++) {
+          fishRainItems.push({ x: pr.x + (c - 1) * 28, y: pr.y, vy: 135, emoji: '🍬', phase: c });
+        }
+      }
+      if (synth) synth.sfxVictory();
+      if (vfx) {
+        vfx.addShockwave(pr.x, pr.y, '#ffc2d1', 120, 0.45);
+        vfx.addPopup(pr.x, pr.y, '🍥 ЗЕФИРНЫЙ ВЗРЫВ: КОНФЕТЫ!', '#fff3d6', 1.15);
+      }
+      if (world3d) world3d.triggerPulse(pr.x, pr.y, '#ffc2d1');
+    } else if (pr.type === 'jelly_generator') {
+      const targets = [...enemies]
+        .sort((a, b) => Math.hypot(a.x - pr.x, a.y - pr.y) - Math.hypot(b.x - pr.x, b.y - pr.y))
+        .slice(0, 3);
+      targets.forEach(t => {
+        t.hp -= 5.5; t.hitFlash = 1;
+        if (vfx) vfx.addLightningArc(pr.x, pr.y, t.x, t.y, '#90e0ef');
+      });
+      if (boss) {
+        boss.hp -= 8; boss.hitFlash = 1;
+        if (vfx) vfx.addLightningArc(pr.x, pr.y, boss.x, boss.y, '#90e0ef');
+      }
+      if (synth) synth.playCyberElectric(0.95);
+      if (vfx) {
+        vfx.addShockwave(pr.x, pr.y, '#90e0ef', 95, 0.38);
+        vfx.addPopup(pr.x, pr.y, '🪼 АКВА-МОЛНИЯ x3!', '#caf0f8', 1.15);
+      }
+      if (world3d) world3d.triggerPulse(pr.x, pr.y, '#caf0f8');
+    } else if (pr.type === 'reggae_boombox') {
+      // Раста-уровень 5: Космо-Бумбокс Регги!
+      psySlowTimer = 4.0;
+      for (let ebIdx = enemyBullets.length - 1; ebIdx >= 0; ebIdx--) {
+        const eb = enemyBullets[ebIdx];
+        if (Math.hypot(eb.x - pr.x, eb.y - pr.y) < 260) {
+          fishRainItems.push({ x: eb.x, y: eb.y, vy: 135, emoji: '🎵', phase: Math.random() * 6 });
+          enemyBullets.splice(ebIdx, 1);
+        }
+      }
+      enemies.forEach(en => {
+        if (Math.hypot(en.x - pr.x, en.y - pr.y) < 240) {
+          en.stunTimer = 2.2;
+          en.hp -= 3.5;
+          en.hitFlash = 1;
+        }
+      });
+      if (synth) synth.sfxVictory();
+      if (vfx) {
+        vfx.addShockwave(pr.x, pr.y, '#06d6a0', 130, 0.45);
+        vfx.addPopup(pr.x, pr.y, '📻 РЕГГИ-ВОЛНА ДЖА! +НОТЫ', '#ffd166', 1.15);
+      }
+      if (world3d) world3d.triggerPulse(pr.x, pr.y, '#06d6a0');
+    } else if (pr.type === 'spore_puffball') {
+      sporeClouds.push({ x: pr.x, y: pr.y, r: 108, life: 4.5, tick: 0 });
+      if (synth) synth.sfxWave();
+      if (vfx) {
+        vfx.addShockwave(pr.x, pr.y, '#e0aaff', 108, 0.45);
+        vfx.addPopup(pr.x, pr.y, '🍄 ЯДОВИТОЕ ОБЛАКО СПОР!', '#ffc6ff', 1.15);
+      }
+      if (world3d) world3d.triggerPulse(pr.x, pr.y, '#ffc6ff');
+    }
+
+    advanceQuest('props', 1);
+  }
+
   function updateInteractiveProps(dt) {
     for (let i = interactiveProps.length - 1; i >= 0; i--) {
       const pr = interactiveProps[i];
       pr.y += pr.vy * dt;
       pr.phase += dt * 2.5;
-      if (pr.cooldown > 0) pr.cooldown = Math.max(0, pr.cooldown - dt);
+      let triggered = false;
 
-      // 1) Ур. 5: Хищная Мухоловка сама захлопывается на пролетающих мимо врагах!
-      if (pr.type === 'flytrap_jaw' && pr.cooldown <= 0) {
-        for (let k = enemies.length - 1; k >= 0; k--) {
-          const en = enemies[k];
-          if (Math.hypot(en.x - pr.x, en.y - pr.y) < pr.r + en.r + 18) {
-            en.hp -= 12;
-            en.hitFlash = 1;
-            pr.cooldown = 0.55;
-            pr.charges--;
-            runCoins += 35;
-            score += 180;
-            if (synth) synth.sfxExplosion();
-            if (vfx) {
-              vfx.addHitSparks(pr.x, pr.y, '#80ed99', 14);
-              vfx.addPopup(pr.x, pr.y - 12, '🪴 АМ! +35 🐟', '#80ed99', 1.1);
-            }
-            if (world3d) world3d.triggerPulse(pr.x, pr.y, '#d8f3dc');
-            advanceQuest('props', 1);
-            if (pr.charges <= 0) {
-              interactiveProps.splice(i, 1);
-            }
-            break;
-          }
-        }
-        if (!interactiveProps[i]) continue;
-      }
-
-      // 2) Реакция на выстрелы игрока
+      // 1) Проверка попадания любой пули игрока по бонусному объекту сектора
       for (let j = bullets.length - 1; j >= 0; j--) {
         const b = bullets[j];
         if (b.propCooldown > 0) continue;
-        if (Math.hypot(b.x - pr.x, b.y - pr.y) < pr.r + b.r) {
-          if (pr.type === 'prism_kaleidoscope') {
-            // Ур. 1: Призма расщепляет пулю на веер из 5 радужных лучей
-            bullets.splice(j, 1);
-            const rayCols = ['#f3c4fb', '#bdb2ff', '#a0c4ff', '#fdffb6', '#ffc6ff'];
-            [-0.48, -0.24, 0, 0.24, 0.48].forEach((ang, rIdx) => {
-              bullets.push({
-                kind: 'plasma', propCooldown: 0.4,
-                x: pr.x, y: pr.y - 10,
-                vx: Math.sin(ang) * 780, vy: -Math.cos(ang) * 780,
-                r: 7.5, dmg: 1.45, color: rayCols[rIdx]
-              });
-            });
-            if (synth) synth.sfxStarCollect();
-            if (vfx) {
-              vfx.addShockwave(pr.x, pr.y, '#f3c4fb', 75, 0.35);
-              vfx.addPopup(pr.x, pr.y, '💎 ПРИЗМА: 5 ЛУЧЕЙ!', '#f3c4fb', 1.1);
-            }
-            if (world3d) world3d.triggerPulse(pr.x, pr.y, '#f3c4fb');
-            advanceQuest('props', 1);
-            interactiveProps.splice(i, 1);
-            break;
-          } else if (pr.type === 'fiesta_drum') {
-            // Ур. 2: Барабан Фиесты взрывается огненной волной, сжигая вражеские пули и врагов
-            bullets.splice(j, 1);
-            for (let ebIdx = enemyBullets.length - 1; ebIdx >= 0; ebIdx--) {
-              if (Math.hypot(enemyBullets[ebIdx].x - pr.x, enemyBullets[ebIdx].y - pr.y) < 230) {
-                enemyBullets.splice(ebIdx, 1);
-              }
-            }
-            enemies.forEach(en => {
-              if (Math.hypot(en.x - pr.x, en.y - pr.y) < 230) {
-                en.hp -= 5.0; en.hitFlash = 1;
-              }
-            });
-            if (synth) synth.sfxExplosion();
-            if (vfx) {
-              vfx.addRealisticExplosion(pr.x, pr.y, '#ffbe0b', 1.5, '#ff006e', '#ffbe0b');
-              vfx.addPopup(pr.x, pr.y, '🥁 ОГНЕННАЯ ВОЛНА ФИЕСТЫ!', '#ffd166', 1.15);
-            }
-            if (world3d) world3d.triggerPulse(pr.x, pr.y, '#ffd6a5');
-            advanceQuest('props', 1);
-            interactiveProps.splice(i, 1);
-            break;
-          } else if (pr.type === 'marshmallow_bomb') {
-            // Ур. 3: Зефирная бомба превращает вражеские пули вокруг в сладкие конфеты +25 🐟
-            bullets.splice(j, 1);
-            let converted = 0;
-            for (let ebIdx = enemyBullets.length - 1; ebIdx >= 0; ebIdx--) {
-              const eb = enemyBullets[ebIdx];
-              if (Math.hypot(eb.x - pr.x, eb.y - pr.y) < 260) {
-                fishRainItems.push({ x: eb.x, y: eb.y, vy: 135, emoji: '🍬', phase: Math.random() * 6 });
-                enemyBullets.splice(ebIdx, 1);
-                converted++;
-              }
-            }
-            if (converted === 0) {
-              for (let c = 0; c < 3; c++) {
-                fishRainItems.push({ x: pr.x + (c - 1) * 28, y: pr.y, vy: 135, emoji: '🍬', phase: c });
-              }
-            }
-            if (synth) synth.sfxVictory();
-            if (vfx) {
-              vfx.addShockwave(pr.x, pr.y, '#ffc2d1', 120, 0.45);
-              vfx.addPopup(pr.x, pr.y, '🍥 ЗЕФИРНЫЙ ВЗРЫВ: КОНФЕТЫ!', '#fff3d6', 1.15);
-            }
-            if (world3d) world3d.triggerPulse(pr.x, pr.y, '#ffc2d1');
-            advanceQuest('props', 1);
-            interactiveProps.splice(i, 1);
-            break;
-          } else if (pr.type === 'spore_puffball') {
-            // Ур. 6: Споровая мина выпускает ядовитое облако на 4.5 секунды
-            bullets.splice(j, 1);
-            sporeClouds.push({ x: pr.x, y: pr.y, r: 108, life: 4.5, tick: 0 });
-            if (synth) synth.sfxWave();
-            if (vfx) {
-              vfx.addShockwave(pr.x, pr.y, '#e0aaff', 108, 0.45);
-              vfx.addPopup(pr.x, pr.y, '🍄 ЯДОВИТОЕ ОБЛАКО СПОР!', '#ffc6ff', 1.15);
-            }
-            if (world3d) world3d.triggerPulse(pr.x, pr.y, '#ffc6ff');
-            advanceQuest('props', 1);
-            interactiveProps.splice(i, 1);
-            break;
-          }
+        if (Math.hypot(b.x - pr.x, b.y - pr.y) < pr.r + b.r + 8) {
+          if (!b.pierce) bullets.splice(j, 1);
+          activateSectorProp(pr);
+          triggered = true;
+          break;
         }
       }
 
-      if (!interactiveProps[i]) continue;
+      if (triggered) {
+        interactiveProps.splice(i, 1);
+        continue;
+      }
 
-      // 3) Контакт игрока с объектом сектора (Ур. 3, 4, 6)
-      if (Math.hypot(player.x - pr.x, player.y - pr.y) < player.r + pr.r + 18) {
-        if (pr.type === 'jelly_generator') {
-          // Ур. 4: Медуза-Генератор заряжает корабль аква-молнией по 3 ближайшим врагам
-          let targets = [...enemies].sort((a, b) => Math.hypot(a.x - pr.x, a.y - pr.y) - Math.hypot(b.x - pr.x, b.y - pr.y)).slice(0, 3);
-          targets.forEach(t => {
-            t.hp -= 5.5; t.hitFlash = 1;
-            if (vfx) vfx.addLightningArc(pr.x, pr.y, t.x, t.y, '#90e0ef');
-          });
-          if (boss && vfx) {
-            boss.hp -= 8; boss.hitFlash = 1;
-            vfx.addLightningArc(pr.x, pr.y, boss.x, boss.y, '#90e0ef');
-          }
-          if (synth) synth.playCyberElectric(0.95);
-          if (vfx) vfx.addPopup(pr.x, pr.y, '🪼 АКВА-МОЛНИЯ x3!', '#caf0f8', 1.15);
-          if (world3d) world3d.triggerPulse(pr.x, pr.y, '#caf0f8');
-          advanceQuest('props', 1);
-          interactiveProps.splice(i, 1);
-          continue;
-        } else if (pr.type === 'marshmallow_bomb') {
-          for (let ebIdx = enemyBullets.length - 1; ebIdx >= 0; ebIdx--) {
-            const eb = enemyBullets[ebIdx];
-            if (Math.hypot(eb.x - pr.x, eb.y - pr.y) < 260) {
-              fishRainItems.push({ x: eb.x, y: eb.y, vy: 135, emoji: '🍬', phase: Math.random() * 6 });
-              enemyBullets.splice(ebIdx, 1);
-            }
-          }
-          if (synth) synth.sfxVictory();
-          if (vfx) vfx.addPopup(pr.x, pr.y, '🍥 ЗЕФИРНЫЙ ВЗРЫВ!', '#fff3d6', 1.15);
-          advanceQuest('props', 1);
-          interactiveProps.splice(i, 1);
-          continue;
-        } else if (pr.type === 'spore_puffball') {
-          sporeClouds.push({ x: pr.x, y: pr.y, r: 108, life: 4.5, tick: 0 });
-          if (synth) synth.sfxWave();
-          if (vfx) vfx.addPopup(pr.x, pr.y, '🍄 ЯДОВИТОЕ ОБЛАКО СПОР!', '#ffc6ff', 1.15);
-          advanceQuest('props', 1);
-          interactiveProps.splice(i, 1);
-          continue;
-        }
+      // 2) Проверка подбора/касания кораблём игрока
+      if (Math.hypot(player.x - pr.x, player.y - pr.y) < player.r + pr.r + 14) {
+        activateSectorProp(pr);
+        interactiveProps.splice(i, 1);
+        continue;
       }
 
       if (pr.y > H + 60) interactiveProps.splice(i, 1);
     }
 
-    // Обновление ядовитых облаков спор (Ур. 6)
     for (let i = sporeClouds.length - 1; i >= 0; i--) {
       const sc = sporeClouds[i];
       sc.life -= dt;
@@ -1530,7 +1495,6 @@
       if (sc.life <= 0) sporeClouds.splice(i, 1);
     }
   }
-
   function update(dt) {
     globalTime += dt;
     updateAndRenderMenuParticles(dt);
@@ -1601,7 +1565,7 @@
 
     propTimer -= dt;
     if (propTimer <= 0 && !boss && bossPreSpawnTimer <= 0 && fishRainTimer <= 0) {
-      propTimer = 7.5 + Math.random() * 2.5;
+      propTimer = 7.0 + Math.random() * 2.5;
       spawnSectorInteractiveProp();
     }
 
@@ -1631,7 +1595,18 @@
       const fr = fishRainItems[i];
       fr.y += fr.vy * dt;
       fr.phase += dt * 4;
-      if (Math.hypot(player.x - fr.x, player.y - fr.y) < player.r + 22) {
+      let collected = Math.hypot(player.x - fr.x, player.y - fr.y) < player.r + 22;
+      if (!collected) {
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          const b = bullets[j];
+          if (Math.hypot(b.x - fr.x, b.y - fr.y) < b.r + 18) {
+            collected = true;
+            if (!b.pierce) bullets.splice(j, 1);
+            break;
+          }
+        }
+      }
+      if (collected) {
         runCoins += 25;
         score += 100;
         if (synth) synth.playStarCollect();
@@ -1812,14 +1787,16 @@
             enemyBullets.push({ kind: 'rubik_square', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25), r: 7.5, color: rCols[Math.floor(Math.random() * rCols.length)] });
           } else if (e.kind === 'mini_donut' || e.kind === 'clown_ship') {
             enemyBullets.push({ kind: 'thrown_donut', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 10, color: '#ffc2d1' });
-          } else if (e.kind === 'vine_beast') {
-            enemyBullets.push({ kind: 'vine_whip', x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 1.15), vy: Math.sin(ang) * (spd * 1.15), ang, r: 10, color: '#80ed99' });
-          } else if (e.kind === 'mini_flower') {
-            enemyBullets.push({ kind: 'laser_flower', rot: 0, x: e.x, y: e.y + 18, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 12, color: '#ff006e' });
+          } else if (e.kind === 'rasta_djembe') {
+            enemyBullets.push({ kind: 'psy_wave', hue: 145, x: e.x, y: e.y + 18, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, ang, r: 18, color: '#06d6a0' });
+          } else if (e.kind === 'rasta_chameleon') {
+            enemyBullets.push({ kind: 'enemy_laser', x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 1.38), vy: Math.sin(ang) * (spd * 1.38), ang, r: 6.5, color: '#ffd166' });
+          } else if (e.kind === 'rasta_sun') {
+            enemyBullets.push({ kind: 'enemy_missile', homing: true, life: 2.6, x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 0.90), vy: Math.sin(ang) * (spd * 0.90), r: 8.5, color: '#ff4d6d' });
           } else if (['mini_stamp', 'mini_skull', 'skeleton_ship', 'squid_ship', 'crab_ship', 'starfish_ship'].includes(e.kind)) {
             const lCol = e.kind === 'squid_ship' ? '#f72585' : (e.kind === 'starfish_ship' ? '#80ed99' : '#00f5d4');
             enemyBullets.push({ kind: 'enemy_laser', x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 1.38), vy: Math.sin(ang) * (spd * 1.38), ang, r: 6.5, color: lCol });
-          } else if (['bat_ship', 'spider_ship', 'lollipop_ship', 'cotton_candy', 'octopus_ship', 'sprout_hunter', 'tentacle_shroom'].includes(e.kind)) {
+          } else if (['bat_ship', 'spider_ship', 'lollipop_ship', 'cotton_candy', 'octopus_ship', 'tentacle_shroom'].includes(e.kind)) {
             enemyBullets.push({ kind: 'enemy_missile', homing: true, life: 2.6, x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 0.90), vy: Math.sin(ang) * (spd * 0.90), r: 8.5, color: '#ff5964' });
           } else if (e.kind === 'jellyfish_ocean') {
             enemyBullets.push({ kind: 'psy_wave', hue: 185, x: e.x, y: e.y + 18, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, ang, r: 18, color: '#9bf6ff' });
@@ -1902,10 +1879,22 @@
       if (eb.y > H + 40 || eb.y < -50 || eb.x < -40 || eb.x > W + 40) enemyBullets.splice(i, 1);
     }
 
+    // Выпадающие бонусные капсулы теперь можно подобрать И корабликом, И сбить выстрелом!
     for (let i = bonuses.length - 1; i >= 0; i--) {
       const bn = bonuses[i];
       bn.phase += dt * 5; bn.y += bn.vy * dt;
-      if (Math.hypot(p.x - bn.x, p.y - bn.y) < p.r + bn.r + 6) {
+      let picked = Math.hypot(p.x - bn.x, p.y - bn.y) < p.r + bn.r + 6;
+      if (!picked) {
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          const b = bullets[j];
+          if (Math.hypot(b.x - bn.x, b.y - bn.y) < bn.r + b.r + 6) {
+            picked = true;
+            if (!b.pierce) bullets.splice(j, 1);
+            break;
+          }
+        }
+      }
+      if (picked) {
         applyFoodBonus(bn); bonuses.splice(i, 1); continue;
       }
       if (bn.y > H + 30) bonuses.splice(i, 1);
