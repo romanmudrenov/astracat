@@ -123,6 +123,41 @@ const WEAPONS_CATALOG = [
   }
 ];
 
+const DRONES_CATALOG = [
+  {
+    id: 'none',
+    name: 'Без дрона',
+    desc: 'Полёт в одиночку без орбитального спутника.',
+    price: 0,
+    weaponType: 'none',
+    accent: '#98c1d9'
+  },
+  {
+    id: 'wing_vanguard',
+    name: '1. Крыло-Перехватчик',
+    desc: 'Летит впереди корабля, тараном снимает HP врагам и стреляет плазменными пульками.',
+    price: 900,
+    weaponType: 'bullet',
+    accent: '#48dbfb'
+  },
+  {
+    id: 'twin_fishes',
+    name: '2. Рыбки-Близнецы (x2)',
+    desc: 'Две неоновые рыбки кружат вокруг корабля и бьют широкими волновыми импульсами.',
+    price: 2200,
+    weaponType: 'wave',
+    accent: '#f15bb5'
+  },
+  {
+    id: 'cat_bowl',
+    name: '3. Космо-Миска Котовии',
+    desc: 'Притягивает рыбку и бонусы, лечит +1 HP кормом и бьёт длинными электро-разрядами!',
+    price: 3800,
+    weaponType: 'electric',
+    accent: '#fee440'
+  }
+];
+
 const LEVELS = [
   {
     id: 1,
@@ -224,20 +259,15 @@ function getShipHardpoints(shipId) {
   return { noseY: -22, pairX: 10, pairY: -8, wingX: 19, wingY: 2 };
 }
 
-// =========================================================================
-// ХЕЛПЕРЫ ДЛЯ ПЛЮШЕВО-МУЛЬТЯШНОЙ ГРАФИКИ (3 ТОНА + ЖИВЫЕ ГЛАЗА + КОРОНА ЭЛИТЫ)
-// =========================================================================
-function drawGlossyCircle(ctx, x, y, r, mainCol, irisCol = null) {
+function drawGlossyCircle(ctx, x, y, r, mainCol) {
   ctx.fillStyle = mainCol;
   ctx.strokeStyle = INK;
   ctx.lineWidth = 2.5;
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-  // Мягкая внутренняя тень снизу
   ctx.fillStyle = 'rgba(18, 8, 38, 0.24)';
   ctx.beginPath(); ctx.arc(x, y + r * 0.14, r * 0.86, 0.15 * Math.PI, 0.85 * Math.PI); ctx.fill();
 
-  // Карамельный верхний блик
   ctx.fillStyle = 'rgba(255, 255, 255, 0.52)';
   ctx.beginPath(); ctx.ellipse(x - r * 0.28, y - r * 0.36, r * 0.42, r * 0.22, -0.35, 0, Math.PI * 2); ctx.fill();
 }
@@ -245,7 +275,6 @@ function drawGlossyCircle(ctx, x, y, r, mainCol, irisCol = null) {
 function drawCartoonEyes(ctx, e, leftX, rightX, eyeY, eyeR, irisCol = '#ff006e', player = null) {
   const hurt = e.hitFlash > 0.25;
   if (hurt) {
-    // Эмоция боли при попадании: зажмуренные глазки (> <)
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.4;
     ctx.beginPath();
@@ -290,6 +319,135 @@ function drawEliteCrown(ctx, yTop) {
   ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#ff006e';
   ctx.beginPath(); ctx.arc(0, -4, 2.2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// =========================================================================
+// ОТРИСОВКА 3 БОЕВЫХ ДРОНОВ (КРЫЛО, РЫБКА, КОСМО-МИСКА ДЛЯ КОРМА КОТА)
+// =========================================================================
+function drawDroneModel(ctx, droneId, time, subIdx = 0) {
+  ctx.save();
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  if (droneId === 'wing_vanguard') {
+    // 1. Крыло-Перехватчик (мини-крыло с плазменной пушкой и энерго-носом)
+    ctx.fillStyle = 'rgba(72, 219, 251, 0.25)';
+    ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = '#48dbfb';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -13);
+    ctx.lineTo(17, 6);
+    ctx.lineTo(7, 4);
+    ctx.lineTo(0, 10);
+    ctx.lineTo(-7, 4);
+    ctx.lineTo(-17, 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Силовой таранный щит спереди
+    ctx.strokeStyle = '#72efdd';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.arc(0, -3, 14, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+
+    // Светящееся ядро
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.arc(0, -2, 3.8, 0, Math.PI * 2); ctx.fill();
+  } else if (droneId === 'twin_fishes') {
+    // 2. Рыбки-Близнецы (неоновая рыбка с волновой пушкой)
+    const wag = Math.sin(time * 14 + subIdx * 2) * 3.5;
+    const bodyCol = subIdx === 0 ? '#ff70a6' : '#72efdd';
+    const finCol = subIdx === 0 ? '#ffd166' : '#48cae4';
+
+    ctx.fillStyle = bodyCol;
+    ctx.globalAlpha = 0.22;
+    ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Хвостик рыбки
+    ctx.fillStyle = finCol;
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(0, 8);
+    ctx.lineTo(-6 + wag, 15);
+    ctx.lineTo(0, 12);
+    ctx.lineTo(6 + wag, 15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Боковые плавники
+    ctx.beginPath();
+    ctx.moveTo(-6, 0); ctx.lineTo(-12, 4); ctx.lineTo(-6, 5);
+    ctx.moveTo(6, 0);  ctx.lineTo(12, 4);  ctx.lineTo(6, 5);
+    ctx.fill();
+    ctx.stroke();
+
+    // Тельце рыбки
+    ctx.fillStyle = bodyCol;
+    ctx.beginPath();
+    ctx.ellipse(0, -1, 7.5, 10.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Глазик
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(-2.8, -5, 2.2, 0, Math.PI * 2); ctx.arc(2.8, -5, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = INK;
+    ctx.beginPath(); ctx.arc(-2.8, -5.5, 1.1, 0, Math.PI * 2); ctx.arc(2.8, -5.5, 1.1, 0, Math.PI * 2); ctx.fill();
+  } else if (droneId === 'cat_bowl') {
+    // 3. Космо-Миска для корма кота с рыбками и магнитным ореолом
+    const pulse = 1 + Math.sin(time * 5) * 0.06;
+    ctx.scale(pulse, pulse);
+
+    // Магнитное поле притяжения добычи
+    ctx.strokeStyle = 'rgba(254, 228, 64, 0.45)';
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Горка золотистого корма и рыбка сверху
+    ctx.fillStyle = '#f4a261';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(0, -2, 11, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+
+    // Маленькая рыбка в миске
+    ctx.fillStyle = '#90e0ef';
+    ctx.beginPath(); ctx.ellipse(0, -6, 5, 2.6, -0.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Трапециевидная миска с лапкой
+    ctx.fillStyle = '#ff5964';
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(-13, -2);
+    ctx.lineTo(13, -2);
+    ctx.lineTo(16, 9);
+    ctx.lineTo(-16, 9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Значок кошачьей лапки на миске
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.arc(0, 4.5, 2.5, 0, Math.PI * 2); ctx.fill();
+    [-3.2, 0, 3.2].forEach((px, idx) => {
+      ctx.beginPath(); ctx.arc(px, idx === 1 ? 1.2 : 1.8, 1.1, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+
   ctx.restore();
 }
 
@@ -426,9 +584,6 @@ function drawPlayerShipModel(ctx, ship, time, vx = 0, opts = {}) {
   ctx.restore();
 }
 
-// =========================================================================
-// ИНТЕРАКТИВНЫЕ ОБЪЕКТЫ УРОВНЕЙ (ПОРТАЛЫ, ПИНЬЯТЫ, УСКОРИТЕЛИ, ПУЗЫРИ, БАТУТЫ, СПОРЫ)
-// =========================================================================
 function drawInteractiveProp(ctx, pr) {
   ctx.save();
   ctx.translate(pr.x, pr.y);
@@ -437,7 +592,6 @@ function drawInteractiveProp(ctx, pr) {
   ctx.scale(pulse, pulse);
 
   if (pr.type === 'mirror_portal') {
-    // 1. Зеркальный портал (Ур.1)
     ctx.rotate(pr.phase * 2.5);
     ctx.strokeStyle = pr.pairIdx === 0 ? '#00f5d4' : '#f72585';
     ctx.lineWidth = 4;
@@ -447,7 +601,6 @@ function drawInteractiveProp(ctx, pr) {
     ctx.beginPath(); ctx.arc(0, 0, pr.r * 0.68, 0, Math.PI * 2); ctx.stroke();
     ctx.setLineDash([]);
   } else if (pr.type === 'pinata_skull') {
-    // 2. Череп-пиньята с конфетти (Ур.2)
     ctx.rotate(Math.sin(pr.phase * 3) * 0.2);
     drawGlossyCircle(ctx, 0, -2, 20, '#ffbe0b');
     ctx.fillStyle = '#ff006e'; ctx.fillRect(-14, -4, 28, 5);
@@ -455,7 +608,6 @@ function drawInteractiveProp(ctx, pr) {
     ctx.fillStyle = INK;
     ctx.beginPath(); ctx.arc(-6, -5, 3.5, 0, Math.PI * 2); ctx.arc(6, -5, 3.5, 0, Math.PI * 2); ctx.fill();
   } else if (pr.type === 'candy_booster') {
-    // 3. Карамельный ускоритель (Ур.3)
     const rCols = ['#ff3366', '#ffee33', '#33ee88', '#33ccff'];
     rCols.forEach((c, idx) => {
       ctx.strokeStyle = c; ctx.lineWidth = 3.5;
@@ -464,7 +616,6 @@ function drawInteractiveProp(ctx, pr) {
     ctx.fillStyle = '#ffffff'; ctx.font = '900 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('⚡', 0, 1);
   } else if (pr.type === 'giant_bubble') {
-    // 4. Гигантский мыльный пузырь (Ур.4)
     ctx.fillStyle = 'rgba(155, 246, 255, 0.25)';
     ctx.strokeStyle = '#9bf6ff';
     ctx.lineWidth = 3;
@@ -472,7 +623,6 @@ function drawInteractiveProp(ctx, pr) {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
     ctx.beginPath(); ctx.ellipse(-pr.r * 0.35, -pr.r * 0.35, pr.r * 0.28, pr.r * 0.14, -0.5, 0, Math.PI * 2); ctx.fill();
   } else if (pr.type === 'flower_bumper') {
-    // 5. Цветок-батут для рикошета пуль (Ур.5)
     ctx.rotate(pr.phase * 1.5);
     for (let k = 0; k < 6; k++) {
       ctx.rotate(Math.PI / 3);
@@ -481,7 +631,6 @@ function drawInteractiveProp(ctx, pr) {
     }
     drawGlossyCircle(ctx, 0, 0, 12, '#fee440');
   } else if (pr.type === 'psy_spore') {
-    // 6. Золотая психо-спора «Перезагрузка» (Ур.6)
     ctx.fillStyle = 'rgba(255, 209, 102, 0.32)';
     ctx.beginPath(); ctx.arc(0, 0, pr.r + 8, 0, Math.PI * 2); ctx.fill();
     drawGlossyCircle(ctx, 0, 0, 16, '#ffd166');
@@ -491,9 +640,6 @@ function drawInteractiveProp(ctx, pr) {
   ctx.restore();
 }
 
-// =========================================================================
-// БОНУСНЫЙ «РЫБНЫЙ ДОЖДЬ» ПЕРЕД БОССОМ (тарелки с рыбкой и сметаной)
-// =========================================================================
 function drawFishRainItem(ctx, item) {
   ctx.save();
   ctx.translate(item.x, item.y);
@@ -557,7 +703,11 @@ function drawPlayerBullet(ctx, b) {
     }
     ctx.closePath(); ctx.fill(); ctx.stroke();
   } else if (b.kind === 'electric_bolt') {
-    ctx.strokeStyle = '#fee440'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(-6, -4); ctx.lineTo(5, 3); ctx.lineTo(0, 14); ctx.stroke();
+    const len = b.longBolt ? 24 : 14;
+    ctx.strokeStyle = '#fee440'; ctx.lineWidth = b.longBolt ? 4.2 : 3.5;
+    ctx.beginPath(); ctx.moveTo(0, -len); ctx.lineTo(-7, -len * 0.35); ctx.lineTo(6, len * 0.35); ctx.lineTo(0, len); ctx.stroke();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.6;
+    ctx.stroke();
   } else if (b.kind === 'wave_pulse') {
     ctx.strokeStyle = b.color || '#f15bb5'; ctx.lineWidth = 5.5; ctx.beginPath(); ctx.arc(0, 8, b.r, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
   } else if (b.kind === 'wing_laser') {
@@ -568,9 +718,7 @@ function drawPlayerBullet(ctx, b) {
   }
   ctx.restore();
 }
-// =========================================================================
-// ПРЕПЯТСТВИЯ НА ПУТИ
-// =========================================================================
+
 function drawObstacle(ctx, ob) {
   ctx.save(); ctx.translate(ob.x, ob.y); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   const hue = Math.floor(((ob.phase || 0) * 95) % 360);
@@ -633,7 +781,6 @@ function drawObstacle(ctx, ob) {
     ctx.restore(); return;
   }
 
-  // Водоросль со щупальцами (Ур.5)
   for (let t = -2; t <= 2; t++) {
     const sway = Math.sin((ob.phase || 0) * 3.5 + t * 1.3) * 9;
     ctx.strokeStyle = t % 2 === 0 ? '#38b000' : '#80ed99'; ctx.lineWidth = 5.5;
@@ -643,9 +790,6 @@ function drawObstacle(ctx, ob) {
   ctx.restore();
 }
 
-// =========================================================================
-// МНОГОСЛОЙНЫЕ ПЛЮШЕВЫЕ ВРАГИ С ЖИВЫМИ ГЛАЗАМИ И ЭЛИТНЫМИ КОРОНАМИ
-// =========================================================================
 function drawUniqueEnemy(ctx, e, player = null) {
   ctx.save(); ctx.translate(e.x, e.y); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   if (e.isElite) ctx.scale(1.18, 1.18);
@@ -653,14 +797,12 @@ function drawUniqueEnemy(ctx, e, player = null) {
   const flash = e.hitFlash > 0;
   const hue = Math.floor((e.phase * 105) % 360);
 
-  // Ореол для элитных лидеров звеньев
   if (e.isElite) {
     ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2.2; ctx.setLineDash([5, 4]);
     ctx.beginPath(); ctx.arc(0, 0, e.r + 8, 0, Math.PI * 2); ctx.stroke();
     ctx.setLineDash([]);
   }
 
-  // --- УРОВЕНЬ 6: ГРИБНАЯ ГАЛАКТИКА ---
   if (e.kind === 'evil_flyagaric' || e.kind === 'mini_flyagaric') {
     const capCol = e.kind === 'mini_flyagaric' ? `hsl(${hue}, 95%, 56%)` : '#ff002b';
     e.wingCol = capCol; e.bodyCol = '#ffffff';
@@ -691,7 +833,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // --- УРОВЕНЬ 1: ФРАКТАЛ, МИНИ-МАРКА, КУБИК РУБИКА ---
   if (e.kind === 'fractal_ship') {
     const c1 = `hsl(${hue}, 95%, 62%)`, c2 = `hsl(${(hue + 140) % 360}, 95%, 68%)`;
     e.wingCol = c1; e.bodyCol = c2;
@@ -733,7 +874,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // --- УРОВЕНЬ 2: ЯРКИЕ РАЗНОЦВЕТНЫЕ ВРАГИ ---
   if (e.kind === 'bat_ship' || e.kind === 'spider_ship' || e.kind === 'skeleton_ship' || e.kind === 'mini_skull') {
     const palette2 = ['#ff002b', '#ffbe0b', '#06d6a0', '#3a86ff'];
     const cMain = palette2[Math.floor(e.phase * 1.5) % palette2.length];
@@ -755,7 +895,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // --- УРОВЕНЬ 3: КЛОУН, ЛЕДЕНЕЦ, РАДУГА, МИНИ-ПОНЧИК ---
   if (e.kind === 'clown_ship' || e.kind === 'lollipop_ship' || e.kind === 'rainbow_spiral' || e.kind === 'mini_donut') {
     const wingCol = `hsl(${hue}, 95%, 66%)`;
     e.wingCol = wingCol; e.bodyCol = '#fff8eb';
@@ -778,7 +917,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // --- УРОВЕНЬ 4 И 5: МОРСКИЕ И РАСТИТЕЛЬНЫЕ ПЛЮШЕВЫЕ ВРАГИ ---
   const mainCol = lvlColorByKind(e.kind, hue);
   e.wingCol = mainCol; e.bodyCol = '#ffffff';
   if (e.kind === 'crab_ship') {
@@ -804,9 +942,6 @@ function lvlColorByKind(kind, hue) {
   return `hsl(${110 + (hue % 45)}, 90%, 62%)`;
 }
 
-// =========================================================================
-// ДЕТАЛИЗИРОВАННЫЕ БОССЫ УРОВНЕЙ 1–6
-// =========================================================================
 function drawUniqueBoss(ctx, b, lvl, player, H) {
   const bScale = b.bossScale || 1.0;
 
@@ -934,7 +1069,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.restore(); return;
   }
 
-  // БОСС 6: ОГРОМНЫЙ СТРАШНЫЙ МУХОМОР
   const capCol = flash ? '#ffffff' : `hsl(${hue}, 100%, 54%)`;
   ctx.fillStyle = '#f8edeb'; ctx.strokeStyle = INK; ctx.lineWidth = 4;
   ctx.beginPath(); ctx.moveTo(-28, 0); ctx.quadraticCurveTo(-36, 36, -24, 62); ctx.lineTo(24, 62); ctx.quadraticCurveTo(36, 36, 28, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
