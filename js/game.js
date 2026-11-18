@@ -699,11 +699,12 @@
     );
 
     const diff = DIFFICULTIES[selectedDiffKey];
+    const midName = lvl.midBossName || 'Авангард-Страж';
     document.getElementById('intro-sector-tag').textContent = `УРОВЕНЬ ${lvl.id} • ${diff.label.toUpperCase()}`;
     document.getElementById('intro-title').textContent = lvl.name.toUpperCase();
     document.getElementById('intro-story').textContent = lvl.story;
     document.getElementById('intro-intel').innerHTML =
-      `<div>🛸 <b>Враги:</b> ${lvl.enemiesDesc}</div><div>👑 <b>Боссы сектора:</b> ${lvl.bossName} (Авангард + Мега-Босс)</div><div>🐟 <b>Награда:</b> +${lvl.coinReward} рыбок</div>`;
+      `<div>🛸 <b>Враги:</b> ${lvl.enemiesDesc}</div><div>👑 <b>Боссы:</b> ${midName} ➔ ${lvl.bossName}</div><div>🐟 <b>Награда:</b> +${lvl.coinReward} рыбок</div>`;
 
     startOverlay.classList.add('hidden'); endOverlay.classList.add('hidden'); introOverlay.classList.remove('hidden');
     syncTopHudVisibility();
@@ -785,12 +786,12 @@
   muteBtn?.addEventListener('click', (e) => { e.stopPropagation(); if (!synth) return; muteBtn.textContent = synth.toggleMute() ? '🔇' : '🔊'; });
 
   let score = 0, runCoins = 0, kills = 0, combo = 1, comboTimer = 0, wave = 1, waveTimer = 0;
-  let spawnTimer = 0, obstacleTimer = 3.5, propTimer = 6.0, screenShake = 0, warningBannerTimer = 0, globalTime = 0;
+  let spawnTimer = 0, obstacleTimer = 3.5, propTimer = 5.5, screenShake = 0, warningBannerTimer = 0, globalTime = 0;
   let midBossDefeated = false, bossPreSpawnTimer = 0, bossPreSpawnIsMid = false;
   let psySlowTimer = 0, fishRainTimer = 0, fishRainSpawnTimer = 0, formationCounter = 0;
   let activeQuest = null;
 
-  let player = null, activeDrones = [], bullets = [], enemyBullets = [], enemies = [], obstacles = [], bonuses = [], interactiveProps = [], fishRainItems = [], boss = null;
+  let player = null, activeDrones = [], bullets = [], enemyBullets = [], enemies = [], obstacles = [], bonuses = [], interactiveProps = [], sporeClouds = [], fishRainItems = [], boss = null;
 
   const keys = {};
   const pointer = { active: false, x: 0, y: 0, isTouch: false };
@@ -832,7 +833,7 @@
   document.getElementById('resume-btn')?.addEventListener('click', (e) => { e.stopPropagation(); togglePause(); });
 
   function returnToMenu() {
-    state = 'START'; pointer.active = false; boss = null; bossPreSpawnTimer = 0; enemies = []; obstacles = []; bullets = []; enemyBullets = []; bonuses = []; interactiveProps = []; fishRainItems = []; activeDrones = [];
+    state = 'START'; pointer.active = false; boss = null; bossPreSpawnTimer = 0; enemies = []; obstacles = []; bullets = []; enemyBullets = []; bonuses = []; interactiveProps = []; sporeClouds = []; fishRainItems = []; activeDrones = [];
     if (vfx) vfx.clear(); if (synth) { synth.sfxMenuTap(); synth.startIntroMusic(); }
     [pauseOverlay, endOverlay, settingsOverlay, introOverlay, loreOverlay, hangarOverlay, splashOverlay, pauseBtn].forEach(el => el.classList.add('hidden'));
     renderLevelGrid(); startOverlay.classList.remove('hidden'); syncTopHudVisibility();
@@ -887,6 +888,11 @@
     }
   }
 
+  function getWaveSpeedMult() {
+    // Нарастающая скорость боя с каждой новой волной: 1.0 -> 1.22 -> 1.44 -> 1.68
+    return 1 + (Math.min(4, wave) - 1) * 0.22;
+  }
+
   function startLevel(idx) {
     resize();
     selectedLevelIdx = idx;
@@ -899,7 +905,7 @@
     if (synth) { synth.init(); synth.startMusic('normal', lvl.id); synth.sfxCosmicHum(); }
 
     score = 0; runCoins = 0; kills = 0; combo = 1; comboTimer = 0; wave = 1; waveTimer = 0;
-    spawnTimer = 0.5; obstacleTimer = 3.2; propTimer = 5.0;
+    spawnTimer = 0.5; obstacleTimer = 3.2; propTimer = 4.8;
     screenShake = 0; warningBannerTimer = 0; midBossDefeated = false; bossPreSpawnTimer = 0; bossPreSpawnIsMid = false;
     psySlowTimer = 0; fishRainTimer = 0; formationCounter = 0;
 
@@ -914,7 +920,7 @@
 
     initActiveDrones();
 
-    bullets = []; enemyBullets = []; enemies = []; obstacles = []; bonuses = []; interactiveProps = []; fishRainItems = []; boss = null;
+    bullets = []; enemyBullets = []; enemies = []; obstacles = []; bonuses = []; interactiveProps = []; sporeClouds = []; fishRainItems = []; boss = null;
     if (vfx) vfx.clear();
 
     state = 'PLAYING';
@@ -935,22 +941,21 @@
     else startLevel(selectedLevelIdx);
   });
 
+  // Спавн новой интерактивной фишки для каждого из 6 секторов
   function spawnSectorInteractiveProp() {
     const lvl = LEVELS[selectedLevelIdx];
-    const pType = lvl.interactiveType || 'mirror_portal';
-
-    if (pType === 'mirror_portal') {
-      const yPos = 140 + Math.random() * 140;
-      const p1 = { id: Math.random(), pairIdx: 0, type: 'mirror_portal', x: W * 0.22, y: yPos, r: 24, vy: 28, phase: 0, cooldown: 0 };
-      const p2 = { id: Math.random(), pairIdx: 1, type: 'mirror_portal', x: W * 0.78, y: yPos, r: 24, vy: 28, phase: 1.5, cooldown: 0 };
-      p1.partner = p2; p2.partner = p1;
-      interactiveProps.push(p1, p2);
-    } else {
-      const x = 60 + Math.random() * (W - 120);
-      interactiveProps.push({
-        type: pType, x, y: -40, r: 24, vy: 78, phase: Math.random() * Math.PI * 2, hp: 2
-      });
-    }
+    const pType = lvl.interactiveType || 'prism_kaleidoscope';
+    const x = 64 + Math.random() * (W - 128);
+    interactiveProps.push({
+      type: pType,
+      x,
+      y: -38,
+      r: 25,
+      vy: 74 * getWaveSpeedMult(),
+      phase: Math.random() * Math.PI * 2,
+      charges: pType === 'flytrap_jaw' ? 2 : 1,
+      cooldown: 0
+    });
   }
 
   // 18 уникальных мигающих препятствий (по 3 на каждый уровень 1–6)
@@ -978,7 +983,7 @@
       y: -48,
       r: 24,
       hp: 3,
-      vy: 96,
+      vy: 94 * getWaveSpeedMult(),
       rot: 0,
       vrot: rotatingShapes.includes(shape) ? (Math.random() > 0.5 ? 1.5 : -1.5) : 0,
       phase: Math.random() * Math.PI * 2
@@ -989,6 +994,7 @@
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
     const hpScale = lvl.hpMult * diff.enemyHp;
+    const waveSpd = getWaveSpeedMult();
     const types = lvl.enemyTypes || ['mini_stamp', 'sunflower_lsd', 'rubik_cube'];
 
     formationCounter++;
@@ -1017,15 +1023,15 @@
         y: -38 + offsetY,
         r: isElite ? 25 : (isMiniBoss ? 24 : 20),
         hp, maxHp: hp,
-        baseVy: (isMiniBoss ? 102 : 132) * diff.bulletSpeed,
-        vy: (isMiniBoss ? 102 : 132) * diff.bulletSpeed,
-        vx: (Math.random() - 0.5) * 130,
+        baseVy: (isMiniBoss ? 98 : 126) * diff.bulletSpeed * waveSpd,
+        vy: (isMiniBoss ? 98 : 126) * diff.bulletSpeed * waveSpd,
+        vx: (Math.random() - 0.5) * 130 * waveSpd,
         rot: 0, vrot: (Math.random() - 0.5) * 4.0,
         phase: Math.random() * Math.PI * 2,
-        freq: 2.2 + Math.random() * 2.2,
+        freq: (2.2 + Math.random() * 2.2) * (0.9 + wave * 0.1),
         amp: 60 + Math.random() * 55,
         turnTimer: 0.5 + Math.random() * 1.1,
-        shootTimer: (isMiniBoss ? 1.25 : 1.65) + Math.random() * 0.7,
+        shootTimer: ((isMiniBoss ? 1.25 : 1.65) + Math.random() * 0.7) / Math.sqrt(waveSpd),
         hitFlash: 0,
         points: isElite ? 350 : (isMiniBoss ? 220 : 120),
         coinValue: isElite ? 100 : (isMiniBoss ? 36 : 18)
@@ -1033,7 +1039,6 @@
     }
   }
 
-  // Запуск гравитационного разлома за 2.5 сек до появления каждого из 2 боссов
   function triggerBossIntroVortex(isMidBoss = false) {
     if (boss || bossPreSpawnTimer > 0) return;
     const lvl = LEVELS[selectedLevelIdx];
@@ -1047,15 +1052,15 @@
     }
     if (vfx) {
       vfx.triggerFlash(lvl.accent, 0.24);
-      const label = isMidBoss ? '🌀 РАЗЛОМ: АВАНГАРД-БОСС!' : '🌀 РАЗЛОМ: МЕГА-БОСС СЕКТОРА!';
-      vfx.addPopup(W / 2, H * 0.36, label, lvl.accent, 1.2);
+      const bTitle = isMidBoss ? (lvl.midBossName || 'АВАНГАРД-БОСС') : lvl.bossName;
+      vfx.addPopup(W / 2, H * 0.36, `🌀 РАЗЛОМ: ${bTitle.toUpperCase()}!`, lvl.accent, 1.15);
     }
   }
 
   function spawnBoss(isMidBoss = false) {
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
-    const mult = isMidBoss ? 0.55 : 1.25;
+    const mult = isMidBoss ? 0.55 : 1.28;
     const bScale = isMidBoss ? 0.80 : 1.18;
     const totalHp = Math.round(240 * lvl.hpMult * diff.enemyHp * mult);
 
@@ -1259,20 +1264,25 @@
   }
 
   function fireUniqueBossWeapon(b, lvl, diff) {
-    const spd = 225 * diff.bulletSpeed;
+    const waveSpd = getWaveSpeedMult();
+    const spd = 220 * diff.bulletSpeed * (0.92 + waveSpd * 0.08);
     const toPlayer = player ? Math.atan2(player.y - b.y, player.x - b.x) : Math.PI / 2;
 
     if (lvl.id === 1) {
       if (synth) synth.sfxWave();
-      b.shootTimer = b.phase === 3 ? 0.92 : 1.18;
-      [-22, 22].forEach(ex => {
-        const eyeAng = Math.atan2(player.y - (b.y - 14), player.x - (b.x + ex));
-        enemyBullets.push({ kind: 'green_spin_star', rot: 0, x: b.x + ex, y: b.y - 14, vx: Math.cos(eyeAng) * (spd * 1.05), vy: Math.sin(eyeAng) * (spd * 1.05), r: 12, color: '#06d6a0' });
+      b.shootTimer = b.phase === 3 ? 0.90 : 1.15;
+      // Колёса-мандалы велосипеда Хофмана или глаза-штемпели
+      const oxList = b.isMidBoss ? [-16, 16] : [-26, 26];
+      oxList.forEach(ex => {
+        const ang = Math.atan2(player.y - (b.y + 18), player.x - (b.x + ex));
+        enemyBullets.push({ kind: 'green_spin_star', rot: 0, x: b.x + ex, y: b.y + 18, vx: Math.cos(ang) * (spd * 1.05), vy: Math.sin(ang) * (spd * 1.05), r: 12, color: '#06d6a0' });
       });
-      [-0.28, 0, 0.28].forEach((offsetAng, idx) => {
-        const ang = Math.PI / 2 + offsetAng + Math.sin(b.time * 3) * 0.15;
-        enemyBullets.push({ kind: 'psy_wave', hue: (b.time * 180 + idx * 110) % 360, x: b.x, y: b.y + 24, vx: Math.cos(ang) * (spd * 0.95), vy: Math.sin(ang) * (spd * 0.95), ang, r: 20, color: '#ff006e' });
-      });
+      if (!b.isMidBoss) {
+        [-0.32, 0, 0.32].forEach((offsetAng, idx) => {
+          const ang = Math.PI / 2 + offsetAng + Math.sin(b.time * 3) * 0.15;
+          enemyBullets.push({ kind: 'psy_wave', hue: (b.time * 180 + idx * 110) % 360, x: b.x, y: b.y + 34, vx: Math.cos(ang) * (spd * 0.95), vy: Math.sin(ang) * (spd * 0.95), ang, r: 20, color: '#ff006e' });
+        });
+      }
     } else if (lvl.id === 2) {
       if (synth) synth.sfxIgnite();
       b.shootTimer = b.phase === 3 ? 0.68 : 0.92;
@@ -1280,23 +1290,31 @@
         const ang = toPlayer + offsetAng;
         enemyBullets.push({ kind: 'fireball', x: b.x, y: b.y + 30, vx: Math.cos(ang) * (spd * 1.12), vy: Math.sin(ang) * (spd * 1.12), r: 12, color: '#ffbe0b' });
       });
-      enemyBullets.push({ kind: 'laser_shuriken', rot: 0, x: b.x, y: b.y + 24, vx: Math.cos(toPlayer) * (spd * 1.22), vy: Math.sin(toPlayer) * (spd * 1.22), r: 14, color: '#ff002b' });
+      if (!b.isMidBoss) {
+        [-74, 74].forEach(mx => {
+          const mAng = Math.atan2(player.y - (b.y + 48), player.x - (b.x + mx));
+          enemyBullets.push({ kind: 'laser_shuriken', rot: 0, x: b.x + mx, y: b.y + 48, vx: Math.cos(mAng) * (spd * 1.18), vy: Math.sin(mAng) * (spd * 1.18), r: 13, color: '#ff002b' });
+        });
+      }
     } else if (lvl.id === 3) {
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.95 : 1.22;
-      [-85, 85].forEach(hx => {
+      const hands = b.isMidBoss ? [-24, 24] : [-55, 55];
+      hands.forEach(hx => {
         const handAng = Math.atan2(player.y - (b.y + 18), player.x - (b.x + hx));
         enemyBullets.push({ kind: 'thrown_donut', rot: 0, x: b.x + hx, y: b.y + 18, vx: Math.cos(handAng) * spd, vy: Math.sin(handAng) * spd, r: 12, color: '#ffc2d1' });
       });
-      enemyBullets.push({ kind: 'psy_wave', hue: 330, x: b.x, y: b.y + 18, vx: Math.cos(toPlayer) * (spd * 0.95), vy: Math.sin(toPlayer) * (spd * 0.95), ang: toPlayer, r: 22, color: '#fff3d6' });
+      enemyBullets.push({ kind: 'psy_wave', hue: 330, x: b.x, y: b.y + 24, vx: Math.cos(toPlayer) * (spd * 0.95), vy: Math.sin(toPlayer) * (spd * 0.95), ang: toPlayer, r: 22, color: '#fff3d6' });
     } else if (lvl.id === 4) {
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.95 : 1.22;
       enemyBullets.push({ kind: 'psy_wave', hue: 185, x: b.x, y: b.y + 20, vx: Math.cos(toPlayer) * spd, vy: Math.sin(toPlayer) * spd, ang: toPlayer, r: 24, color: '#9bf6ff' });
-      [-45, 45].forEach(ox => {
-        const ang = Math.atan2(player.y - (b.y + 55), player.x - (b.x + ox));
-        enemyBullets.push({ kind: 'enemy_laser', x: b.x + ox, y: b.y + 55, vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25), ang, r: 6.5, color: '#9bf6ff' });
-      });
+      if (!b.isMidBoss) {
+        [-45, 45].forEach(ox => {
+          const ang = Math.atan2(player.y - (b.y + 55), player.x - (b.x + ox));
+          enemyBullets.push({ kind: 'enemy_laser', x: b.x + ox, y: b.y + 55, vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25), ang, r: 6.5, color: '#9bf6ff' });
+        });
+      }
     } else if (lvl.id === 5) {
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.92 : 1.18;
@@ -1304,17 +1322,21 @@
         const ang = toPlayer + offsetAng;
         enemyBullets.push({ kind: 'laser_flower', rot: 0, x: b.x, y: b.y + 24, vx: Math.cos(ang) * (spd * 0.92), vy: Math.sin(ang) * (spd * 0.92), r: 16, color: '#ff006e' });
       });
-      enemyBullets.push({ kind: 'vine_whip', x: b.x, y: b.y + 30, vx: Math.cos(toPlayer) * (spd * 1.18), vy: Math.sin(toPlayer) * (spd * 1.18), ang: toPlayer, r: 11, color: '#80ed99' });
+      if (!b.isMidBoss) {
+        enemyBullets.push({ kind: 'vine_whip', x: b.x, y: b.y + 30, vx: Math.cos(toPlayer) * (spd * 1.18), vy: Math.sin(toPlayer) * (spd * 1.18), ang: toPlayer, r: 11, color: '#80ed99' });
+      }
     } else {
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.85 : 1.10;
-      [-0.25, 0, 0.25].forEach((offsetAng, idx) => {
+      const spread = b.isMidBoss ? [-0.18, 0.18] : [-0.26, 0, 0.26];
+      spread.forEach((offsetAng, idx) => {
         const ang = toPlayer + offsetAng;
         enemyBullets.push({ kind: 'mini_mushroom_shot', hue: (b.time * 160 + idx * 90) % 360, rot: 0, x: b.x, y: b.y + 38, vx: Math.cos(ang) * (spd * 1.08), vy: Math.sin(ang) * (spd * 1.08), r: 12, color: '#ff006e' });
       });
     }
   }
 
+  // Логика 6 новых интерактивных объектов сектора
   function updateInteractiveProps(dt) {
     for (let i = interactiveProps.length - 1; i >= 0; i--) {
       const pr = interactiveProps[i];
@@ -1322,92 +1344,190 @@
       pr.phase += dt * 2.5;
       if (pr.cooldown > 0) pr.cooldown = Math.max(0, pr.cooldown - dt);
 
+      // 1) Ур. 5: Хищная Мухоловка сама захлопывается на пролетающих мимо врагах!
+      if (pr.type === 'flytrap_jaw' && pr.cooldown <= 0) {
+        for (let k = enemies.length - 1; k >= 0; k--) {
+          const en = enemies[k];
+          if (Math.hypot(en.x - pr.x, en.y - pr.y) < pr.r + en.r + 18) {
+            en.hp -= 12;
+            en.hitFlash = 1;
+            pr.cooldown = 0.55;
+            pr.charges--;
+            runCoins += 35;
+            score += 180;
+            if (synth) synth.sfxExplosion();
+            if (vfx) {
+              vfx.addHitSparks(pr.x, pr.y, '#80ed99', 14);
+              vfx.addPopup(pr.x, pr.y - 12, '🪴 АМ! +35 🐟', '#80ed99', 1.1);
+            }
+            if (world3d) world3d.triggerPulse(pr.x, pr.y, '#d8f3dc');
+            advanceQuest('props', 1);
+            if (pr.charges <= 0) {
+              interactiveProps.splice(i, 1);
+            }
+            break;
+          }
+        }
+        if (!interactiveProps[i]) continue;
+      }
+
+      // 2) Реакция на выстрелы игрока
       for (let j = bullets.length - 1; j >= 0; j--) {
         const b = bullets[j];
         if (b.propCooldown > 0) continue;
         if (Math.hypot(b.x - pr.x, b.y - pr.y) < pr.r + b.r) {
-          if (pr.type === 'mirror_portal' && pr.partner) {
-            b.x = pr.partner.x;
-            b.y = pr.partner.y;
-            b.propCooldown = 0.45;
-            if (synth) synth.sfxGravity();
-            if (vfx) vfx.addShockwave(pr.partner.x, pr.partner.y, '#00f5d4', 45, 0.25);
-            advanceQuest('props', 1);
-          } else if (pr.type === 'pinata_skull') {
+          if (pr.type === 'prism_kaleidoscope') {
+            // Ур. 1: Призма расщепляет пулю на веер из 5 радужных лучей
             bullets.splice(j, 1);
-            if (synth) synth.sfxVictory();
+            const rayCols = ['#f3c4fb', '#bdb2ff', '#a0c4ff', '#fdffb6', '#ffc6ff'];
+            [-0.48, -0.24, 0, 0.24, 0.48].forEach((ang, rIdx) => {
+              bullets.push({
+                kind: 'plasma', propCooldown: 0.4,
+                x: pr.x, y: pr.y - 10,
+                vx: Math.sin(ang) * 780, vy: -Math.cos(ang) * 780,
+                r: 7.5, dmg: 1.45, color: rayCols[rIdx]
+              });
+            });
+            if (synth) synth.sfxStarCollect();
             if (vfx) {
-              vfx.addRealisticExplosion(pr.x, pr.y, '#ffbe0b', 1.4, '#ff006e', '#06d6a0');
-              vfx.addPopup(pr.x, pr.y, '🎉 ПИНЬЯТА! ОГЛУШЕНИЕ +80 🐟', '#ffd166', 1.15);
+              vfx.addShockwave(pr.x, pr.y, '#f3c4fb', 75, 0.35);
+              vfx.addPopup(pr.x, pr.y, '💎 ПРИЗМА: 5 ЛУЧЕЙ!', '#f3c4fb', 1.1);
             }
-            if (world3d) world3d.triggerPulse(pr.x, pr.y, '#ffd6a5');
-            runCoins += 80;
-            enemies.forEach(en => { if (Math.hypot(en.x - pr.x, en.y - pr.y) < 220) en.stunTimer = 3.0; });
+            if (world3d) world3d.triggerPulse(pr.x, pr.y, '#f3c4fb');
             advanceQuest('props', 1);
             interactiveProps.splice(i, 1);
             break;
-          } else if (pr.type === 'flower_bumper') {
-            b.propCooldown = 0.35;
-            const target = enemies[0] || boss;
-            if (target) {
-              const ang = Math.atan2(target.y - b.y, target.x - b.x);
-              const spd = Math.hypot(b.vx, b.vy);
-              b.vx = Math.cos(ang) * spd;
-              b.vy = Math.sin(ang) * spd;
-            } else {
-              b.vx = (Math.random() - 0.5) * 500;
+          } else if (pr.type === 'fiesta_drum') {
+            // Ур. 2: Барабан Фиесты взрывается огненной волной, сжигая вражеские пули и врагов
+            bullets.splice(j, 1);
+            for (let ebIdx = enemyBullets.length - 1; ebIdx >= 0; ebIdx--) {
+              if (Math.hypot(enemyBullets[ebIdx].x - pr.x, enemyBullets[ebIdx].y - pr.y) < 230) {
+                enemyBullets.splice(ebIdx, 1);
+              }
             }
-            if (synth) synth.sfxStarCollect();
-            if (vfx) vfx.addShockwave(pr.x, pr.y, '#fee440', 45, 0.25);
+            enemies.forEach(en => {
+              if (Math.hypot(en.x - pr.x, en.y - pr.y) < 230) {
+                en.hp -= 5.0; en.hitFlash = 1;
+              }
+            });
+            if (synth) synth.sfxExplosion();
+            if (vfx) {
+              vfx.addRealisticExplosion(pr.x, pr.y, '#ffbe0b', 1.5, '#ff006e', '#ffbe0b');
+              vfx.addPopup(pr.x, pr.y, '🥁 ОГНЕННАЯ ВОЛНА ФИЕСТЫ!', '#ffd166', 1.15);
+            }
+            if (world3d) world3d.triggerPulse(pr.x, pr.y, '#ffd6a5');
             advanceQuest('props', 1);
+            interactiveProps.splice(i, 1);
+            break;
+          } else if (pr.type === 'marshmallow_bomb') {
+            // Ур. 3: Зефирная бомба превращает вражеские пули вокруг в сладкие конфеты +25 🐟
+            bullets.splice(j, 1);
+            let converted = 0;
+            for (let ebIdx = enemyBullets.length - 1; ebIdx >= 0; ebIdx--) {
+              const eb = enemyBullets[ebIdx];
+              if (Math.hypot(eb.x - pr.x, eb.y - pr.y) < 260) {
+                fishRainItems.push({ x: eb.x, y: eb.y, vy: 135, emoji: '🍬', phase: Math.random() * 6 });
+                enemyBullets.splice(ebIdx, 1);
+                converted++;
+              }
+            }
+            if (converted === 0) {
+              for (let c = 0; c < 3; c++) {
+                fishRainItems.push({ x: pr.x + (c - 1) * 28, y: pr.y, vy: 135, emoji: '🍬', phase: c });
+              }
+            }
+            if (synth) synth.sfxVictory();
+            if (vfx) {
+              vfx.addShockwave(pr.x, pr.y, '#ffc2d1', 120, 0.45);
+              vfx.addPopup(pr.x, pr.y, '🍥 ЗЕФИРНЫЙ ВЗРЫВ: КОНФЕТЫ!', '#fff3d6', 1.15);
+            }
+            if (world3d) world3d.triggerPulse(pr.x, pr.y, '#ffc2d1');
+            advanceQuest('props', 1);
+            interactiveProps.splice(i, 1);
+            break;
+          } else if (pr.type === 'spore_puffball') {
+            // Ур. 6: Споровая мина выпускает ядовитое облако на 4.5 секунды
+            bullets.splice(j, 1);
+            sporeClouds.push({ x: pr.x, y: pr.y, r: 108, life: 4.5, tick: 0 });
+            if (synth) synth.sfxWave();
+            if (vfx) {
+              vfx.addShockwave(pr.x, pr.y, '#e0aaff', 108, 0.45);
+              vfx.addPopup(pr.x, pr.y, '🍄 ЯДОВИТОЕ ОБЛАКО СПОР!', '#ffc6ff', 1.15);
+            }
+            if (world3d) world3d.triggerPulse(pr.x, pr.y, '#ffc6ff');
+            advanceQuest('props', 1);
+            interactiveProps.splice(i, 1);
+            break;
           }
         }
       }
 
       if (!interactiveProps[i]) continue;
 
-      if (Math.hypot(player.x - pr.x, player.y - pr.y) < player.r + pr.r) {
-        if (pr.type === 'candy_booster') {
-          player.turboTimer = 4.5;
-          if (synth) synth.sfxPurrBoost();
-          if (vfx) vfx.addPopup(pr.x, pr.y, '🌈 ВАНИЛЬНЫЙ УСКОРИТЕЛЬ!', '#fff3d6', 1.15);
+      // 3) Контакт игрока с объектом сектора (Ур. 3, 4, 6)
+      if (Math.hypot(player.x - pr.x, player.y - pr.y) < player.r + pr.r + 18) {
+        if (pr.type === 'jelly_generator') {
+          // Ур. 4: Медуза-Генератор заряжает корабль аква-молнией по 3 ближайшим врагам
+          let targets = [...enemies].sort((a, b) => Math.hypot(a.x - pr.x, a.y - pr.y) - Math.hypot(b.x - pr.x, b.y - pr.y)).slice(0, 3);
+          targets.forEach(t => {
+            t.hp -= 5.5; t.hitFlash = 1;
+            if (vfx) vfx.addLightningArc(pr.x, pr.y, t.x, t.y, '#90e0ef');
+          });
+          if (boss && vfx) {
+            boss.hp -= 8; boss.hitFlash = 1;
+            vfx.addLightningArc(pr.x, pr.y, boss.x, boss.y, '#90e0ef');
+          }
+          if (synth) synth.playCyberElectric(0.95);
+          if (vfx) vfx.addPopup(pr.x, pr.y, '🪼 АКВА-МОЛНИЯ x3!', '#caf0f8', 1.15);
+          if (world3d) world3d.triggerPulse(pr.x, pr.y, '#caf0f8');
           advanceQuest('props', 1);
           interactiveProps.splice(i, 1);
           continue;
-        } else if (pr.type === 'giant_bubble') {
-          player.shield = true;
-          if (synth) synth.sfxShieldBlock();
-          if (vfx) vfx.addPopup(pr.x, pr.y, '🫧 ПУЗЫРЬ-ЩИТ!', '#9bf6ff', 1.15);
-          advanceQuest('props', 1);
-          interactiveProps.splice(i, 1);
-          continue;
-        } else if (pr.type === 'psy_spore') {
-          psySlowTimer = 5.0;
+        } else if (pr.type === 'marshmallow_bomb') {
+          for (let ebIdx = enemyBullets.length - 1; ebIdx >= 0; ebIdx--) {
+            const eb = enemyBullets[ebIdx];
+            if (Math.hypot(eb.x - pr.x, eb.y - pr.y) < 260) {
+              fishRainItems.push({ x: eb.x, y: eb.y, vy: 135, emoji: '🍬', phase: Math.random() * 6 });
+              enemyBullets.splice(ebIdx, 1);
+            }
+          }
           if (synth) synth.sfxVictory();
-          if (vfx) {
-            vfx.triggerFlash('#ffd166', 0.28);
-            vfx.addPopup(pr.x, pr.y, '🍄 ПСИХО-СПОРА: ЗАМЕДЛЕНИЕ + ВЕЕР!', '#ffd166', 1.2);
-          }
+          if (vfx) vfx.addPopup(pr.x, pr.y, '🍥 ЗЕФИРНЫЙ ВЗРЫВ!', '#fff3d6', 1.15);
           advanceQuest('props', 1);
           interactiveProps.splice(i, 1);
           continue;
-        }
-      }
-
-      if (pr.type === 'giant_bubble') {
-        for (let k = enemies.length - 1; k >= 0; k--) {
-          const en = enemies[k];
-          if (!en.isElite && Math.hypot(en.x - pr.x, en.y - pr.y) < pr.r + en.r) {
-            if (vfx) vfx.addPopup(en.x, en.y, '🫧 ПОЙМАН В ПУЗЫРЬ! +30 🐟', '#9bf6ff');
-            runCoins += 30;
-            enemies.splice(k, 1);
-            advanceQuest('props', 1);
-            break;
-          }
+        } else if (pr.type === 'spore_puffball') {
+          sporeClouds.push({ x: pr.x, y: pr.y, r: 108, life: 4.5, tick: 0 });
+          if (synth) synth.sfxWave();
+          if (vfx) vfx.addPopup(pr.x, pr.y, '🍄 ЯДОВИТОЕ ОБЛАКО СПОР!', '#ffc6ff', 1.15);
+          advanceQuest('props', 1);
+          interactiveProps.splice(i, 1);
+          continue;
         }
       }
 
       if (pr.y > H + 60) interactiveProps.splice(i, 1);
+    }
+
+    // Обновление ядовитых облаков спор (Ур. 6)
+    for (let i = sporeClouds.length - 1; i >= 0; i--) {
+      const sc = sporeClouds[i];
+      sc.life -= dt;
+      sc.tick -= dt;
+      if (sc.tick <= 0) {
+        sc.tick = 0.35;
+        enemies.forEach(en => {
+          if (Math.hypot(en.x - sc.x, en.y - sc.y) < sc.r + en.r) {
+            en.hp -= 1.6;
+            en.hitFlash = 0.7;
+          }
+        });
+        if (boss && Math.hypot(boss.x - sc.x, boss.y - sc.y) < sc.r + boss.r) {
+          boss.hp -= 2.2;
+          boss.hitFlash = 0.5;
+        }
+      }
+      if (sc.life <= 0) sporeClouds.splice(i, 1);
     }
   }
 
@@ -1433,7 +1553,6 @@
     if (psySlowTimer > 0) psySlowTimer = Math.max(0, psySlowTimer - dt);
     if (comboTimer > 0) { comboTimer -= dt; if (comboTimer <= 0) combo = 1; }
 
-    // Обработка 2.5-секундного гравитационного портала перед появлением каждого из 2 боссов
     let vortexFactor = 0;
     if (bossPreSpawnTimer > 0) {
       bossPreSpawnTimer = Math.max(0, bossPreSpawnTimer - dt);
@@ -1445,19 +1564,21 @@
     }
 
     const dMult = diff.durationMult || 1.0;
+    const waveSpd = getWaveSpeedMult();
     waveTimer += dt;
+
     if (!boss && bossPreSpawnTimer <= 0) {
       if (wave === 1 && waveTimer > 19 * dMult) {
         wave = 2;
         if (world3d) world3d.triggerPulse(W / 2, H * 0.35, lvl.accent);
-        if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 2 / 4: НОВЫЕ УЗОРЫ И ПРЕПЯТСТВИЯ!', lvl.accent, 1.12);
+        if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 2 / 4: УСКОРЕНИЕ ПОТОКА!', lvl.accent, 1.15);
       } else if (wave === 2 && waveTimer > 38 * dMult) {
         if (!midBossDefeated) {
           triggerBossIntroVortex(true);
         } else {
           wave = 3;
           if (world3d) world3d.triggerPulse(W / 2, H * 0.35, '#ffd166');
-          if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 3 / 4: ЭЛИТА В КОРОНАХ!', '#ffd166', 1.2);
+          if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 3 / 4: ЭЛИТА И ВЫСОКАЯ СКОРОСТЬ!', '#ffd166', 1.2);
         }
       } else if (wave === 3 && waveTimer > 60 * dMult) {
         wave = 4;
@@ -1473,20 +1594,20 @@
         spawnTimer -= dt;
         if (spawnTimer <= 0) {
           spawnEnemyFormation();
-          spawnTimer = ([0, 1.15, 1.25, 0.90][wave] || 1.0) * diff.spawnRate;
+          spawnTimer = (([0, 1.15, 1.20, 0.90][wave] || 1.0) * diff.spawnRate) / Math.sqrt(waveSpd);
         }
       }
     }
 
     propTimer -= dt;
     if (propTimer <= 0 && !boss && bossPreSpawnTimer <= 0 && fishRainTimer <= 0) {
-      propTimer = 8.5 + Math.random() * 3.0;
+      propTimer = 7.5 + Math.random() * 2.5;
       spawnSectorInteractiveProp();
     }
 
     obstacleTimer -= dt;
     if (obstacleTimer <= 0 && !boss && bossPreSpawnTimer <= 0 && fishRainTimer <= 0) {
-      obstacleTimer = (wave === 2 ? 2.1 : 3.4) + Math.random() * 1.3;
+      obstacleTimer = ((wave === 2 ? 2.1 : 3.3) + Math.random() * 1.2) / Math.sqrt(waveSpd);
       spawnObstacle();
     }
 
@@ -1494,12 +1615,12 @@
       fishRainTimer -= dt;
       fishRainSpawnTimer -= dt;
       if (fishRainSpawnTimer <= 0) {
-        fishRainSpawnTimer = 0.36;
+        fishRainSpawnTimer = 0.34;
         const emojis = ['🐟', '🥛', '🍖', '🍤'];
         fishRainItems.push({
           x: 40 + Math.random() * (W - 80),
           y: -25,
-          vy: 165 + Math.random() * 60,
+          vy: (170 + Math.random() * 60) * waveSpd,
           emoji: emojis[Math.floor(Math.random() * emojis.length)],
           phase: Math.random() * Math.PI * 2
         });
@@ -1652,7 +1773,7 @@
         const edt = dt * slowMult;
         if (e.movePattern === 'zigzag') {
           e.turnTimer -= edt;
-          if (e.turnTimer <= 0) { e.turnTimer = 0.55 + Math.random() * 0.85; e.vx = (Math.random() > 0.5 ? 1 : -1) * (110 + Math.random() * 110); }
+          if (e.turnTimer <= 0) { e.turnTimer = 0.55 + Math.random() * 0.85; e.vx = (Math.random() > 0.5 ? 1 : -1) * (110 + Math.random() * 110) * waveSpd; }
           e.x += e.vx * edt; e.y += e.baseVy * edt;
         } else if (e.movePattern === 'dash') {
           e.y += e.baseVy * (0.45 + Math.max(0, Math.sin(e.phase * 1.4)) * 1.45) * edt;
@@ -1664,7 +1785,7 @@
           e.turnTimer -= edt;
           if (e.turnTimer <= 0) {
             e.turnTimer = 0.65 + Math.random() * 0.9;
-            e.vx = Math.random() < 0.45 && player ? Math.sign(player.x - e.x) * (120 + Math.random() * 90) : (Math.random() - 0.5) * 260;
+            e.vx = (Math.random() < 0.45 && player ? Math.sign(player.x - e.x) * (120 + Math.random() * 90) : (Math.random() - 0.5) * 260) * waveSpd;
             e.vy = e.baseVy * (0.7 + Math.random() * 0.85);
           }
           e.x += e.vx * edt; e.y += e.vy * edt;
@@ -1675,9 +1796,9 @@
 
         e.shootTimer -= edt;
         if (e.shootTimer <= 0 && e.y > 40 && e.y < H * 0.68) {
-          e.shootTimer = 1.80 / diff.bulletSpeed;
+          e.shootTimer = 1.80 / (diff.bulletSpeed * Math.sqrt(waveSpd));
           const ang = Math.atan2(p.y - e.y, p.x - e.x);
-          const spd = 225 * diff.bulletSpeed;
+          const spd = 220 * diff.bulletSpeed * (0.9 + waveSpd * 0.1);
 
           if (e.kind === 'evil_flyagaric' || e.kind === 'psy_mushroom') {
             for (let s = 0; s < 6; s++) {
@@ -1952,6 +2073,22 @@
     }
   }
 
+  function drawSporeClouds() {
+    for (const sc of sporeClouds) {
+      ctx.save();
+      const alpha = Math.min(0.42, sc.life * 0.14);
+      const grad = ctx.createRadialGradient(sc.x, sc.y, 8, sc.x, sc.y, sc.r);
+      grad.addColorStop(0, `rgba(204, 255, 51, ${alpha})`);
+      grad.addColorStop(0.6, `rgba(157, 78, 221, ${alpha * 0.8})`);
+      grad.addColorStop(1, 'rgba(157, 78, 221, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(sc.x, sc.y, sc.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
   function drawCatLifeIcon(ctx, x, y, active) {
     ctx.save(); ctx.translate(x, y); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     ctx.fillStyle = active ? '#ffb703' : 'rgba(255, 255, 255, 0.18)';
@@ -1996,8 +2133,9 @@
 
     if (boss) {
       const bw = Math.min(240, W - 210), bx = (W - bw) / 2 - 18, by = 18;
-      ctx.fillStyle = '#ffd166'; ctx.font = '900 11px sans-serif'; ctx.textAlign = 'center';
-      const bTitle = boss.isMidBoss ? `1/2 АВАНГАРД: ${lvl.bossName.toUpperCase()}` : `2/2 МЕГА: ${lvl.bossName.toUpperCase()}`;
+      ctx.fillStyle = '#ffd166'; ctx.font = '900 10.5px sans-serif'; ctx.textAlign = 'center';
+      const bossLabel = boss.isMidBoss ? (lvl.midBossName || lvl.bossName) : lvl.bossName;
+      const bTitle = `${boss.isMidBoss ? '1/2' : '2/2'} ${bossLabel.toUpperCase()}`;
       ctx.strokeText(bTitle, bx + bw / 2, by + 32); ctx.fillText(bTitle, bx + bw / 2, by + 32);
       roundRectPath(ctx, bx, by, bw, 15, 8); ctx.fillStyle = BORDER_INK; ctx.fill();
       const fillW = Math.max(0, (bw - 6) * (boss.hp / boss.maxHp));
@@ -2078,6 +2216,7 @@
     else { ctx.fillStyle = lvl.skyMid; ctx.fillRect(0, 0, W, H); }
 
     if (vfx) vfx.renderTrails(ctx);
+    drawSporeClouds();
     for (const pr of interactiveProps) drawInteractiveProp(ctx, pr);
     for (const ob of obstacles) drawObstacle(ctx, ob);
     for (const fr of fishRainItems) drawFishRainItem(ctx, fr);
