@@ -671,11 +671,9 @@
     applySiteTheme(cur);
     const ship = getActiveShip();
     const drone = getActiveDrone();
-    const diff = DIFFICULTIES[selectedDiffKey];
-    const bossCountLabel = diff.twoBosses ? '2 БОССА ПОДРЯД!' : cur.bossName;
     const droneTag = drone.id !== 'none' ? ` • 🛸 ${drone.name.replace(/^\d+\.\s*/, '')}` : '';
     document.getElementById('selected-level-info').innerHTML =
-      `<strong>Уровень ${cur.id}: ${cur.name}</strong> (+${cur.coinReward} 🐟)<br><span>Босс: ${bossCountLabel} • ${ship.name}${droneTag}</span>`;
+      `<strong>Уровень ${cur.id}: ${cur.name}</strong> (+${cur.coinReward} 🐟)<br><span>2 Босса: ${cur.bossName} • ${ship.name}${droneTag}</span>`;
     document.getElementById('start-best').textContent =
       `Рекорд: ${progress.bestScore} • Пройдено: ${progress.completed.length}/${LEVELS.length}`;
   }
@@ -705,7 +703,7 @@
     document.getElementById('intro-title').textContent = lvl.name.toUpperCase();
     document.getElementById('intro-story').textContent = lvl.story;
     document.getElementById('intro-intel').innerHTML =
-      `<div>🛸 <b>Враги:</b> ${lvl.enemiesDesc}</div><div>👑 <b>Босс:</b> ${diff.twoBosses ? lvl.bossName + ' (x2)' : lvl.bossName}</div><div>🐟 <b>Награда:</b> +${lvl.coinReward} рыбок</div>`;
+      `<div>🛸 <b>Враги:</b> ${lvl.enemiesDesc}</div><div>👑 <b>Боссы сектора:</b> ${lvl.bossName} (Авангард + Мега-Босс)</div><div>🐟 <b>Награда:</b> +${lvl.coinReward} рыбок</div>`;
 
     startOverlay.classList.add('hidden'); endOverlay.classList.add('hidden'); introOverlay.classList.remove('hidden');
     syncTopHudVisibility();
@@ -787,7 +785,8 @@
   muteBtn?.addEventListener('click', (e) => { e.stopPropagation(); if (!synth) return; muteBtn.textContent = synth.toggleMute() ? '🔇' : '🔊'; });
 
   let score = 0, runCoins = 0, kills = 0, combo = 1, comboTimer = 0, wave = 1, waveTimer = 0;
-  let spawnTimer = 0, obstacleTimer = 4.0, propTimer = 6.5, screenShake = 0, warningBannerTimer = 0, globalTime = 0, midBossDefeated = false;
+  let spawnTimer = 0, obstacleTimer = 3.5, propTimer = 6.0, screenShake = 0, warningBannerTimer = 0, globalTime = 0;
+  let midBossDefeated = false, bossPreSpawnTimer = 0, bossPreSpawnIsMid = false;
   let psySlowTimer = 0, fishRainTimer = 0, fishRainSpawnTimer = 0, formationCounter = 0;
   let activeQuest = null;
 
@@ -833,7 +832,7 @@
   document.getElementById('resume-btn')?.addEventListener('click', (e) => { e.stopPropagation(); togglePause(); });
 
   function returnToMenu() {
-    state = 'START'; pointer.active = false; boss = null; enemies = []; obstacles = []; bullets = []; enemyBullets = []; bonuses = []; interactiveProps = []; fishRainItems = []; activeDrones = [];
+    state = 'START'; pointer.active = false; boss = null; bossPreSpawnTimer = 0; enemies = []; obstacles = []; bullets = []; enemyBullets = []; bonuses = []; interactiveProps = []; fishRainItems = []; activeDrones = [];
     if (vfx) vfx.clear(); if (synth) { synth.sfxMenuTap(); synth.startIntroMusic(); }
     [pauseOverlay, endOverlay, settingsOverlay, introOverlay, loreOverlay, hangarOverlay, splashOverlay, pauseBtn].forEach(el => el.classList.add('hidden'));
     renderLevelGrid(); startOverlay.classList.remove('hidden'); syncTopHudVisibility();
@@ -900,8 +899,9 @@
     if (synth) { synth.init(); synth.startMusic('normal', lvl.id); synth.sfxCosmicHum(); }
 
     score = 0; runCoins = 0; kills = 0; combo = 1; comboTimer = 0; wave = 1; waveTimer = 0;
-    spawnTimer = 0.5; obstacleTimer = 3.5; propTimer = 5.0;
-    screenShake = 0; warningBannerTimer = 0; midBossDefeated = false; psySlowTimer = 0; fishRainTimer = 0; formationCounter = 0;
+    spawnTimer = 0.5; obstacleTimer = 3.2; propTimer = 5.0;
+    screenShake = 0; warningBannerTimer = 0; midBossDefeated = false; bossPreSpawnTimer = 0; bossPreSpawnIsMid = false;
+    psySlowTimer = 0; fishRainTimer = 0; formationCounter = 0;
 
     initLevelQuest(lvl);
 
@@ -922,7 +922,10 @@
     pauseBtn.classList.remove('hidden');
     syncTopHudVisibility();
 
-    if (world3d) world3d.setCameraFromPlayer(player.x, W);
+    if (world3d) {
+      world3d.setCameraFromPlayer(player.x, W);
+      world3d.setBattleState({ wave: 1, playerX: player.x, playerY: player.y, bossVortex: 0 });
+    }
     if (vfx) vfx.addPopup(W / 2, H * 0.34, `УРОВЕНЬ ${lvl.id}: ${lvl.name.toUpperCase()}`, lvl.accent, 1.15);
   }
 
@@ -950,20 +953,35 @@
     }
   }
 
+  // 18 уникальных мигающих препятствий (по 3 на каждый уровень 1–6)
   function spawnObstacle() {
     const lvl = LEVELS[selectedLevelIdx];
     const x = 56 + Math.random() * (W - 112);
-    let shape = 'om_fractal';
-    if (lvl.theme === 'lsd') shape = Math.random() < 0.55 ? 'om_fractal' : 'neon_star_obstacle';
-    else if (lvl.theme === 'horror') shape = Math.random() < 0.65 ? 'skull_bones' : 'blood_pentagram';
-    else if (lvl.theme === 'rainbow') shape = ['rainbow_donut', 'dream_bubble', 'rainbow_cloud'][Math.floor(Math.random() * 3)];
-    else if (lvl.theme === 'underwater') shape = Math.random() < 0.55 ? 'neon_coral' : 'seaweed_kelp';
-    else if (lvl.theme === 'organic') shape = 'tentacle_seaweed';
-    else if (lvl.theme === 'mushroom') shape = Math.random() < 0.55 ? 'mushroom_box' : 'spore_crystal';
+
+    const shapesByTheme = {
+      lsd:        ['om_star', 'hippie_peace', 'spinning_mandala'],
+      horror:     ['mexican_skull_bones', 'donkey_pinata', 'blinking_sombrero'],
+      rainbow:    ['cotton_candy_storm', 'pastel_donut', 'pastel_fractal'],
+      underwater: ['moving_seaweed', 'spiral_seashell', 'pink_corals'],
+      organic:    ['living_flower', 'plant_cell', 'spiky_plant'],
+      mushroom:   ['fly_agaric_obs', 'psilocybin_shroom', 'round_psy_shroom']
+    };
+
+    const pool = shapesByTheme[lvl.theme] || shapesByTheme.lsd;
+    const shape = pool[Math.floor(Math.random() * pool.length)];
+    const rotatingShapes = ['om_star', 'spinning_mandala', 'pastel_donut', 'pastel_fractal', 'plant_cell', 'round_psy_shroom'];
 
     obstacles.push({
-      shape, neonColor: lvl.accent || '#00f5d4', x, y: -48, r: 25, vy: 96,
-      rot: 0, vrot: shape === 'tentacle_seaweed' ? 0 : 1.5, phase: Math.random() * Math.PI * 2
+      shape,
+      neonColor: lvl.accent || '#f3c4fb',
+      x,
+      y: -48,
+      r: 24,
+      hp: 3,
+      vy: 96,
+      rot: 0,
+      vrot: rotatingShapes.includes(shape) ? (Math.random() > 0.5 ? 1.5 : -1.5) : 0,
+      phase: Math.random() * Math.PI * 2
     });
   }
 
@@ -1015,11 +1033,30 @@
     }
   }
 
+  // Запуск гравитационного разлома за 2.5 сек до появления каждого из 2 боссов
+  function triggerBossIntroVortex(isMidBoss = false) {
+    if (boss || bossPreSpawnTimer > 0) return;
+    const lvl = LEVELS[selectedLevelIdx];
+    bossPreSpawnTimer = 2.5;
+    bossPreSpawnIsMid = isMidBoss;
+    warningBannerTimer = 2.5;
+
+    if (synth) {
+      synth.sfxBossAlarm();
+      synth.setMusicMode('boss', lvl.id);
+    }
+    if (vfx) {
+      vfx.triggerFlash(lvl.accent, 0.24);
+      const label = isMidBoss ? '🌀 РАЗЛОМ: АВАНГАРД-БОСС!' : '🌀 РАЗЛОМ: МЕГА-БОСС СЕКТОРА!';
+      vfx.addPopup(W / 2, H * 0.36, label, lvl.accent, 1.2);
+    }
+  }
+
   function spawnBoss(isMidBoss = false) {
     const lvl = LEVELS[selectedLevelIdx];
     const diff = DIFFICULTIES[selectedDiffKey];
-    const mult = isMidBoss ? 0.58 : (diff.twoBosses ? 1.35 : 1.0);
-    const bScale = isMidBoss ? 0.82 : (diff.twoBosses ? 1.24 : 1.0);
+    const mult = isMidBoss ? 0.55 : 1.25;
+    const bScale = isMidBoss ? 0.80 : 1.18;
     const totalHp = Math.round(240 * lvl.hpMult * diff.enemyHp * mult);
 
     boss = {
@@ -1027,9 +1064,9 @@
       r: 62 * bScale, hp: totalHp, maxHp: totalHp, phase: 1, time: 0, hitFlash: 0,
       smokeTimer: 0, shootTimer: 0.95, specialTimer: 3.2, laserState: 'idle', laserTimer: 0, laserX: W / 2
     };
-    warningBannerTimer = 2.4;
-    if (synth) { synth.sfxBossAlarm(); synth.setMusicMode('boss', lvl.id); }
-    if (vfx) vfx.triggerFlash(lvl.accent, 0.28);
+    screenShake = 10;
+    if (vfx) vfx.triggerFlash('#ffffff', 0.34);
+    if (world3d) world3d.triggerPulse(W / 2, H * 0.22, lvl.accent);
   }
 
   function maybeDropFoodBonus(x, y, guaranteed = false) {
@@ -1249,9 +1286,9 @@
       b.shootTimer = b.phase === 3 ? 0.95 : 1.22;
       [-85, 85].forEach(hx => {
         const handAng = Math.atan2(player.y - (b.y + 18), player.x - (b.x + hx));
-        enemyBullets.push({ kind: 'thrown_donut', rot: 0, x: b.x + hx, y: b.y + 18, vx: Math.cos(handAng) * spd, vy: Math.sin(handAng) * spd, r: 12, color: '#ff70a6' });
+        enemyBullets.push({ kind: 'thrown_donut', rot: 0, x: b.x + hx, y: b.y + 18, vx: Math.cos(handAng) * spd, vy: Math.sin(handAng) * spd, r: 12, color: '#ffc2d1' });
       });
-      enemyBullets.push({ kind: 'psy_wave', hue: (b.time * 140) % 360, x: b.x, y: b.y + 18, vx: Math.cos(toPlayer) * (spd * 0.95), vy: Math.sin(toPlayer) * (spd * 0.95), ang: toPlayer, r: 22, color: '#00f5d4' });
+      enemyBullets.push({ kind: 'psy_wave', hue: 330, x: b.x, y: b.y + 18, vx: Math.cos(toPlayer) * (spd * 0.95), vy: Math.sin(toPlayer) * (spd * 0.95), ang: toPlayer, r: 22, color: '#fff3d6' });
     } else if (lvl.id === 4) {
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.95 : 1.22;
@@ -1303,6 +1340,7 @@
               vfx.addRealisticExplosion(pr.x, pr.y, '#ffbe0b', 1.4, '#ff006e', '#06d6a0');
               vfx.addPopup(pr.x, pr.y, '🎉 ПИНЬЯТА! ОГЛУШЕНИЕ +80 🐟', '#ffd166', 1.15);
             }
+            if (world3d) world3d.triggerPulse(pr.x, pr.y, '#ffd6a5');
             runCoins += 80;
             enemies.forEach(en => { if (Math.hypot(en.x - pr.x, en.y - pr.y) < 220) en.stunTimer = 3.0; });
             advanceQuest('props', 1);
@@ -1332,7 +1370,7 @@
         if (pr.type === 'candy_booster') {
           player.turboTimer = 4.5;
           if (synth) synth.sfxPurrBoost();
-          if (vfx) vfx.addPopup(pr.x, pr.y, '🌈 РАДУЖНЫЙ УСКОРИТЕЛЬ!', '#ffd166', 1.15);
+          if (vfx) vfx.addPopup(pr.x, pr.y, '🌈 ВАНИЛЬНЫЙ УСКОРИТЕЛЬ!', '#fff3d6', 1.15);
           advanceQuest('props', 1);
           interactiveProps.splice(i, 1);
           continue;
@@ -1395,47 +1433,61 @@
     if (psySlowTimer > 0) psySlowTimer = Math.max(0, psySlowTimer - dt);
     if (comboTimer > 0) { comboTimer -= dt; if (comboTimer <= 0) combo = 1; }
 
-    propTimer -= dt;
-    if (propTimer <= 0 && !boss && fishRainTimer <= 0) {
-      propTimer = 8.5 + Math.random() * 3.0;
-      spawnSectorInteractiveProp();
-    }
-
-    obstacleTimer -= dt;
-    if (obstacleTimer <= 0 && !boss && fishRainTimer <= 0) {
-      obstacleTimer = (wave === 2 ? 2.2 : 3.8) + Math.random() * 1.4;
-      spawnObstacle();
+    // Обработка 2.5-секундного гравитационного портала перед появлением каждого из 2 боссов
+    let vortexFactor = 0;
+    if (bossPreSpawnTimer > 0) {
+      bossPreSpawnTimer = Math.max(0, bossPreSpawnTimer - dt);
+      vortexFactor = Math.min(1, 1 - (bossPreSpawnTimer / 2.5));
+      if (bossPreSpawnTimer <= 0) {
+        spawnBoss(bossPreSpawnIsMid);
+        vortexFactor = 0;
+      }
     }
 
     const dMult = diff.durationMult || 1.0;
     waveTimer += dt;
-    if (!boss) {
-      if (wave === 1 && waveTimer > 20 * dMult) {
+    if (!boss && bossPreSpawnTimer <= 0) {
+      if (wave === 1 && waveTimer > 19 * dMult) {
         wave = 2;
-        if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 2 / 4: МЕТЕОРНЫЙ СЛАЛОМ!', lvl.accent, 1.15);
-      } else if (wave === 2 && waveTimer > 40 * dMult) {
-        if (diff.twoBosses && !midBossDefeated) spawnBoss(true);
-        else {
+        if (world3d) world3d.triggerPulse(W / 2, H * 0.35, lvl.accent);
+        if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 2 / 4: НОВЫЕ УЗОРЫ И ПРЕПЯТСТВИЯ!', lvl.accent, 1.12);
+      } else if (wave === 2 && waveTimer > 38 * dMult) {
+        if (!midBossDefeated) {
+          triggerBossIntroVortex(true);
+        } else {
           wave = 3;
+          if (world3d) world3d.triggerPulse(W / 2, H * 0.35, '#ffd166');
           if (vfx) vfx.addPopup(W / 2, H * 0.35, 'ВОЛНА 3 / 4: ЭЛИТА В КОРОНАХ!', '#ffd166', 1.2);
         }
-      } else if (wave === 3 && waveTimer > 62 * dMult) {
+      } else if (wave === 3 && waveTimer > 60 * dMult) {
         wave = 4;
         fishRainTimer = 8.0;
         if (synth) synth.sfxVictory();
-        if (vfx) vfx.addPopup(W / 2, H * 0.34, '🐟 БОНУС: РЫБНЫЙ ДОЖДЬ! 🐟', '#ffd166', 1.25);
-      } else if (wave === 4 && fishRainTimer <= 0 && waveTimer > 71 * dMult) {
-        wave = 5;
-        spawnBoss(false);
+        if (world3d) world3d.triggerPulse(W / 2, H * 0.34, '#ffd166');
+        if (vfx) vfx.addPopup(W / 2, H * 0.34, '🐟 ВОЛНА 4 / 4: РЫБНЫЙ ДОЖДЬ! 🐟', '#ffd166', 1.22);
+      } else if (wave === 4 && fishRainTimer <= 0 && waveTimer > 69 * dMult) {
+        triggerBossIntroVortex(false);
       }
 
-      if (wave <= 3) {
+      if (wave <= 3 && bossPreSpawnTimer <= 0) {
         spawnTimer -= dt;
         if (spawnTimer <= 0) {
           spawnEnemyFormation();
           spawnTimer = ([0, 1.15, 1.25, 0.90][wave] || 1.0) * diff.spawnRate;
         }
       }
+    }
+
+    propTimer -= dt;
+    if (propTimer <= 0 && !boss && bossPreSpawnTimer <= 0 && fishRainTimer <= 0) {
+      propTimer = 8.5 + Math.random() * 3.0;
+      spawnSectorInteractiveProp();
+    }
+
+    obstacleTimer -= dt;
+    if (obstacleTimer <= 0 && !boss && bossPreSpawnTimer <= 0 && fishRainTimer <= 0) {
+      obstacleTimer = (wave === 2 ? 2.1 : 3.4) + Math.random() * 1.3;
+      spawnObstacle();
     }
 
     if (fishRainTimer > 0) {
@@ -1499,7 +1551,16 @@
 
     p.x = Math.max(24, Math.min(W - 24, p.x));
     p.y = Math.max(54, Math.min(H - 24, p.y));
-    if (world3d) world3d.setCameraFromPlayer(p.x, W);
+
+    if (world3d) {
+      world3d.setCameraFromPlayer(p.x, W);
+      world3d.setBattleState({
+        wave: Math.min(4, wave),
+        playerX: p.x,
+        playerY: p.y,
+        bossVortex: vortexFactor
+      });
+    }
 
     p.fireCooldown -= dt;
     const baseCd = p.turboTimer > 0 ? 0.11 : 0.18;
@@ -1514,16 +1575,40 @@
     for (let i = obstacles.length - 1; i >= 0; i--) {
       const ob = obstacles[i];
       ob.y += ob.vy * dt; ob.rot += (ob.vrot || 0) * dt; ob.phase += dt * 2.5;
+      let destroyed = false;
+
       for (let j = bullets.length - 1; j >= 0; j--) {
         const b = bullets[j];
         if (Math.hypot(b.x - ob.x, b.y - ob.y) < ob.r + b.r) {
+          ob.hp -= b.dmg;
           if (vfx) vfx.addHitSparks(b.x, b.y, ob.neonColor, 8);
           if (!b.pierce) bullets.splice(j, 1);
-          if (synth && Math.random() < 0.35) synth.sfxDisintegrate();
+
+          if (ob.hp <= 0) {
+            destroyed = true;
+            score += 60;
+            runCoins += 10;
+            if (synth) synth.sfxExplosion();
+            if (vfx) {
+              vfx.addRealisticExplosion(ob.x, ob.y, ob.neonColor, 0.95);
+              vfx.addPopup(ob.x, ob.y, '+10 🐟', ob.neonColor, 0.9);
+            }
+            if (world3d) world3d.triggerPulse(ob.x, ob.y, ob.neonColor);
+            break;
+          } else if (synth && Math.random() < 0.4) {
+            synth.sfxDisintegrate();
+          }
         }
       }
+
+      if (destroyed) {
+        obstacles.splice(i, 1);
+        continue;
+      }
+
       if (Math.hypot(p.x - ob.x, p.y - ob.y) < p.r + ob.r - 4) {
         if (vfx) vfx.addRealisticExplosion(ob.x, ob.y, ob.neonColor, 1.0);
+        if (world3d) world3d.triggerPulse(ob.x, ob.y, ob.neonColor);
         obstacles.splice(i, 1); damagePlayer(); continue;
       }
       if (ob.y > H + 60) obstacles.splice(i, 1);
@@ -1605,7 +1690,7 @@
             const rCols = ['#ff3366', '#ffd166', '#06d6a0', '#48dbfb'];
             enemyBullets.push({ kind: 'rubik_square', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * (spd * 1.25), vy: Math.sin(ang) * (spd * 1.25), r: 7.5, color: rCols[Math.floor(Math.random() * rCols.length)] });
           } else if (e.kind === 'mini_donut' || e.kind === 'clown_ship') {
-            enemyBullets.push({ kind: 'thrown_donut', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 10, color: '#ff70a6' });
+            enemyBullets.push({ kind: 'thrown_donut', rot: 0, x: e.x, y: e.y + 16, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, r: 10, color: '#ffc2d1' });
           } else if (e.kind === 'vine_beast') {
             enemyBullets.push({ kind: 'vine_whip', x: e.x, y: e.y + 18, vx: Math.cos(ang) * (spd * 1.15), vy: Math.sin(ang) * (spd * 1.15), ang, r: 10, color: '#80ed99' });
           } else if (e.kind === 'mini_flower') {
@@ -1651,6 +1736,7 @@
       if (e.hp <= 0) {
         if (synth) synth.sfxExplosion();
         if (vfx) vfx.addRealisticExplosion(e.x, e.y, lvl.accent, 1.05, e.wingCol, e.bodyCol);
+        if (world3d && e.isElite) world3d.triggerPulse(e.x, e.y, '#ffd6a5');
 
         score += Math.round(e.points * combo * diff.scoreMult);
         const earnedFood = Math.round(e.coinValue * (p.ship.coinMult || 1));
@@ -1749,11 +1835,12 @@
         if (b.hp <= 0) {
           if (synth) synth.sfxBossExplosion();
           if (vfx) { vfx.triggerFlash('#ffffff', 0.65); vfx.addRealisticExplosion(b.x, b.y, lvl.accent, 2.3, lvl.bossColor, '#ffd166'); }
+          if (world3d) world3d.triggerPulse(b.x, b.y, '#ffffff');
           screenShake = 22;
 
           if (b.isMidBoss) {
             midBossDefeated = true; score += 1800; runCoins += Math.round((lvl.coinReward || 380) * 0.5); kills++;
-            maybeDropFoodBonus(b.x, b.y, true); boss = null; wave = 3;
+            maybeDropFoodBonus(b.x, b.y, true); boss = null; enemyBullets = []; wave = 3;
             if (synth) synth.startMusic('normal', lvl.id);
             if (vfx) vfx.addPopup(W / 2, H * 0.35, '1-Й БОСС ПОВЕРЖЕН! ВПЕРЕДИ МЕГА-БОСС!', '#80ffdb', 1.2);
             return;
@@ -1894,7 +1981,9 @@
     ctx.strokeText(`${score}  •  🐟 ${runCoins}`, 18, 60); ctx.fillText(`${score}  •  🐟 ${runCoins}`, 18, 60);
 
     ctx.fillStyle = lvl.accent; ctx.font = '800 12px sans-serif';
-    const waveLabel = boss ? (boss.isMidBoss ? 'МИНИ-БОСС' : 'МЕГА-БОСС') : (fishRainTimer > 0 ? '🐟 РЫБНЫЙ ДОЖДЬ!' : `ВОЛНА ${Math.min(4, wave)}/4`);
+    const waveLabel = boss
+      ? (boss.isMidBoss ? 'БОСС 1/2 (АВАНГАРД)' : 'БОСС 2/2 (МЕГА)')
+      : (bossPreSpawnTimer > 0 ? '🌀 ПОРТАЛ БОССА!' : (fishRainTimer > 0 ? '🐟 РЫБНЫЙ ДОЖДЬ!' : `ВОЛНА ${Math.min(4, wave)}/4`));
     const subHud = combo > 1 ? `УРОВЕНЬ ${lvl.id} • ${waveLabel} • x${combo}` : `УРОВЕНЬ ${lvl.id} • ${waveLabel}`;
     ctx.strokeText(subHud, 18, 78); ctx.fillText(subHud, 18, 78);
 
@@ -1908,7 +1997,7 @@
     if (boss) {
       const bw = Math.min(240, W - 210), bx = (W - bw) / 2 - 18, by = 18;
       ctx.fillStyle = '#ffd166'; ctx.font = '900 11px sans-serif'; ctx.textAlign = 'center';
-      const bTitle = boss.isMidBoss ? `АВАНГАРД: ${lvl.bossName.toUpperCase()}` : lvl.bossName.toUpperCase();
+      const bTitle = boss.isMidBoss ? `1/2 АВАНГАРД: ${lvl.bossName.toUpperCase()}` : `2/2 МЕГА: ${lvl.bossName.toUpperCase()}`;
       ctx.strokeText(bTitle, bx + bw / 2, by + 32); ctx.fillText(bTitle, bx + bw / 2, by + 32);
       roundRectPath(ctx, bx, by, bw, 15, 8); ctx.fillStyle = BORDER_INK; ctx.fill();
       const fillW = Math.max(0, (bw - 6) * (boss.hp / boss.maxHp));
@@ -1916,7 +2005,7 @@
     }
 
     if (warningBannerTimer > 0 && Math.floor(warningBannerTimer * 6) % 2 === 0) {
-      ctx.fillStyle = '#ff5964'; ctx.strokeStyle = BORDER_INK; ctx.lineWidth = 5; ctx.font = '900 24px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#ff5964'; ctx.strokeStyle = BORDER_INK; ctx.lineWidth = 5; ctx.font = '900 23px sans-serif'; ctx.textAlign = 'center';
       ctx.strokeText('⚠ ВНИМАНИЕ: ПОЖИРАТЕЛЬ! ⚠', W / 2, H * 0.44); ctx.fillText('⚠ ВНИМАНИЕ: ПОЖИРАТЕЛЬ! ⚠', W / 2, H * 0.44);
     }
     ctx.restore();
@@ -1926,9 +2015,9 @@
     ctx.save(); ctx.translate(eb.x, eb.y);
     if (eb.kind === 'thrown_donut') {
       ctx.rotate(eb.rot || 0);
-      ctx.fillStyle = '#f4a261'; ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#ff70a6'; ctx.beginPath(); ctx.arc(0, 0, 8.5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#1d1447'; ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f3d5b5'; ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffc2d1'; ctx.beginPath(); ctx.arc(0, 0, 8.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#4a3563'; ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fill();
     } else if (eb.kind === 'mini_mushroom_shot') {
       ctx.rotate(eb.rot || 0);
       ctx.fillStyle = '#ffffff'; ctx.fillRect(-3, 0, 6, 9);
