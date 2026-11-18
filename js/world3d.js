@@ -7,12 +7,12 @@ class World3DEngine {
     this.time = 0;
     this.bgScrollY = 0;
 
-    // Состояние боя для динамики волн, интерактива и воронки босса
+    // Состояние боя для динамики 4 волн, интерактива и воронки босса
     this.currentWave = 1;
     this.playerX = 240;
     this.playerY = 650;
-    this.bossVortex = 0; // 0..1 — сила гравитационного разлома перед выходом босса
-    this.pulses = [];    // Пастельные волны на фоне от сбитых элит и препятствий
+    this.bossVortex = 0;
+    this.pulses = [];
 
     // Автоподгрузка чётких бесшовных фонов img/bg1.jpg .. img/bg6.jpg
     this.bgImages = {};
@@ -26,44 +26,42 @@ class World3DEngine {
         x: Math.random(),
         y: Math.random(),
         z,
-        r: layer === 0 ? 1.2 : (layer === 1 ? 1.9 : 2.6),
-        speed: 0.032 + z * 0.14,
+        r: layer === 0 ? 1.3 : (layer === 1 ? 2.0 : 2.8),
+        speed: 0.035 + z * 0.14,
         phase: Math.random() * Math.PI * 2,
-        blinkSpd: 2.8 + (i % 5) * 1.2,
-        hueOffset: (i * 37) % 360
+        blinkSpd: 2.8 + (i % 5) * 1.2
       };
     });
 
-    // 14 пастельных геометрических узоров / мандал (меняют форму каждую волну)
-    this.geoShapes = Array.from({ length: 14 }, (_, i) => ({
+    // 16 крупных пастельных узоров / мандал (меняют рисунок каждую волну)
+    this.geoShapes = Array.from({ length: 16 }, (_, i) => ({
       x: ((i % 4) + 0.5) / 4 + (Math.random() - 0.5) * 0.12,
-      y: (i / 14) + Math.random() * 0.06,
+      y: (i / 16) + Math.random() * 0.05,
       z: 0.28 + (i % 3) * 0.22,
       kind: i % 4,
-      size: 24 + (i % 4) * 10,
+      size: 28 + (i % 4) * 11,
       rot: Math.random() * Math.PI * 2,
-      vrot: (i % 2 === 0 ? 1 : -1) * (0.45 + (i % 3) * 0.28),
-      speed: 0.030 + (i % 3) * 0.018,
+      vrot: (i % 2 === 0 ? 1 : -1) * (0.55 + (i % 3) * 0.32),
+      speed: 0.034 + (i % 3) * 0.02,
       phase: i * 0.95
     }));
 
-    // 48 элементов уникальной «погоды сектора» (Идея 1)
+    // 48 элементов уникальной «погоды сектора»
     this.weatherItems = Array.from({ length: 48 }, (_, i) => ({
       x: Math.random(),
       y: Math.random(),
       z: 0.35 + (i % 3) * 0.26,
       vx: (Math.random() - 0.5) * 0.05,
-      vy: 0.04 + (i % 4) * 0.025,
-      r: 4 + (i % 4) * 2.2,
+      vy: 0.045 + (i % 4) * 0.026,
+      r: 4.5 + (i % 4) * 2.2,
       rot: Math.random() * Math.PI * 2,
       vrot: (i % 2 === 0 ? 1 : -1) * (0.9 + Math.random() * 1.6),
       phase: Math.random() * Math.PI * 2,
-      hue: (i * 47) % 360,
       offsetX: 0,
       offsetY: 0
     }));
 
-    // 3 тематические планеты в мягкой пастельной обработке
+    // 3 тематические планеты в пастельной палитре (если не загружена картинка фона)
     this.planets = [
       { x: 0.24, y: 0.18, z: 0.36, r: 52, speed: 0.022, hueShift: 0 },
       { x: 0.77, y: 0.54, z: 0.50, r: 42, speed: 0.028, hueShift: 110 },
@@ -105,7 +103,11 @@ class World3DEngine {
     this.bossVortex = Math.max(0, Math.min(1, bossVortex));
   }
 
-  // Идея 3: Пастельная волна-реакция на фоне при уничтожении элиты или препятствия
+  getWaveSpeedMultiplier() {
+    // Нарастающая скорость потока с каждой волной: 1.0 -> 1.28 -> 1.56 -> 1.85
+    return 1 + (this.currentWave - 1) * 0.28;
+  }
+
   triggerPulse(x, y, color = '#ffd6ff') {
     if (this.pulses.length > 8) this.pulses.shift();
     this.pulses.push({
@@ -113,16 +115,18 @@ class World3DEngine {
       y,
       color,
       r: 14,
-      maxR: 185,
-      alpha: 0.45
+      maxR: 195,
+      alpha: 0.52
     });
   }
 
   update(dt, turboActive = false) {
-    this.time += dt;
-    const mult = (turboActive ? 1.8 : 1.0) * (1 + this.bossVortex * 1.4);
+    const waveMult = this.getWaveSpeedMultiplier();
+    const mult = waveMult * (turboActive ? 1.65 : 1.0) * (1 + this.bossVortex * 1.3);
+
+    this.time += dt * (0.85 + this.currentWave * 0.15);
     this.camX += (this.targetCamX - this.camX) * Math.min(1, dt * 4.5);
-    this.bgScrollY = (this.bgScrollY + 26 * mult * dt) % 4096;
+    this.bgScrollY = (this.bgScrollY + 32 * mult * dt) % 4096;
 
     for (const s of this.stars) {
       s.y += s.speed * mult * dt;
@@ -135,8 +139,8 @@ class World3DEngine {
 
     for (const g of this.geoShapes) {
       g.y += g.speed * mult * dt;
-      g.rot += g.vrot * (1 + this.currentWave * 0.15) * dt;
-      g.phase += dt * 2.6;
+      g.rot += g.vrot * waveMult * dt;
+      g.phase += dt * 2.8;
       if (g.y > 1.14) {
         g.y = -0.14;
         g.x = 0.08 + Math.random() * 0.84;
@@ -170,14 +174,13 @@ class World3DEngine {
 
     for (let i = this.pulses.length - 1; i >= 0; i--) {
       const pl = this.pulses[i];
-      pl.r += 230 * dt;
-      pl.alpha -= 0.75 * dt;
+      pl.r += 240 * dt;
+      pl.alpha -= 0.72 * dt;
       if (pl.alpha <= 0 || pl.r >= pl.maxR) this.pulses.splice(i, 1);
     }
   }
 
   getDynamicSkyColors(lvl) {
-    // Уровень 3 — нежный ванильно-пастельный!
     const palettesByTheme = {
       lsd: [
         ['#1b0b38', '#361963', '#562982'],
@@ -188,8 +191,8 @@ class World3DEngine {
         ['#1e0c30', '#3d1647', '#612152']
       ],
       rainbow: [
-        ['#3c2a5e', '#6d4c8c', '#b5839d'],
-        ['#453169', '#7a5699', '#c492a8']
+        ['#4a3563', '#7d5a8a', '#d4a5b8'],
+        ['#543d70', '#8c6699', '#deb0c2']
       ],
       underwater: [
         ['#08243d', '#124669', '#1e6b8c'],
@@ -209,10 +212,8 @@ class World3DEngine {
     return list[idx];
   }
 
-  // Пастельные синусоиды, меняющие рисунок каждую из 4 волн!
   getPastelWaveColors(theme) {
     if (theme === 'rainbow') {
-      // Ванильно-пастельная палитра Уровня 3
       return ['#fff3d6', '#ffc2d1', '#ffcfd2', '#e0c3fc', '#d8f3dc', '#fde4cf'];
     }
     if (theme === 'lsd') {
@@ -222,14 +223,15 @@ class World3DEngine {
       return ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#bdb2ff'];
     }
     if (theme === 'underwater') {
-      return ['#caf0f8', '#ade8f4', '#90e0ef', '#b8f2e6', '#d8e2dc'];
+      return ['#caf0f8', '#ade8f4', '#90e0ef', '#b8f2e6', '#ffd6ff'];
     }
     if (theme === 'organic') {
-      return ['#d8f3dc', '#b7e4c7', '#e9edc9', '#fefae0', '#ccd5ae'];
+      return ['#d8f3dc', '#b7e4c7', '#e9edc9', '#fefae0', '#ffc2d1'];
     }
     return ['#ffc6ff', '#e0aaff', '#ffccd5', '#bde0fe', '#ffd6a5'];
   }
 
+  // Чётко различимые пастельные синусоиды с тёмной подложкой, меняющие форму каждую из 4 волн
   drawThemeSineWaves(ctx, lvl, W, H) {
     const waveNum = this.currentWave;
     const cols = this.getPastelWaveColors(lvl.theme);
@@ -239,53 +241,63 @@ class World3DEngine {
     ctx.lineCap = 'round';
 
     for (let s = 0; s < count; s++) {
-      const yBase = H * (0.11 + (s / count) * 0.82);
+      const yBase = H * (0.10 + (s / count) * 0.84);
       const dir = s % 2 === 0 ? 1 : -1;
       const col = cols[s % cols.length];
 
-      ctx.strokeStyle = col;
-      ctx.globalAlpha = lvl.theme === 'rainbow' ? 0.30 : 0.22;
-      ctx.lineWidth = waveNum === 4 ? 4.5 : 5.5;
-
-      ctx.beginPath();
+      // Строим кривую волны
+      const pts = [];
       for (let x = -30; x <= W + 30; x += 14) {
         let sy = yBase;
         if (waveNum === 1) {
-          // Волна 1: плавные широкие пастельные ленты
-          sy += Math.sin(x * 0.011 + this.time * 1.5 * dir + s) * 28;
+          // Волна 1: широкие плавные пастельные дуги
+          sy += Math.sin(x * 0.011 + this.time * 1.6 * dir + s) * 32;
         } else if (waveNum === 2) {
-          // Волна 2: двойная косичка (интерференция двух гармоник)
-          sy += Math.sin(x * 0.013 + this.time * 1.9 * dir + s * 1.3) * 24
-              + Math.cos(x * 0.024 - this.time * 1.4 * dir) * 12;
+          // Волна 2: двойная волна-косичка
+          sy += Math.sin(x * 0.014 + this.time * 2.1 * dir + s * 1.3) * 26
+              + Math.cos(x * 0.028 - this.time * 1.6 * dir) * 14;
         } else if (waveNum === 3) {
-          // Волна 3: лепестковая модуляция с узелками
-          const env = 0.65 + 0.45 * Math.sin(x * 0.008 + this.time);
-          sy += Math.sin(x * 0.018 + this.time * 2.2 * dir + s) * 32 * env;
+          // Волна 3: лепестковая пульсация
+          const env = 0.55 + 0.55 * Math.sin(x * 0.009 + this.time * 1.3);
+          sy += Math.sin(x * 0.019 + this.time * 2.4 * dir + s) * 36 * env;
         } else {
-          // Волна 4: пульсирующие пред-боссовые гармонические волны
-          sy += Math.sin(x * 0.015 + this.time * 2.8 * dir + s * 0.9) * 26
-              + Math.sin(x * 0.032 + this.time * 3.5) * 9;
+          // Волна 4: высокочастотная пред-боссовая гармоника
+          sy += Math.sin(x * 0.016 + this.time * 3.0 * dir + s * 0.9) * 28
+              + Math.sin(x * 0.038 + this.time * 4.0) * 11;
         }
 
-        // Идея 2: Затягивание волн в воронку при появлении босса
         if (this.bossVortex > 0) {
-          const vx = W / 2, vy = H * 0.22;
-          sy += (vy - sy) * (this.bossVortex * 0.35);
+          const vy = H * 0.22;
+          sy += (vy - sy) * (this.bossVortex * 0.38);
         }
-
-        if (x === -30) ctx.moveTo(x, sy);
-        else ctx.lineTo(x, sy);
+        pts.push([x, sy]);
       }
+
+      // 1) Мягкая тёмная подложка под волной, чтобы её было хорошо видно на любом фоне
+      ctx.strokeStyle = 'rgba(10, 4, 24, 0.52)';
+      ctx.globalAlpha = 0.65;
+      ctx.lineWidth = 8.5;
+      ctx.beginPath();
+      pts.forEach(([x, sy], idx) => (idx === 0 ? ctx.moveTo(x, sy) : ctx.lineTo(x, sy)));
       ctx.stroke();
 
-      // На 3-й и 4-й волне рисуем пастельные жемчужные узелки на гребнях волн
-      if (waveNum >= 3) {
+      // 2) Яркая пастельная линия поверх подложки
+      ctx.strokeStyle = col;
+      ctx.globalAlpha = 0.56;
+      ctx.lineWidth = waveNum === 4 ? 3.2 : 4.0;
+      ctx.beginPath();
+      pts.forEach(([x, sy], idx) => (idx === 0 ? ctx.moveTo(x, sy) : ctx.lineTo(x, sy)));
+      ctx.stroke();
+
+      // На волнах 2–4 добавляем жемчужные бусины на гребнях
+      if (waveNum >= 2) {
         ctx.fillStyle = col;
-        ctx.globalAlpha = 0.34;
-        for (let nx = 40; nx < W; nx += 95) {
-          const ny = yBase + Math.sin(nx * 0.016 + this.time * 2.2 * dir + s) * 26;
+        ctx.globalAlpha = 0.65;
+        const step = waveNum === 2 ? 120 : 85;
+        for (let nx = 35; nx < W; nx += step) {
+          const ny = yBase + Math.sin(nx * 0.015 + this.time * 2.2 * dir + s) * 28;
           ctx.beginPath();
-          ctx.arc(nx, ny, waveNum === 4 ? 4 : 3, 0, Math.PI * 2);
+          ctx.arc(nx, ny, waveNum === 4 ? 4.5 : 3.5, 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -294,18 +306,17 @@ class World3DEngine {
     ctx.restore();
   }
 
-  // Пастельные геометрические узоры, усложняющиеся от 1-й к 4-й волне
+  // Явная смена геометрических узоров от 1-й к 4-й волне
   drawLevelGeometry(ctx, lvl, W, H) {
     const waveNum = this.currentWave;
     const cols = this.getPastelWaveColors(lvl.theme);
-    const symmetry = 4 + waveNum * 2; // 6 -> 8 -> 10 -> 12 лучей с каждой волной
+    const symmetry = 4 + waveNum * 2; // 6 -> 8 -> 10 -> 12 лучей
 
     ctx.save();
     for (const g of this.geoShapes) {
       let gx = ((g.x * W - this.camX * (g.z * 38)) % W + W) % W;
       let gy = g.y * H;
 
-      // Идея 2: Спиральное затягивание узоров к центру появления босса
       if (this.bossVortex > 0) {
         const cx = W / 2, cy = H * 0.22;
         const dx = gx - cx, dy = gy - cy;
@@ -315,22 +326,32 @@ class World3DEngine {
         gy = cy + Math.sin(ang) * dist;
       }
 
-      const pulse = 1 + Math.sin(g.phase * 2.0) * 0.12;
-      const s = g.size * pulse * (0.9 + waveNum * 0.06);
+      const pulse = 1 + Math.sin(g.phase * 2.2) * 0.14;
+      const s = g.size * pulse * (0.95 + waveNum * 0.08);
       const col = cols[g.kind % cols.length];
 
       ctx.save();
       ctx.translate(gx, gy);
       ctx.rotate(g.rot);
+
+      // Тёмный ореол под узором для читаемости на фоновой картинке
+      ctx.fillStyle = 'rgba(10, 4, 24, 0.34)';
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.92, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.strokeStyle = col;
       ctx.fillStyle = col;
-      ctx.lineWidth = 1.8;
-      ctx.globalAlpha = 0.22 + 0.08 * Math.abs(Math.sin(g.phase));
+      ctx.lineWidth = 2.4;
+      ctx.globalAlpha = 0.50 + 0.15 * Math.abs(Math.sin(g.phase));
 
       if (waveNum === 1) {
-        // Волна 1: лёгкие пастельные кольца и созвездия
+        // ВОЛНА 1: Двойные концентрические кольца и сакральные знаки
         ctx.beginPath();
-        ctx.arc(0, 0, s * 0.85, 0, Math.PI * 2);
+        ctx.arc(0, 0, s * 0.92, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, s * 0.54, 0, Math.PI * 2);
         ctx.stroke();
         if (lvl.theme === 'lsd') {
           ctx.font = `bold ${Math.round(s * 0.85)}px serif`;
@@ -339,30 +360,36 @@ class World3DEngine {
           ctx.fillText('ॐ', 0, 1);
         }
       } else if (waveNum === 2) {
-        // Волна 2: двойные пересекающиеся многоугольники
+        // ВОЛНА 2: Вращающиеся восьмиконечные звёзды и ромбы
         for (let r = 0; r < 2; r++) {
           ctx.rotate(Math.PI / 4);
-          ctx.strokeRect(-s * 0.58, -s * 0.58, s * 1.16, s * 1.16);
+          ctx.strokeRect(-s * 0.64, -s * 0.64, s * 1.28, s * 1.28);
         }
+        ctx.beginPath();
+        ctx.arc(0, 0, s * 0.3, 0, Math.PI * 2);
+        ctx.stroke();
       } else if (waveNum === 3) {
-        // Волна 3: лепестковые пастельные мандалы
+        // ВОЛНА 3: Раскрытые лепестковые лотосы-мандалы
         for (let k = 0; k < symmetry; k++) {
           ctx.rotate((Math.PI * 2) / symmetry);
           ctx.beginPath();
-          ctx.ellipse(s * 0.48, 0, s * 0.42, s * 0.16, 0, 0, Math.PI * 2);
+          ctx.ellipse(s * 0.52, 0, s * 0.45, s * 0.18, 0, 0, Math.PI * 2);
           ctx.stroke();
         }
       } else {
-        // Волна 4: многолучевые калейдоскопы со спиралью в центре
+        // ВОЛНА 4: Многолучевые калейдоскопы со спиралью в центре
         for (let k = 0; k < symmetry; k++) {
           ctx.rotate((Math.PI * 2) / symmetry);
           ctx.beginPath();
-          ctx.moveTo(s * 0.2, 0);
-          ctx.lineTo(s * 0.95, 0);
+          ctx.moveTo(s * 0.18, 0);
+          ctx.lineTo(s * 0.98, 0);
           ctx.stroke();
         }
         ctx.beginPath();
-        ctx.arc(0, 0, s * 0.55, 0, Math.PI * 2);
+        ctx.arc(0, 0, s * 0.62, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, s * 0.28, 0, Math.PI * 2);
         ctx.stroke();
       }
 
@@ -403,7 +430,6 @@ class World3DEngine {
     ctx.restore();
   }
 
-  // Идея 1: Уникальная пастельная погода для каждого из 6 секторов
   drawSectorWeather(ctx, lvl, W, H) {
     const cols = this.getPastelWaveColors(lvl.theme);
     ctx.save();
@@ -413,7 +439,6 @@ class World3DEngine {
       let px = ((w.x * W - this.camX * (w.z * 48)) % W + W) % W + w.offsetX;
       let py = w.y * H + w.offsetY;
 
-      // Идея 1 (Ур. 5): Интерактивная био-пыльца разлетается от корабля игрока!
       if (lvl.theme === 'organic') {
         const dx = px - this.playerX;
         const dy = py - this.playerY;
@@ -427,7 +452,6 @@ class World3DEngine {
         }
       }
 
-      // Идея 2: Затягивание частиц погоды в воронку босса
       if (this.bossVortex > 0) {
         const cx = W / 2, cy = H * 0.22;
         px += (cx - px) * (this.bossVortex * 0.42);
@@ -435,7 +459,7 @@ class World3DEngine {
       }
 
       const col = cols[i % cols.length];
-      const blink = 0.32 + 0.28 * Math.sin(w.phase);
+      const blink = 0.40 + 0.32 * Math.sin(w.phase);
 
       ctx.save();
       ctx.translate(px, py);
@@ -443,9 +467,8 @@ class World3DEngine {
       ctx.globalAlpha = blink;
 
       if (lvl.theme === 'lsd') {
-        // Ур. 1: Плавающие пастельные линзы калейдоскопа
         ctx.strokeStyle = col;
-        ctx.lineWidth = 1.6;
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.arc(0, 0, w.r * 1.4, 0, Math.PI * 2);
         ctx.stroke();
@@ -453,13 +476,11 @@ class World3DEngine {
         ctx.arc(0, 0, w.r * 0.65, 0, Math.PI * 2);
         ctx.stroke();
       } else if (lvl.theme === 'horror') {
-        // Ур. 2: Падающие светящиеся лепестки мексиканских бархатцев (семпасучиль)
         ctx.fillStyle = i % 2 === 0 ? '#ffd166' : '#ffadad';
         ctx.beginPath();
         ctx.ellipse(0, 0, w.r * 1.25, w.r * 0.55, 0, 0, Math.PI * 2);
         ctx.fill();
       } else if (lvl.theme === 'rainbow') {
-        // Ур. 3: Ванильные облачка сахарной пудры и тёплые кремовые блики
         ctx.fillStyle = i % 2 === 0 ? '#fff3d6' : '#ffc2d1';
         ctx.beginPath();
         ctx.arc(-w.r * 0.5, 0, w.r * 0.85, 0, Math.PI * 2);
@@ -467,9 +488,8 @@ class World3DEngine {
         ctx.arc(0, -w.r * 0.4, w.r * 0.95, 0, Math.PI * 2);
         ctx.fill();
       } else if (lvl.theme === 'underwater') {
-        // Ур. 4: Жемчужные пузырьки с бликом
         ctx.strokeStyle = '#caf0f8';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1.6;
         ctx.beginPath();
         ctx.arc(0, 0, w.r, 0, Math.PI * 2);
         ctx.stroke();
@@ -478,15 +498,13 @@ class World3DEngine {
         ctx.arc(-w.r * 0.32, -w.r * 0.32, w.r * 0.25, 0, Math.PI * 2);
         ctx.fill();
       } else if (lvl.theme === 'organic') {
-        // Ур. 5: Светящаяся био-пыльца
         ctx.fillStyle = i % 2 === 0 ? '#d8f3dc' : '#fefae0';
         ctx.beginPath();
-        ctx.arc(0, 0, w.r * 0.75, 0, Math.PI * 2);
+        ctx.arc(0, 0, w.r * 0.8, 0, Math.PI * 2);
         ctx.fill();
       } else {
-        // Ур. 6: Мерцающие кольца спор и нити грибницы
         ctx.strokeStyle = col;
-        ctx.lineWidth = 1.6;
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.arc(0, 0, w.r * 1.15, 0, Math.PI * 2);
         ctx.stroke();
@@ -495,9 +513,8 @@ class World3DEngine {
       ctx.restore();
     }
 
-    // Дополнительный слой Ур. 4: солнечные блики каустики на воде
     if (lvl.theme === 'underwater') {
-      ctx.strokeStyle = 'rgba(202, 240, 248, 0.14)';
+      ctx.strokeStyle = 'rgba(202, 240, 248, 0.16)';
       ctx.lineWidth = 14;
       for (let c = 0; c < 3; c++) {
         const cx = W * (0.2 + c * 0.3) + Math.sin(this.time * 1.2 + c) * 35;
@@ -511,7 +528,6 @@ class World3DEngine {
     ctx.restore();
   }
 
-  // Идея 2: Гравитационный разлом / портал перед выходом босса
   drawBossPreSpawnVortex(ctx, lvl, W, H) {
     if (this.bossVortex <= 0) return;
     const cx = W / 2;
@@ -520,21 +536,19 @@ class World3DEngine {
     const cols = this.getPastelWaveColors(lvl.theme);
 
     ctx.save();
-    // Мягкое затемнение краёв экрана для акцента на портале босса
     const vig = ctx.createRadialGradient(cx, cy, 20, cx, cy, H * 0.75);
     vig.addColorStop(0, 'rgba(255, 255, 255, 0)');
     vig.addColorStop(1, `rgba(8, 2, 20, ${0.48 * v})`);
     ctx.fillStyle = vig;
     ctx.fillRect(0, 0, W, H);
 
-    // Вращающиеся пастельно-неоновые кольца разлома в точке появления босса
     ctx.translate(cx, cy);
     for (let ring = 0; ring < 4; ring++) {
       ctx.save();
       ctx.rotate(this.time * (3.5 + ring) * (ring % 2 === 0 ? 1 : -1));
       ctx.strokeStyle = cols[ring % cols.length];
-      ctx.globalAlpha = 0.55 * v;
-      ctx.lineWidth = 3.5 - ring * 0.5;
+      ctx.globalAlpha = 0.65 * v;
+      ctx.lineWidth = 3.8 - ring * 0.5;
       ctx.setLineDash([18, 12]);
       const rad = (24 + ring * 22) * (0.4 + v * 0.75);
       ctx.beginPath();
@@ -543,10 +557,9 @@ class World3DEngine {
       ctx.restore();
     }
 
-    // Светящееся ядро портала
     const coreGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 56 * v);
-    coreGrad.addColorStop(0, `rgba(255, 255, 255, ${0.85 * v})`);
-    coreGrad.addColorStop(0.5, `rgba(255, 198, 255, ${0.45 * v})`);
+    coreGrad.addColorStop(0, `rgba(255, 255, 255, ${0.88 * v})`);
+    coreGrad.addColorStop(0.5, `rgba(255, 198, 255, ${0.48 * v})`);
     coreGrad.addColorStop(1, 'rgba(255, 198, 255, 0)');
     ctx.fillStyle = coreGrad;
     ctx.beginPath();
@@ -557,7 +570,7 @@ class World3DEngine {
   }
 
   render(ctx, lvl, W, H) {
-    // 1. Чёткий фон на 100% разрешения (бесшовная прокрутка img/bg1..6.jpg или пастельное небо)
+    // 1. Чёткий фон на 100% разрешения
     const bgEntry = this.bgImages[lvl.id];
     if (bgEntry && bgEntry.ready && bgEntry.img) {
       const img = bgEntry.img;
@@ -569,10 +582,9 @@ class World3DEngine {
       ctx.drawImage(img, offsetX, yOffset - drawH, drawW, drawH);
       ctx.drawImage(img, offsetX, yOffset, drawW, drawH);
 
-      // Лёгкая атмосферная вуаль без потери чёткости деталей картинки
       ctx.fillStyle = lvl.theme === 'rainbow'
-        ? 'rgba(42, 22, 64, 0.20)'
-        : 'rgba(10, 4, 24, 0.24)';
+        ? 'rgba(42, 22, 64, 0.24)'
+        : 'rgba(10, 4, 24, 0.28)';
       ctx.fillRect(0, 0, W, H);
     } else {
       const [topC, midC, botC] = this.getDynamicSkyColors(lvl);
@@ -584,7 +596,7 @@ class World3DEngine {
       ctx.fillRect(0, 0, W, H);
     }
 
-    // 2. Пастельные синусоиды (меняются каждую из 4 волн)
+    // 2. Пастельные синусоиды с тёмной подложкой (чётко видны и меняются каждую волну)
     this.drawThemeSineWaves(ctx, lvl, W, H);
 
     // 3. Звёзды
@@ -599,7 +611,7 @@ class World3DEngine {
       }
 
       const blink = 0.35 + 0.65 * Math.abs(Math.sin(s.phase));
-      ctx.globalAlpha = blink * 0.65;
+      ctx.globalAlpha = blink * 0.70;
       ctx.fillStyle = '#fff8eb';
       ctx.beginPath();
       ctx.arc(sx, sy, s.r, 0, Math.PI * 2);
@@ -607,32 +619,32 @@ class World3DEngine {
     }
     ctx.globalAlpha = 1;
 
-    // 4. Пастельные геометрические узоры (усложняются с 1-й по 4-ю волну)
+    // 4. Пастельные геометрические узоры (меняют форму с 1-й по 4-ю волну)
     this.drawLevelGeometry(ctx, lvl, W, H);
 
-    // 5. Планеты (если не загружена пользовательская картинка фона, чтобы не перекрывать арт)
+    // 5. Планеты (если нет фонового изображения)
     if (!(bgEntry && bgEntry.ready)) {
       for (const p of this.planets) {
         this.drawPlanet3D(ctx, p, lvl, W, H);
       }
     }
 
-    // 6. Идея 3: Пастельные импульсы на фоне от побед над врагами и препятствиями
+    // 6. Пастельные волны-реакции от побед над врагами и препятствиями
     for (const pl of this.pulses) {
       ctx.save();
       ctx.strokeStyle = pl.color;
       ctx.globalAlpha = Math.max(0, pl.alpha);
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3.5;
       ctx.beginPath();
       ctx.arc(pl.x, pl.y, pl.r, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
 
-    // 7. Идея 1: Уникальная погода каждого из 6 секторов
+    // 7. Уникальная погода каждого из 6 секторов
     this.drawSectorWeather(ctx, lvl, W, H);
 
-    // 8. Идея 2: Вихрь-портал перед выходом босса
+    // 8. Гравитационный разлом перед выходом босса
     this.drawBossPreSpawnVortex(ctx, lvl, W, H);
   }
 }
