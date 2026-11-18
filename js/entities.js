@@ -98,7 +98,7 @@ const LEVELS = [
   {
     id: 4,
     name: 'Пастельный Океан',
-    story: 'Подлетай к Медузам-Генераторам для цепной аква-молнии! Главный босс — Кракен-Удильщик!',
+    story: 'Подлетай или стреляй в Медуз-Генераторов для цепной аква-молнии! Главный босс — Кракен-Удильщик!',
     enemiesDesc: 'Осьминоги, Неоновые Медузы, Кальмары и Крабы',
     midBossName: 'Астральная Медуза-Гипнотизёр',
     bossName: 'Глубоководный Кракен-Удильщик',
@@ -110,16 +110,16 @@ const LEVELS = [
   },
   {
     id: 5,
-    name: 'Изумрудный Мир Био-Флоры',
-    story: 'Заманивай врагов в Хищные Мухоловки — они сами пережуют противников! Босс — Древень-Подсолнух!',
-    enemiesDesc: 'Злобные Лианы, Хищные Ростки и Цветки-Мухоловки',
-    midBossName: 'Трёхглавый Бутон-Мухоловка',
-    bossName: 'Древень-Подсолнух Пожиратель',
+    name: 'Раста-Туманность Джа-Космос',
+    story: 'Врубай Космо-Бумбоксы Регги для замедления врагов и золотых нот! Главный босс — Мега-Лев Джа!',
+    enemiesDesc: 'Барабаны Джембе, Психо-Хамелеоны и Раста-Солнца',
+    midBossName: 'Дредастый Хамелеон-Гипнотизёр',
+    bossName: 'Мега-Лев Джа с Дредами',
     theme: 'organic',
-    interactiveType: 'flytrap_jaw',
-    enemyTypes: ['vine_beast', 'sprout_hunter', 'mini_flower', 'starfish_ship'],
-    skyTop: '#041b0b', skyMid: '#0b3818', skyBot: '#145926',
-    accent: '#d8f3dc', bossColor: '#b7e4c7', hpMult: 2.05, coinReward: 1500
+    interactiveType: 'reggae_boombox',
+    enemyTypes: ['rasta_djembe', 'rasta_chameleon', 'rasta_sun'],
+    skyTop: '#1f0c14', skyMid: '#2e2408', skyBot: '#0a331c',
+    accent: '#ffd166', bossColor: '#06d6a0', hpMult: 2.05, coinReward: 1500
   },
   {
     id: 6,
@@ -256,6 +256,30 @@ function drawEliteCrown(ctx, yTop) {
   ctx.fillStyle = '#ff006e';
   ctx.beginPath(); ctx.arc(0, -4, 2.2, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
+}
+
+function drawHempLeafShape(ctx, r, fillCol) {
+  const angles = [-1.15, -0.75, -0.36, 0, 0.36, 0.75, 1.15];
+  const lengths = [0.48, 0.72, 0.90, 1.12, 0.90, 0.72, 0.48];
+  ctx.fillStyle = fillCol;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 2.2;
+  angles.forEach((a, idx) => {
+    ctx.save();
+    ctx.rotate(a);
+    const len = r * lengths[idx];
+    const wid = len * 0.22;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-wid, -len * 0.55, 0, -len);
+    ctx.quadraticCurveTo(wid, -len * 0.55, 0, 0);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  });
+  roundRectPath(ctx, -r * 0.06, 0, r * 0.12, r * 0.40, 2);
+  ctx.fill();
+  ctx.stroke();
 }
 
 // =========================================================================
@@ -463,7 +487,7 @@ function drawPlayerShipModel(ctx, ship, time, vx = 0, opts = {}) {
 }
 
 // =========================================================================
-// 6 НОВЫХ ИНТЕРАКТИВНЫХ ОБЪЕКТОВ СЕКТОРА (ПО 1 УНИКАЛЬНОЙ ФИШКЕ НА УРОВЕНЬ)
+// 6 НОВЫХ ИНТЕРАКТИВНЫХ ОБЪЕКТОВ СЕКТОРА (ВКЛЮЧАЯ КОСМО-БУМБОКС РЕГГИ)
 // =========================================================================
 function drawInteractiveProp(ctx, pr) {
   ctx.save();
@@ -474,21 +498,15 @@ function drawInteractiveProp(ctx, pr) {
   ctx.scale(pulse, pulse);
 
   if (pr.type === 'prism_kaleidoscope') {
-    // Ур. 1: Призма-Калейдоскоп (выстрел расщепляет пулю на 5 радужных лучей)
     ctx.rotate(pr.phase * 1.6);
     const cols = ['#f3c4fb', '#bdb2ff', '#a0c4ff', '#fdffb6', '#ffc6ff'];
     for (let k = 0; k < 5; k++) {
       ctx.rotate((Math.PI * 2) / 5);
-      ctx.fillStyle = cols[k];
-      ctx.strokeStyle = INK;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(0, 0); ctx.lineTo(14, -7); ctx.lineTo(24, 0); ctx.lineTo(14, 7);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = cols[k]; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(14, -7); ctx.lineTo(24, 0); ctx.lineTo(14, 7); ctx.closePath(); ctx.fill(); ctx.stroke();
     }
     drawGlossyCircle(ctx, 0, 0, 9, '#ffffff');
   } else if (pr.type === 'fiesta_drum') {
-    // Ур. 2: Тотемный Барабан Фиесты (огненная ударная волна)
     ctx.rotate(Math.sin(pr.phase * 3) * 0.18);
     ctx.fillStyle = '#ff006e'; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
     roundRectPath(ctx, -17, -14, 34, 28, 8); ctx.fill(); ctx.stroke();
@@ -497,7 +515,6 @@ function drawInteractiveProp(ctx, pr) {
     ctx.fillStyle = '#fff8eb';
     ctx.beginPath(); ctx.ellipse(0, -14, 17, 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   } else if (pr.type === 'marshmallow_bomb') {
-    // Ур. 3: Зефирная Бомба-Подушка (превращает вражеские пули в конфеты +15 🐟)
     ctx.rotate(Math.sin(pr.phase * 2.5) * 0.2);
     ctx.fillStyle = '#ffc2d1'; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
     roundRectPath(ctx, -18, -16, 36, 32, 12); ctx.fill(); ctx.stroke();
@@ -506,7 +523,6 @@ function drawInteractiveProp(ctx, pr) {
     ctx.fillStyle = '#f72585'; ctx.font = '900 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('🍬', 0, 1);
   } else if (pr.type === 'jelly_generator') {
-    // Ур. 4: Медуза-Генератор (цепная аква-молния по 3 врагам)
     ctx.strokeStyle = '#caf0f8'; ctx.lineWidth = 2.6;
     for (let k = -1; k <= 1; k++) {
       const w = Math.sin(pr.phase * 6 + k) * 5;
@@ -515,20 +531,23 @@ function drawInteractiveProp(ctx, pr) {
     ctx.fillStyle = '#48cae4'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.4;
     ctx.beginPath(); ctx.arc(0, 2, 18, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#fee440'; ctx.font = '900 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('⚡', 0, -4);
-  } else if (pr.type === 'flytrap_jaw') {
-    // Ур. 5: Хищная Мухоловка (захлопывается на пролетающих мимо врагах)
-    const snap = Math.abs(Math.sin(pr.phase * 4)) * 0.35;
-    [-1, 1].forEach(side => {
-      ctx.save();
-      ctx.rotate(side * (0.25 + snap));
-      ctx.fillStyle = '#38b000'; ctx.strokeStyle = INK; ctx.lineWidth = 2.2;
-      ctx.beginPath(); ctx.ellipse(side * 10, 0, 12, 18, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#ff006e';
-      ctx.beginPath(); ctx.ellipse(side * 8, 0, 8, 13, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
+  } else if (pr.type === 'reggae_boombox') {
+    // Ур. 5 (Раста): Космо-Бумбокс Регги!
+    ctx.rotate(Math.sin(pr.phase * 3.5) * 0.14);
+    // Ручка сверху
+    ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.moveTo(-12, -12); ctx.lineTo(-12, -20); ctx.lineTo(12, -20); ctx.lineTo(12, -12); ctx.stroke();
+    // Корпус бумбокса в цветах раста
+    ctx.fillStyle = '#06d6a0'; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
+    roundRectPath(ctx, -22, -12, 44, 26, 6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff4d6d'; ctx.fillRect(-20, -10, 40, 6);
+    ctx.fillStyle = '#ffd166'; ctx.fillRect(-20, -4, 40, 5);
+    // Два басовых динамика
+    [-12, 12].forEach(sx => {
+      ctx.fillStyle = '#14052b'; ctx.beginPath(); ctx.arc(sx, 4, 7.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 1.6; ctx.stroke();
     });
   } else if (pr.type === 'spore_puffball') {
-    // Ур. 6: Споровая Мина-Дождевик (ядовитое неоновое облако)
     ctx.fillStyle = 'rgba(224, 170, 255, 0.28)';
     ctx.beginPath(); ctx.arc(0, 0, pr.r + 7, 0, Math.PI * 2); ctx.fill();
     drawGlossyCircle(ctx, 0, 0, 17, '#9d4edd');
@@ -619,7 +638,7 @@ function drawPlayerBullet(ctx, b) {
 }
 
 // =========================================================================
-// 18 УНИКАЛЬНЫХ МИГАЮЩИХ ПРЕПЯТСТВИЙ (ПО 3 НА КАЖДЫЙ УРОВЕНЬ 1–6)
+// 18 УНИКАЛЬНЫХ МИГАЮЩИХ ПРЕПЯТСТВИЙ (УР. 5 — РАСТАМАНСКИЕ)
 // =========================================================================
 function drawObstacle(ctx, ob) {
   ctx.save();
@@ -633,6 +652,7 @@ function drawObstacle(ctx, ob) {
   const blinkCol = strobe ? '#ffffff' : `hsl(${hue}, 100%, 66%)`;
   const blinkCol2 = `hsl(${(hue + 140) % 360}, 100%, 70%)`;
 
+  // Ур. 1
   if (ob.shape === 'om_star') {
     ctx.rotate(ob.rot || 0);
     ctx.fillStyle = blinkCol2; ctx.strokeStyle = INK; ctx.lineWidth = 2.8;
@@ -678,6 +698,7 @@ function drawObstacle(ctx, ob) {
     ctx.restore(); return;
   }
 
+  // Ур. 2
   if (ob.shape === 'mexican_skull_bones') {
     ctx.rotate(Math.sin(ph * 2.5) * 0.22);
     ctx.strokeStyle = strobe ? '#ffbe0b' : '#ffffff'; ctx.lineWidth = 6;
@@ -726,6 +747,7 @@ function drawObstacle(ctx, ob) {
     ctx.restore(); return;
   }
 
+  // Ур. 3
   if (ob.shape === 'cotton_candy_storm') {
     const puffs = [[-12, -2, 11], [12, -2, 11], [-6, -10, 12], [7, -9, 11], [0, -1, 13]];
     puffs.forEach(([px, py, pr], idx) => {
@@ -770,6 +792,7 @@ function drawObstacle(ctx, ob) {
     ctx.restore(); return;
   }
 
+  // Ур. 4
   if (ob.shape === 'moving_seaweed') {
     for (let t = -2; t <= 2; t++) {
       const sway = Math.sin(ph * 4.5 + t * 1.4) * 11;
@@ -800,52 +823,47 @@ function drawObstacle(ctx, ob) {
     ctx.restore(); return;
   }
 
-  if (ob.shape === 'living_flower') {
-    const leafW = Math.sin(ph * 5) * 4;
-    [-1, 1].forEach(side => {
-      ctx.fillStyle = '#38b000'; ctx.strokeStyle = INK; ctx.lineWidth = 2.2;
-      ctx.beginPath(); ctx.ellipse(side * 14, 12 + leafW * side, 11, 5.5, side * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    });
-    const petalScale = 1 + Math.sin(ph * 6) * 0.08;
-    ctx.save(); ctx.scale(petalScale, petalScale);
-    for (let k = 0; k < 6; k++) {
-      ctx.rotate(Math.PI / 3);
-      ctx.fillStyle = strobe ? '#ff70a6' : '#ccff33'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.ellipse(12, 0, 9, 5.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    }
-    drawGlossyCircle(ctx, 0, 0, 9, '#ffd166');
-    ctx.restore();
+  // --- УРОВЕНЬ 5 (РАСТАМАНСКИЙ): 1) 7-листник конопли, 2) Винил-пластинка регги, 3) Раста-солнце в очках ---
+  if (ob.shape === 'rasta_hemp_leaf') {
+    ctx.rotate(Math.sin(ph * 3) * 0.28);
+    ctx.translate(0, 10);
+    const leafCol = strobe ? '#06d6a0' : '#ffd166';
+    drawHempLeafShape(ctx, 24, leafCol);
     ctx.restore(); return;
   }
 
-  if (ob.shape === 'plant_cell') {
+  if (ob.shape === 'reggae_vinyl') {
     ctx.rotate(ob.rot || 0);
-    ctx.fillStyle = '#1b4332'; ctx.strokeStyle = strobe ? '#ccff33' : '#80ed99'; ctx.lineWidth = 3.5;
-    ctx.beginPath();
-    for (let k = 0; k < 6; k++) {
-      const a = (Math.PI * 2 * k) / 6;
-      const vx = Math.cos(a) * 24, vy = Math.sin(a) * 24;
-      if (k === 0) ctx.moveTo(vx, vy); else ctx.lineTo(vx, vy);
-    }
-    ctx.closePath(); ctx.fill(); ctx.stroke();
-    drawGlossyCircle(ctx, -4, -3, 8, '#ff70a6');
-    [[10, -7], [9, 8], [-9, 10]].forEach(([cx, cy]) => {
-      ctx.fillStyle = '#70e000'; ctx.beginPath(); ctx.ellipse(cx, cy, 5, 3, 0.5, 0, Math.PI * 2); ctx.fill();
-    });
+    drawGlossyCircle(ctx, 0, 0, 23, '#14052b');
+    ctx.strokeStyle = '#4a4e69'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, 17, 0, Math.PI * 2); ctx.stroke();
+    // Красно-жёлто-зелёное яблоко пластинки
+    ctx.fillStyle = '#ff4d6d'; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffd166'; ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#06d6a0'; ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fill();
     ctx.restore(); return;
   }
 
-  if (ob.shape === 'spiky_plant') {
-    drawGlossyCircle(ctx, 0, 2, 18, '#2d6a4f');
-    ctx.strokeStyle = strobe ? '#ffee33' : '#ccff33'; ctx.lineWidth = 2.6;
-    for (let k = 0; k < 10; k++) {
-      const a = (Math.PI * 2 * k) / 10;
-      ctx.beginPath(); ctx.moveTo(Math.cos(a) * 16, 2 + Math.sin(a) * 16); ctx.lineTo(Math.cos(a) * 26, 2 + Math.sin(a) * 26); ctx.stroke();
+  if (ob.shape === 'rasta_sun_shades') {
+    const rayCols = ['#ff4d6d', '#ffd166', '#06d6a0'];
+    for (let k = 0; k < 9; k++) {
+      ctx.save();
+      ctx.rotate((Math.PI * 2 * k) / 9 + ph * 0.6);
+      ctx.fillStyle = rayCols[(k + (strobe ? 1 : 0)) % 3];
+      ctx.strokeStyle = INK; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(14, -4); ctx.lineTo(25, 0); ctx.lineTo(14, 4); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
     }
-    drawGlossyCircle(ctx, 0, -15, 6.5, '#ff006e');
+    drawGlossyCircle(ctx, 0, 0, 15, '#ffd166');
+    // Тёмные солнцезащитные очки
+    ctx.fillStyle = '#120826';
+    roundRectPath(ctx, -11, -5, 9, 6, 2); ctx.fill();
+    roundRectPath(ctx, 2, -5, 9, 6, 2); ctx.fill();
+    ctx.fillRect(-3, -4, 6, 2);
     ctx.restore(); return;
   }
 
+  // Ур. 6
   if (ob.shape === 'fly_agaric_obs') {
     ctx.rotate(Math.sin(ph * 3) * 0.2);
     ctx.fillStyle = '#fff8eb'; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
@@ -877,7 +895,7 @@ function drawObstacle(ctx, ob) {
 }
 
 // =========================================================================
-// ДЕТАЛИЗИРОВАННЫЕ МИГАЮЩИЕ ВРАГИ (БЕЗ КРУГОВ ВОКРУГ)
+// ДЕТАЛИЗИРОВАННЫЕ МИГАЮЩИЕ ВРАГИ (ВКЛЮЧАЯ 3 РАСТА-ВРАГА УР. 5)
 // =========================================================================
 function drawUniqueEnemy(ctx, e, player = null) {
   ctx.save();
@@ -891,6 +909,7 @@ function drawUniqueEnemy(ctx, e, player = null) {
   const strobe = Math.sin(e.phase * 10) > 0;
   const neonRim = strobe ? '#ffffff' : `hsl(${hue}, 100%, 66%)`;
 
+  // Ур. 1
   if (e.kind === 'mini_stamp') {
     const stampCol = flash ? '#ffffff' : `hsl(${hue}, 95%, 56%)`;
     e.wingCol = stampCol; e.bodyCol = '#14052b';
@@ -958,6 +977,7 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
+  // Ур. 2
   if (e.kind === 'mini_skull' || e.kind === 'skeleton_ship') {
     e.wingCol = '#ff006e'; e.bodyCol = '#fff8eb';
     ctx.fillStyle = flash ? '#ffffff' : '#fff8eb'; ctx.strokeStyle = strobe ? '#ffbe0b' : '#ff006e'; ctx.lineWidth = 3;
@@ -1008,6 +1028,7 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
+  // Ур. 3
   if (e.kind === 'lollipop_ship') {
     e.wingCol = '#ffc2d1'; e.bodyCol = '#fff3d6';
     ctx.fillStyle = '#fff3d6'; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
@@ -1062,6 +1083,7 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
+  // Ур. 4
   if (e.kind === 'octopus_ship') {
     const octCol = flash ? '#ffffff' : '#7209b7';
     const spotCol = strobe ? '#00f5d4' : '#ff70a6';
@@ -1122,53 +1144,85 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  if (e.kind === 'vine_beast') {
-    const vCol = flash ? '#ffffff' : '#38b000';
-    const thornCol = strobe ? '#ffee33' : '#ff006e';
-    e.wingCol = vCol; e.bodyCol = thornCol;
-    ctx.strokeStyle = vCol; ctx.lineWidth = 5;
-    for (let k = 0; k < 6; k++) {
-      const a = (Math.PI * 2 * k) / 6 + e.phase * 1.4;
-      ctx.beginPath(); ctx.moveTo(Math.cos(a) * 8, Math.sin(a) * 8); ctx.quadraticCurveTo(Math.cos(a + 0.5) * 20, Math.sin(a + 0.5) * 20, Math.cos(a) * 26, Math.sin(a) * 26); ctx.stroke();
+  // --- УРОВЕНЬ 5 (РАСТАМАНСКИЙ): 1) Барабан Джембе в раста-шапке, 2) Психо-Хамелеон, 3) Раста-Солнце ---
+  if (e.kind === 'rasta_djembe') {
+    e.wingCol = '#ff4d6d'; e.bodyCol = '#ffd166';
+    // Дреды по бокам барабана
+    for (let side of [-1, 1]) {
+      [-4, 4].forEach((dy, idx) => {
+        const w = Math.sin(e.phase * 6 + idx + side) * 4;
+        ctx.strokeStyle = idx === 0 ? '#ff4d6d' : '#06d6a0';
+        ctx.lineWidth = 4.2;
+        ctx.beginPath(); ctx.moveTo(side * 14, -6 + dy); ctx.quadraticCurveTo(side * 23, 6 + w, side * 20, 20 - w); ctx.stroke();
+      });
     }
-    drawGlossyCircle(ctx, 0, 0, 15, flash ? '#ffffff' : '#1b4332');
-    drawCartoonEyes(ctx, e, -5.5, 5.5, -3, 4.1, thornCol, player, true);
-    drawFangedMouth(ctx, 4.5, 15, 6);
-    if (e.isElite) drawEliteCrown(ctx, -18);
+    // Корпус барабана джембе
+    ctx.fillStyle = flash ? '#ffffff' : '#bc6c25';
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(-14, -6); ctx.lineTo(14, -6); ctx.lineTo(8, 8); ctx.lineTo(11, 20); ctx.lineTo(-11, 20); ctx.lineTo(-8, 8);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+
+    // Вязаная раста-шапка (красный, жёлтый, зелёный) сверху
+    ctx.fillStyle = '#06d6a0'; ctx.beginPath(); ctx.arc(0, -10, 15, Math.PI, 0); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffd166'; ctx.fillRect(-15, -11, 30, 4);
+    ctx.fillStyle = '#ff4d6d'; ctx.fillRect(-15, -7, 30, 4);
+
+    drawCartoonEyes(ctx, e, -5.5, 5.5, 1, 4, '#ffd166', player, true);
+    drawFangedMouth(ctx, 9, 14, 5.5);
+    if (e.isElite) drawEliteCrown(ctx, -26);
     ctx.restore(); return;
   }
 
-  if (e.kind === 'sprout_hunter') {
-    const spCol = flash ? '#ffffff' : '#70e000';
-    e.wingCol = spCol; e.bodyCol = '#ff006e';
-    ctx.strokeStyle = '#38b000'; ctx.lineWidth = 4.5;
-    ctx.beginPath(); ctx.moveTo(0, 8); ctx.quadraticCurveTo(Math.sin(e.phase * 5) * 8, 18, 0, 26); ctx.stroke();
-    [-1, 1].forEach(side => {
-      ctx.fillStyle = spCol; ctx.strokeStyle = INK; ctx.lineWidth = 2.6;
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(side * 16, -16, side * 24, -2); ctx.quadraticCurveTo(side * 14, 6, 0, 4); ctx.fill(); ctx.stroke();
+  if (e.kind === 'rasta_chameleon') {
+    const rCols = ['#ff4d6d', '#ffd166', '#06d6a0'];
+    const chCol = flash ? '#ffffff' : rCols[Math.floor(e.phase * 2.5) % 3];
+    const chCol2 = rCols[(Math.floor(e.phase * 2.5) + 1) % 3];
+    e.wingCol = chCol; e.bodyCol = chCol2;
+
+    // Закрученный спиральный хвост снизу
+    ctx.strokeStyle = chCol2; ctx.lineWidth = 4.5;
+    ctx.beginPath();
+    ctx.moveTo(0, 12); ctx.quadraticCurveTo(14, 24, 4, 28); ctx.quadraticCurveTo(-6, 28, -2, 21);
+    ctx.stroke();
+
+    // Зубчатый гребень на голове и тело хамелеона
+    drawGlossyCircle(ctx, 0, -2, 16, chCol);
+    ctx.fillStyle = chCol2;
+    [-6, 0, 6].forEach(sx => {
+      ctx.beginPath(); ctx.moveTo(sx - 3, -16); ctx.lineTo(sx, -24); ctx.lineTo(sx + 3, -16); ctx.closePath(); ctx.fill();
     });
-    drawGlossyCircle(ctx, 0, -2, 14.5, flash ? '#ffffff' : '#ff006e');
-    drawCartoonEyes(ctx, e, -5.5, 5.5, -4, 4, '#ccff33', player, true);
-    drawFangedMouth(ctx, 3.5, 14, 6);
-    if (e.isElite) drawEliteCrown(ctx, -19);
+
+    drawCartoonEyes(ctx, e, -7, 7, -3, 4.6, '#ff002b', player, true);
+    drawFangedMouth(ctx, 5, 14, 5.5);
+    if (e.isElite) drawEliteCrown(ctx, -26);
     ctx.restore(); return;
   }
 
-  if (e.kind === 'mini_flower' || e.kind === 'starfish_ship') {
-    const fCol = flash ? '#ffffff' : (strobe ? '#ff006e' : '#ccff33');
-    e.wingCol = fCol; e.bodyCol = '#38b000';
-    for (let k = 0; k < 5; k++) {
-      ctx.rotate((Math.PI * 2) / 5);
-      ctx.fillStyle = fCol; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
-      ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(18, -7); ctx.lineTo(25, 0); ctx.lineTo(18, 7); ctx.closePath(); ctx.fill(); ctx.stroke();
+  if (e.kind === 'rasta_sun') {
+    const rCols = ['#ff4d6d', '#ffd166', '#06d6a0'];
+    e.wingCol = '#ffd166'; e.bodyCol = '#ff4d6d';
+    ctx.save();
+    ctx.rotate(e.phase * 0.8);
+    for (let k = 0; k < 12; k++) {
+      ctx.rotate(Math.PI / 6);
+      ctx.fillStyle = rCols[(k + (strobe ? 1 : 0)) % 3];
+      ctx.strokeStyle = INK; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(12, -4); ctx.lineTo(25, 0); ctx.lineTo(12, 4); ctx.closePath(); ctx.fill(); ctx.stroke();
     }
-    drawGlossyCircle(ctx, 0, 0, 13.5, flash ? '#ffffff' : '#2d6a4f');
-    drawCartoonEyes(ctx, e, -5, 5, -2, 4, '#ffee33', player, true);
-    drawFangedMouth(ctx, 4.5, 13, 5.5);
-    if (e.isElite) drawEliteCrown(ctx, -18);
+    ctx.restore();
+    drawGlossyCircle(ctx, 0, 0, 15, flash ? '#ffffff' : '#ffd166');
+    // Тёмные очки раста-солнца
+    ctx.fillStyle = '#120826';
+    roundRectPath(ctx, -11, -5, 9, 6, 2); ctx.fill();
+    roundRectPath(ctx, 2, -5, 9, 6, 2); ctx.fill();
+    ctx.fillRect(-3, -4, 6, 2);
+    drawFangedMouth(ctx, 4, 14, 5.5);
+    if (e.isElite) drawEliteCrown(ctx, -22);
     ctx.restore(); return;
   }
 
+  // Ур. 6
   if (e.kind === 'tentacle_shroom') {
     const capCol = flash ? '#ffffff' : `hsl(${hue}, 100%, 58%)`;
     const tentCol = strobe ? '#00f5d4' : '#ffbe0b';
@@ -1203,8 +1257,7 @@ function drawUniqueEnemy(ctx, e, player = null) {
 }
 
 // =========================================================================
-// 12 УНИКАЛЬНЫХ АНИМИРОВАННЫХ БОССОВ (ПО 2 НА УРОВЕНЬ: МАЛЫЙ И БОЛЬШОЙ)
-// ВКЛЮЧАЯ КРЫЛАТУЮ МАРКУ АЛЬБЕРТА ХОФМАНА НА ВЕЛОСИПЕДЕ (БОЛЬШОЙ БОСС УР. 1)
+// 12 УНИКАЛЬНЫХ АНИМИРОВАННЫХ БОССОВ (ВКЛЮЧАЯ МАРКУ ХОФМАНА И МЕГА-ЛЬВА ДЖА)
 // =========================================================================
 function drawUniqueBoss(ctx, b, lvl, player, H) {
   const bScale = b.bossScale || 1.0;
@@ -1236,14 +1289,11 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   const hue = Math.floor((b.time * 130) % 360);
   const strobe = Math.sin(b.time * 11) > 0;
 
-  // =======================================================================
-  // УРОВЕНЬ 1: МАЛЫЙ — КРЫЛАТЫЙ ГЛАЗ-ШТЕМПЕЛЬ | БОЛЬШОЙ — МАРКА ХОФМАНА
-  // =======================================================================
+  // 1. УРОВЕНЬ 1: КРЫЛАТЫЙ ГЛАЗ-ШТЕМПЕЛЬ / КРЫЛАТАЯ МАРКА АЛЬБЕРТА ХОФМАНА
   if (lvl.id === 1) {
     const flap = Math.sin(b.time * 7.5) * 16;
 
     if (b.isMidBoss) {
-      // МАЛЫЙ БОСС УР. 1: Крылатый Глаз-Штемпель
       for (let side of [-1, 1]) {
         ctx.fillStyle = strobe ? '#f3c4fb' : '#00f5d4';
         ctx.strokeStyle = INK; ctx.lineWidth = 3;
@@ -1256,7 +1306,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.fillStyle = flash ? '#ffffff' : '#9b5de5';
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3.5;
       roundRectPath(ctx, -46, -50, 92, 100, 14); ctx.fill(); ctx.stroke();
-      // Огромный гипнотический глаз в центре
       ctx.fillStyle = '#ffffff'; ctx.strokeStyle = INK; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(0, -8, 26, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = `hsl(${hue}, 100%, 55%)`;
@@ -1267,8 +1316,7 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.restore(); return;
     }
 
-    // БОЛЬШОЙ БОСС УР. 1: КРЫЛАТАЯ МАРКА АЛЬБЕРТА ХОФМАНА «ДЕНЬ ВЕЛОСИПЕДА»
-    // Психоделический шлейф двойников при движении
+    // Шлейф двойников
     for (let g = 2; g >= 1; g--) {
       ctx.save();
       ctx.translate(-Math.cos(b.time * 1.6) * g * 12, -g * 4);
@@ -1280,29 +1328,22 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.restore();
     }
 
-    // Большие психоделические крылья по бокам марки
+    // Крылья марки Хофмана
     for (let side of [-1, 1]) {
       ctx.save();
       ctx.fillStyle = `hsl(${(hue + (side > 0 ? 60 : 200)) % 360}, 95%, 62%)`;
-      ctx.strokeStyle = INK;
-      ctx.lineWidth = 3.4;
+      ctx.strokeStyle = INK; ctx.lineWidth = 3.4;
       ctx.beginPath();
       ctx.moveTo(side * 58, -22);
       ctx.bezierCurveTo(side * 105, -78 + flap, side * 136, -34 + flap, side * 124, 6 + flap * 0.8);
       ctx.bezierCurveTo(side * 116, 36 + flap * 0.5, side * 86, 46, side * 58, 28);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Внутренние витражные перья крыла
+      ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.fillStyle = strobe ? '#fff3d6' : '#00f5d4';
-      ctx.beginPath();
-      ctx.ellipse(side * 92, -12 + flap * 0.7, 18, 9, side * -0.35, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.ellipse(side * 92, -12 + flap * 0.7, 18, 9, side * -0.35, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
 
-    // Перфорированная рамка почтовой марки
+    // Зубчатая рамка марки
     const stampW = 126, stampH = 142, halfW = 63, halfH = 71;
     ctx.fillStyle = flash ? '#ffffff' : '#fff8eb';
     ctx.strokeStyle = strobe ? '#ffee33' : '#ff006e';
@@ -1317,100 +1358,63 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     for (let i = 8; i >= 0; i--) ctx.arc(-halfW, -halfH + (stampH * (i + 0.5)) / 9, 4.5, Math.PI / 2, -Math.PI / 2, true);
     ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Внутренняя картина «День велосипеда 1943»:
     ctx.save();
     roundRectPath(ctx, -52, -60, 104, 120, 6);
     ctx.clip();
 
-    // 1) Психоделическое небо с лучами солнца
-    ctx.fillStyle = '#240046';
-    ctx.fillRect(-52, -60, 104, 120);
-    ctx.save();
-    ctx.translate(0, -28);
-    ctx.rotate(b.time * 1.4);
+    ctx.fillStyle = '#240046'; ctx.fillRect(-52, -60, 104, 120);
+    ctx.save(); ctx.translate(0, -28); ctx.rotate(b.time * 1.4);
     for (let r = 0; r < 12; r++) {
       ctx.rotate(Math.PI / 6);
       ctx.fillStyle = r % 2 === 0 ? '#ff9f1c' : '#ff006e';
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(75, -10); ctx.lineTo(75, 10); ctx.closePath(); ctx.fill();
     }
     ctx.restore();
-    // Сияющее солнце Хофмана
-    ctx.fillStyle = '#ffee33';
-    ctx.beginPath(); ctx.arc(0, -28, 16, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffee33'; ctx.beginPath(); ctx.arc(0, -28, 16, 0, Math.PI * 2); ctx.fill();
 
-    // 2) Психоделические горы и радужная дорога снизу
-    ctx.fillStyle = '#7209b7';
-    ctx.beginPath(); ctx.moveTo(-54, 16); ctx.lineTo(-22, -14); ctx.lineTo(12, 16); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#3a0ca3';
-    ctx.beginPath(); ctx.moveTo(-8, 16); ctx.lineTo(26, -18); ctx.lineTo(56, 16); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#7209b7'; ctx.beginPath(); ctx.moveTo(-54, 16); ctx.lineTo(-22, -14); ctx.lineTo(12, 16); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#3a0ca3'; ctx.beginPath(); ctx.moveTo(-8, 16); ctx.lineTo(26, -18); ctx.lineTo(56, 16); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#06d6a0'; ctx.fillRect(-52, 14, 104, 46);
+    ctx.fillStyle = '#ffd166'; ctx.beginPath(); ctx.moveTo(-45, 60); ctx.lineTo(-10, 14); ctx.lineTo(14, 14); ctx.lineTo(48, 60); ctx.closePath(); ctx.fill();
 
-    ctx.fillStyle = '#06d6a0';
-    ctx.fillRect(-52, 14, 104, 46);
-    ctx.fillStyle = '#ffd166';
-    ctx.beginPath(); ctx.moveTo(-45, 60); ctx.lineTo(-10, 14); ctx.lineTo(14, 14); ctx.lineTo(48, 60); ctx.closePath(); ctx.fill();
-
-    // 3) Велосипед с крутящимися колёсами-мандалами
     const wheelRot = b.time * 8;
     [-22, 22].forEach(wx => {
-      ctx.save();
-      ctx.translate(wx, 22);
-      ctx.rotate(wheelRot);
-      ctx.strokeStyle = INK; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.stroke();
+      ctx.save(); ctx.translate(wx, 22); ctx.rotate(wheelRot);
+      ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.stroke();
       ctx.strokeStyle = strobe ? '#00f5d4' : '#ff006e'; ctx.lineWidth = 2;
-      for (let sp = 0; sp < 6; sp++) {
-        ctx.rotate(Math.PI / 3);
-        ctx.beginPath(); ctx.moveTo(-13, 0); ctx.lineTo(13, 0); ctx.stroke();
-      }
+      for (let sp = 0; sp < 6; sp++) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(-13, 0); ctx.lineTo(13, 0); ctx.stroke(); }
       ctx.restore();
     });
 
-    // Рама велосипеда и руль
     ctx.strokeStyle = '#ff002b'; ctx.lineWidth = 3.2;
     ctx.beginPath();
     ctx.moveTo(-22, 22); ctx.lineTo(-4, 22); ctx.lineTo(14, 8); ctx.lineTo(-8, 8); ctx.closePath();
-    ctx.moveTo(14, 8); ctx.lineTo(22, 22);
-    ctx.moveTo(14, 8); ctx.lineTo(11, -1); ctx.lineTo(18, -3);
+    ctx.moveTo(14, 8); ctx.lineTo(22, 22); ctx.moveTo(14, 8); ctx.lineTo(11, -1); ctx.lineTo(18, -3);
     ctx.stroke();
 
-    // 4) Силуэт Альберта Хофмана на велосипеде (крутит педали + злые светящиеся глаза)
     const pedal = Math.sin(b.time * 11) * 4;
     ctx.strokeStyle = INK; ctx.lineWidth = 4.5;
-    // Ноги на педалях
     ctx.beginPath(); ctx.moveTo(-6, 4); ctx.lineTo(-2, 16 + pedal); ctx.lineTo(-4, 24 + pedal); ctx.stroke();
-    // Туловище в пиджаке и развевающийся галстук
-    ctx.fillStyle = '#1b0933';
-    roundRectPath(ctx, -12, -16, 16, 22, 5); ctx.fill();
+    ctx.fillStyle = '#1b0933'; roundRectPath(ctx, -12, -16, 16, 22, 5); ctx.fill();
     ctx.strokeStyle = '#ff006e'; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.moveTo(-2, -12); ctx.lineTo(-14 - pedal, -8); ctx.stroke();
-    // Руки на руле
     ctx.strokeStyle = '#1b0933'; ctx.lineWidth = 3.8;
     ctx.beginPath(); ctx.moveTo(-2, -12); ctx.lineTo(14, -2); ctx.stroke();
-    // Голова профессора с развевающимися седыми волосами и горящими глазами
     ctx.fillStyle = '#ffe5d9'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(-2, -24, 9.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(-7, -27, 5, 0, Math.PI * 2); ctx.arc(-10, -22, 4, 0, Math.PI * 2); ctx.fill();
-    // Злые горящие глаза
-    ctx.fillStyle = '#ff002b';
-    ctx.beginPath(); ctx.arc(1 + lookX * 0.5, -25, 2.2, 0, Math.PI * 2); ctx.arc(5 + lookX * 0.5, -25, 2.2, 0, Math.PI * 2); ctx.fill();
-
-    // Надпись LSD-25 сверху марки
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(-7, -27, 5, 0, Math.PI * 2); ctx.arc(-10, -22, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ff002b'; ctx.beginPath(); ctx.arc(1 + lookX * 0.5, -25, 2.2, 0, Math.PI * 2); ctx.arc(5 + lookX * 0.5, -25, 2.2, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#ffffff'; ctx.font = '900 10px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('1943 • BICYCLE DAY', 0, -48);
     ctx.restore();
 
-    // Зубастая пасть марки в нижней части рамки
     drawFangedMouth(ctx, 43, 52, 16);
     ctx.restore(); return;
   }
 
-  // =======================================================================
-  // УРОВЕНЬ 2: МАЛЫЙ — НЕТОПЫРЬ КАЛАВЕРА | БОЛЬШОЙ — НЕКРО-ПАУК С МАРИОНЕТКАМИ
-  // =======================================================================
+  // 2. УРОВЕНЬ 2
   if (lvl.id === 2) {
     if (b.isMidBoss) {
-      // МАЛЫЙ БОСС УР. 2: Костяной Нетопырь Калавера
       const flap = Math.sin(b.time * 8) * 18;
       ctx.fillStyle = '#240046'; ctx.strokeStyle = strobe ? '#ffbe0b' : '#ff006e'; ctx.lineWidth = 3;
       ctx.beginPath();
@@ -1428,16 +1432,13 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.restore(); return;
     }
 
-    // БОЛЬШОЙ БОСС УР. 2: Некро-Паук с Марионетками-черепами на нитях
     const legCols = ['#ff002b', '#ffbe0b', '#06d6a0', '#3a86ff'];
     for (let side of [-1, 1]) {
       for (let l = 0; l < 4; l++) {
         const wave = Math.sin(b.time * 7 + l * 1.4) * 12, baseY = -14 + l * 12;
-        ctx.strokeStyle = strobe ? '#ffffff' : legCols[l];
-        ctx.lineWidth = 7;
+        ctx.strokeStyle = strobe ? '#ffffff' : legCols[l]; ctx.lineWidth = 7;
         ctx.beginPath(); ctx.moveTo(side * 42, baseY); ctx.lineTo(side * 78, baseY - 26 + wave); ctx.lineTo(side * 98, baseY + 26 - wave); ctx.stroke();
       }
-      // Марионетки мини-черепа на светящихся нитях паутины
       const swing = Math.sin(b.time * 4.5 + side) * 14;
       const mx = side * 74 + swing, my = 48 + Math.cos(b.time * 4.5) * 8;
       ctx.strokeStyle = '#ffbe0b'; ctx.lineWidth = 2;
@@ -1449,7 +1450,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.fillStyle = flash ? '#ffffff' : '#fff8eb'; ctx.strokeStyle = strobe ? '#ffbe0b' : '#ff002b'; ctx.lineWidth = 4.5;
     ctx.beginPath(); ctx.arc(0, -14, 52, Math.PI * 0.82, Math.PI * 2.18); ctx.lineTo(26, 52); ctx.lineTo(-26, 52); ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Пылающее сердце в 3-й фазе
     if (b.phase === 3) {
       const hBeat = 1 + Math.sin(b.time * 16) * 0.2;
       ctx.save(); ctx.translate(0, -34); ctx.scale(hBeat, hBeat);
@@ -1468,19 +1468,13 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.restore(); return;
   }
 
-  // =======================================================================
-  // УРОВЕНЬ 3 (ВАНИЛЬНО-ПАСТЕЛЬНЫЙ): МАЛЫЙ — ЗЕФИРНЫЙ ЧЕРВЬ | БОЛЬШОЙ — ТОРТ-ЛЕВИАФАН
-  // =======================================================================
+  // 3. УРОВЕНЬ 3
   if (lvl.id === 3) {
     if (b.isMidBoss) {
-      // МАЛЫЙ БОСС УР. 3: Зубастый Зефирный Червь в вафельном рожке
       for (let seg = 4; seg >= 0; seg--) {
-        const sy = -24 + seg * 15;
-        const sx = Math.sin(b.time * 6 + seg * 0.9) * 16;
-        const r = 24 - seg * 2.5;
+        const sy = -24 + seg * 15, sx = Math.sin(b.time * 6 + seg * 0.9) * 16, r = 24 - seg * 2.5;
         drawGlossyCircle(ctx, sx, sy, r, seg % 2 === 0 ? '#ffc2d1' : '#fff3d6');
       }
-      // Вафельный рожок-корона сверху
       ctx.fillStyle = '#f3d5b5'; ctx.strokeStyle = INK; ctx.lineWidth = 2.6;
       ctx.beginPath(); ctx.moveTo(-18, -36); ctx.lineTo(18, -36); ctx.lineTo(0, -68); ctx.closePath(); ctx.fill(); ctx.stroke();
       [-10, 10].forEach(ex => {
@@ -1491,18 +1485,13 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.restore(); return;
     }
 
-    // БОЛЬШОЙ БОСС УР. 3: Многоглазый Торт-Левиафан на 6 карамельных ногах
     for (let side of [-1, 1]) {
       for (let l = 0; l < 3; l++) {
-        const kick = Math.sin(b.time * 8 + l * 1.5 + side) * 11;
-        const y0 = 10 + l * 14;
-        ctx.strokeStyle = l % 2 === 0 ? '#ffc2d1' : '#fff3d6';
-        ctx.lineWidth = 7;
+        const kick = Math.sin(b.time * 8 + l * 1.5 + side) * 11, y0 = 10 + l * 14;
+        ctx.strokeStyle = l % 2 === 0 ? '#ffc2d1' : '#fff3d6'; ctx.lineWidth = 7;
         ctx.beginPath(); ctx.moveTo(side * 48, y0); ctx.lineTo(side * 78, y0 - 10 + kick); ctx.lineTo(side * 94, y0 + 22 - kick); ctx.stroke();
       }
     }
-
-    // 3 вращающихся яруса торта
     const tiers = [
       { y: 26, w: 112, h: 32, col: '#ffc2d1' },
       { y: -4, w: 88,  h: 28, col: '#fff3d6' },
@@ -1510,21 +1499,15 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ];
     tiers.forEach((tr, idx) => {
       const shift = Math.sin(b.time * 4 + idx * 2) * 5;
-      ctx.fillStyle = flash ? '#ffffff' : tr.col;
-      ctx.strokeStyle = INK; ctx.lineWidth = 3;
-      roundRectPath(ctx, -tr.w / 2 + shift, tr.y - tr.h / 2, tr.w, tr.h, 12);
-      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = flash ? '#ffffff' : tr.col; ctx.strokeStyle = INK; ctx.lineWidth = 3;
+      roundRectPath(ctx, -tr.w / 2 + shift, tr.y - tr.h / 2, tr.w, tr.h, 12); ctx.fill(); ctx.stroke();
     });
-
-    // Свечи-огнемёты сверху
     [-16, 0, 16].forEach((cx, idx) => {
       ctx.fillStyle = '#bde0fe'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
       roundRectPath(ctx, cx - 4, -58, 8, 18, 3); ctx.fill(); ctx.stroke();
       ctx.fillStyle = strobe ? '#fff3d6' : '#ff85a1';
       ctx.beginPath(); ctx.arc(cx, -64 - (idx === 1 ? 3 : 0), 6, 0, Math.PI * 2); ctx.fill();
     });
-
-    // Много глаз по ярусам торта + зубастая пасть
     [[-24, 24], [0, 24], [24, 24], [-18, -5], [18, -5]].forEach(([ex, ey]) => {
       ctx.fillStyle = '#ffffff'; ctx.strokeStyle = INK; ctx.lineWidth = 2.2;
       ctx.beginPath(); ctx.arc(ex, ey, 8.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -1534,12 +1517,9 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.restore(); return;
   }
 
-  // =======================================================================
-  // УРОВЕНЬ 4: МАЛЫЙ — МЕДУЗА-ГИПНОТИЗЁР | БОЛЬШОЙ — КРАКЕН-УДИЛЬЩИК
-  // =======================================================================
+  // 4. УРОВЕНЬ 4
   if (lvl.id === 4) {
     if (b.isMidBoss) {
-      // МАЛЫЙ БОСС УР. 4: Астральная Медуза-Гипнотизёр с неоновым мозгом внутри
       for (let k = -3; k <= 3; k++) {
         const w = Math.sin(b.time * 6 + k) * 12;
         ctx.strokeStyle = k % 2 === 0 ? '#caf0f8' : '#ff70a6'; ctx.lineWidth = 4.5;
@@ -1547,7 +1527,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       }
       ctx.fillStyle = 'rgba(72, 202, 228, 0.72)'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3.5;
       ctx.beginPath(); ctx.arc(0, 6, 44, Math.PI, 0); ctx.quadraticCurveTo(46, 18, 0, 14); ctx.quadraticCurveTo(-46, 18, -44, 6); ctx.closePath(); ctx.fill(); ctx.stroke();
-      // Пульсирующий неоновый мозг под куполом
       const brPulse = 1 + Math.sin(b.time * 10) * 0.14;
       ctx.save(); ctx.translate(0, -14); ctx.scale(brPulse, brPulse);
       ctx.fillStyle = '#ff70a6'; ctx.beginPath(); ctx.ellipse(-7, 0, 11, 8, 0, 0, Math.PI * 2); ctx.ellipse(7, 0, 11, 8, 0, 0, Math.PI * 2); ctx.fill();
@@ -1559,7 +1538,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.restore(); return;
     }
 
-    // БОЛЬШОЙ БОСС УР. 4: Глубоководный Кракен-Удильщик
     const seaHue = (b.time * 125) % 360;
     for (let i = 0; i < 8; i++) {
       const t = i - 3.5, waveX = Math.sin(b.time * 5.5 + i * 0.9) * 18;
@@ -1571,7 +1549,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.strokeStyle = strobe ? '#ffffff' : '#9bf6ff'; ctx.lineWidth = 4.5;
     ctx.beginPath(); ctx.arc(0, -4, 54, Math.PI, 0); ctx.quadraticCurveTo(58, 32, 0, 34); ctx.quadraticCurveTo(-58, 32, -54, -4); ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Удочка удильщика с раскачивающимся гипно-фонарём сверху
     const lureX = Math.sin(b.time * 3.5) * 32;
     ctx.strokeStyle = '#caf0f8'; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(0, -54); ctx.quadraticCurveTo(lureX * 0.5, -88, lureX, -66); ctx.stroke();
@@ -1587,54 +1564,98 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   }
 
   // =======================================================================
-  // УРОВЕНЬ 5: МАЛЫЙ — ТРЁХГЛАВЫЙ БУТОН | БОЛЬШОЙ — ДРЕВЕНЬ-ПОДСОЛНУХ ПОЖИРАТЕЛЬ
+  // 5. УРОВЕНЬ 5 (РАСТАМАНСКИЙ):
+  // МАЛЫЙ — ДРЕДАСТЫЙ ХАМЕЛЕОН-ГИПНОТИЗЁР | БОЛЬШОЙ — МЕГА-ЛЕВ ДЖА С ДРЕДАМИ
   // =======================================================================
   if (lvl.id === 5) {
+    const rCols = ['#ff4d6d', '#ffd166', '#06d6a0'];
+
     if (b.isMidBoss) {
-      // МАЛЫЙ БОСС УР. 5: Трёхглавый Бутон-Мухоловка
-      [[-32, 6, 0], [0, -12, 2], [32, 6, 4]].forEach(([hx, hy, phOff]) => {
-        const lunge = Math.sin(b.time * 5 + phOff) * 10;
-        ctx.strokeStyle = '#38b000'; ctx.lineWidth = 7;
-        ctx.beginPath(); ctx.moveTo(0, 36); ctx.quadraticCurveTo(hx * 0.5, 16, hx, hy + lunge); ctx.stroke();
-        drawGlossyCircle(ctx, hx, hy + lunge, 19, flash ? '#ffffff' : '#ff006e');
-        drawGlossyCircle(ctx, hx, hy + lunge - 4, 8, '#ffee33');
-        drawFangedMouth(ctx, hy + lunge + 4, 20, 9);
+      // МАЛЫЙ БОСС УР. 5: Дредастый Хамелеон-Гипнотизёр на 6 лапах
+      for (let side of [-1, 1]) {
+        for (let l = 0; l < 3; l++) {
+          const step = Math.sin(b.time * 8 + l * 1.6 + side) * 10;
+          ctx.strokeStyle = rCols[l]; ctx.lineWidth = 5.5;
+          ctx.beginPath(); ctx.moveTo(side * 28, -10 + l * 14); ctx.lineTo(side * 56, -18 + l * 14 + step); ctx.lineTo(side * 68, 8 + l * 14 - step); ctx.stroke();
+        }
+      }
+      // Гипно-спираль хвоста снизу
+      ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 7;
+      ctx.beginPath(); ctx.moveTo(0, 28); ctx.quadraticCurveTo(28, 54, 6, 62); ctx.quadraticCurveTo(-14, 62, -6, 46); ctx.stroke();
+
+      const chCol = flash ? '#ffffff' : rCols[Math.floor(b.time * 3) % 3];
+      drawGlossyCircle(ctx, 0, -4, 38, chCol);
+      // Дреды на макушке
+      [-16, -6, 6, 16].forEach((dx, idx) => {
+        ctx.strokeStyle = rCols[idx % 3]; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(dx, -36); ctx.quadraticCurveTo(dx * 1.8, -54, dx * 2.2, -32); ctx.stroke();
       });
+      [-16, 16].forEach(ex => {
+        ctx.fillStyle = '#ffffff'; ctx.strokeStyle = INK; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.arc(ex, -8, 11, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#ff002b'; ctx.beginPath(); ctx.arc(ex + lookX, -8, 5, 0, Math.PI * 2); ctx.fill();
+      });
+      drawFangedMouth(ctx, 10, 34, 14);
       ctx.restore(); return;
     }
 
-    // БОЛЬШОЙ БОСС УР. 5: Древень-Подсолнух Пожиратель с 6 лианами и 8 глазами в центре
-    for (let v = 0; v < 6; v++) {
-      const t = v - 2.5, whipX = Math.sin(b.time * 5 + v * 1.2) * 30;
-      ctx.strokeStyle = v % 2 === 0 ? '#38b000' : '#ccff33'; ctx.lineWidth = 9;
-      ctx.beginPath(); ctx.moveTo(t * 18, 22); ctx.bezierCurveTo(t * 28 + whipX, 55, t * 18 - whipX, 82, t * 28 + whipX * 0.6, 102); ctx.stroke();
+    // БОЛЬШОЙ БОСС УР. 5: МЕГА-ЛЕВ ДЖА С ДРЕДАМИ И РАСТА-КОРОНОЙ
+    // 6 толстых извивающихся красно-жёлто-зелёных дредов-щупалец
+    for (let d = 0; d < 6; d++) {
+      const side = d < 3 ? -1 : 1;
+      const idx = d % 3;
+      const wave = Math.sin(b.time * 5.5 + d * 1.1) * 20;
+      const startX = side * (36 + idx * 12);
+      ctx.strokeStyle = rCols[idx];
+      ctx.lineWidth = 11;
+      ctx.beginPath();
+      ctx.moveTo(startX, -8 + idx * 12);
+      ctx.bezierCurveTo(startX + side * 34 + wave, 24, startX + side * 16 - wave, 62, startX + side * 38 + wave * 0.7, 94);
+      ctx.stroke();
+
+      // Золотые кольца-бусины на дредах
+      ctx.fillStyle = '#ffd166';
+      ctx.beginPath(); ctx.arc(startX + side * 24, 48 + wave * 0.4, 5.5, 0, Math.PI * 2); ctx.fill();
     }
-    ctx.save(); ctx.rotate(b.time * 0.8);
-    for (let i = 0; i < 16; i++) {
-      ctx.rotate((Math.PI * 2) / 16);
-      ctx.fillStyle = (i + (strobe ? 1 : 0)) % 2 === 0 ? '#ffd166' : '#ff9f1c';
-      ctx.strokeStyle = '#80ed99'; ctx.lineWidth = 2.4;
-      ctx.beginPath(); ctx.moveTo(0, 32); ctx.quadraticCurveTo(14, 60, 0, 76); ctx.quadraticCurveTo(-14, 60, 0, 32); ctx.fill(); ctx.stroke();
+
+    // Пышная грива Льва Джа
+    ctx.save();
+    ctx.rotate(Math.sin(b.time * 2) * 0.08);
+    for (let m = 0; m < 14; m++) {
+      ctx.rotate((Math.PI * 2) / 14);
+      ctx.fillStyle = rCols[m % 3];
+      ctx.strokeStyle = INK; ctx.lineWidth = 2.6;
+      ctx.beginPath(); ctx.moveTo(28, -10); ctx.lineTo(66, 0); ctx.lineTo(28, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
     }
     ctx.restore();
-    ctx.fillStyle = flash ? '#ffffff' : '#3d1e05'; ctx.strokeStyle = strobe ? '#ffffff' : '#80ed99'; ctx.lineWidth = 4.5;
-    ctx.beginPath(); ctx.arc(0, 0, 44, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-    // 6 бегающих глаз вместо семечек вокруг пасти
-    for (let eIdx = 0; eIdx < 6; eIdx++) {
-      const ea = (Math.PI * 2 * eIdx) / 6 + Math.sin(b.time * 2) * 0.2;
-      const ex = Math.cos(ea) * 24, ey = -4 + Math.sin(ea) * 18;
-      ctx.fillStyle = '#fee440'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(ex, ey, 7.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#ff002b'; ctx.beginPath(); ctx.arc(ex + lookX * 0.7, ey, 3.5, 0, Math.PI * 2); ctx.fill();
-    }
-    drawFangedMouth(ctx, 14, 42, 16);
+    // Морда Льва Джа
+    drawGlossyCircle(ctx, 0, 2, 44, flash ? '#ffffff' : '#f4a261');
+
+    // Вязаная раста-шапка / корона сверху
+    ctx.fillStyle = '#06d6a0'; ctx.strokeStyle = INK; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, -30, 34, Math.PI, 0); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffd166'; ctx.fillRect(-34, -32, 68, 7);
+    ctx.fillStyle = '#ff4d6d'; ctx.fillRect(-34, -25, 68, 7);
+
+    // Круглые радужные очки Льва
+    [-17, 17].forEach((ex, idx) => {
+      ctx.fillStyle = idx === 0 ? '#ff4d6d' : '#06d6a0';
+      ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 3.2;
+      ctx.beginPath(); ctx.arc(ex, -4, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(ex + lookX, -4, 4.5, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.moveTo(-4, -4); ctx.lineTo(4, -4); ctx.stroke();
+
+    // Львиный нос и рычащая клыкастая пасть
+    ctx.fillStyle = INK;
+    ctx.beginPath(); ctx.moveTo(-7, 10); ctx.lineTo(7, 10); ctx.lineTo(0, 18); ctx.closePath(); ctx.fill();
+    drawFangedMouth(ctx, 21, 44, 17);
     ctx.restore(); return;
   }
 
-  // =======================================================================
-  // УРОВЕНЬ 6: МАЛЫЙ — СПОРОВАЯ МИНИ-СКОЛОПЕНДРА | БОЛЬШОЙ — ВЛАДЫКА МУХОМОР-СКОЛОПЕНДРА
-  // =======================================================================
+  // 6. УРОВЕНЬ 6: СПОРОВАЯ МИНИ-СКОЛОПЕНДРА / ВЛАДЫКА МУХОМОР-СКОЛОПЕНДРА
   const segCount = b.isMidBoss ? 3 : 5;
   for (let seg = segCount - 1; seg >= 0; seg--) {
     const sy = (b.isMidBoss ? 12 : 18) + seg * (b.isMidBoss ? 13 : 15);
