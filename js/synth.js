@@ -34,24 +34,27 @@ class AstraCatSynth {
     this.brownNoiseBuffer = null;
 
     this.warmScale = [146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63];
+    this.cyberScale = [220.00, 246.94, 293.66, 329.63, 392.00];
     this.collectStep = 0;
     this.woodStep = 0;
     this.shotStep = 0;
+    this.cyberStep = 0;
 
-    this.availableTracks = [
-      'level1.mp3', 'level2.mp3', 'level3.mp3', 'level4.mp3',
-      'level5.mp3', 'level6.mp3', 'level7.mp3', 'level8.mp3',
-      'level9.mp3', 'level10.mp3', 'level11.mp3'
-    ];
+    // Список треков от level1.mp3 до level30.mp3 (уточняется автосканированием)
+    this.maxTrackCount = 30;
+    this.availableTracks = Array.from({ length: 11 }, (_, i) => ({
+      num: i + 1,
+      file: `level${i + 1}.mp3`,
+      label: `Трек ${i + 1}`
+    }));
 
     this.bossTracks = ['boss.mp3', 'boss2.mp3'];
 
-    this.selectedTrack = 'auto';
     this.recentTracks = [];
     this.currentTrackIndex = 0;
 
     this.bgmAudio = new Audio();
-    this.bgmAudio.loop = true;
+    this.bgmAudio.loop = false;
     this.bgmAudio.preload = 'auto';
 
     this.currentTrackFile = '';
@@ -62,6 +65,7 @@ class AstraCatSynth {
 
     this.lastScrollTickTime = 0;
     this.lastShotSoundTime = 0;
+    this.lastCyberSoundTime = 0;
     this.lastDroneShotTime = 0;
     this.lastExplosionTime = 0;
     this.lastHitTime = 0;
@@ -71,11 +75,20 @@ class AstraCatSynth {
     this.bgmAudio.addEventListener('playing', () => {
       this.isPlayRequestInFlight = false;
       this.pendingTrack = null;
-      this.updateStatusHint(`▶ Играет: ${this.currentTrackFile}`);
+      this.syncCockpitPlayerUI();
+    });
+
+    this.bgmAudio.addEventListener('pause', () => {
+      this.syncCockpitPlayerUI();
     });
 
     this.bgmAudio.addEventListener('ended', () => {
-      if (!this.pausedByGame && this.musicEnabled && !this.muted && this.currentTrackFile) {
+      if (this.pausedByGame || !this.musicEnabled || this.muted || !this.currentTrackFile) return;
+      // Если играл трек из плейлиста level1..30 — ставим следующий случайный без повтора 4 раз
+      const isLevelTrack = /^level\d+\.mp3$/i.test(this.currentTrackFile);
+      if (isLevelTrack && this.availableTracks.length > 1) {
+        this.playTrack(this.pickNextTrack(), 'level1.mp3', true);
+      } else {
         this.bgmAudio.currentTime = 0;
         const p = this.bgmAudio.play();
         if (p && typeof p.catch === 'function') p.catch(() => {});
@@ -84,7 +97,14 @@ class AstraCatSynth {
 
     this.bgmAudio.addEventListener('error', () => {
       this.isPlayRequestInFlight = false;
-      this.updateStatusHint(`⚠ Ошибка файла ${this.currentTrackFile}`);
+      // Удаляем недоступный трек из пула, если он не найден
+      const brokenIdx = this.availableTracks.findIndex(t => t.file === this.currentTrackFile);
+      if (brokenIdx !== -1 && this.availableTracks.length > 1) {
+        this.availableTracks.splice(brokenIdx, 1);
+        this.renderCockpitTrackGrid();
+        this.playTrack(this.pickNextTrack(), 'level1.mp3', true);
+        return;
+      }
       if (this.fallbackTrackFile && this.currentTrackFile !== this.fallbackTrackFile) {
         const fb = this.fallbackTrackFile;
         this.fallbackTrackFile = null;
@@ -93,8 +113,17 @@ class AstraCatSynth {
     });
 
     this.syncDefaultSlidersUI();
+    this.bindCockpitControls();
     this.scanMusicFolder();
     this.setupAutoUnlock();
+  }
+
+  getTrackDisplayLabel(filename) {
+    if (!filename) return 'Трек 1';
+    const match = filename.match(/^level(\d+)\.mp3$/i);
+    if (match) return `Трек ${match[1]}`;
+    const cur = this.availableTracks[this.currentTrackIndex];
+    return cur ? cur.label : 'Трек 1';
   }
 
   syncDefaultSlidersUI() {
@@ -114,9 +143,60 @@ class AstraCatSynth {
     if (warmthVal) warmthVal.textContent = `${this.settings.warmthCutoff} Hz`;
   }
 
-  updateStatusHint(text) {
-    const hint = document.getElementById('tracks-found-hint');
-    if (hint) hint.textContent = text;
+  bindCockpitControls() {
+    document.getElementById('cockpit-prev-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.init();
+      this.prevTrack();
+    });
+    document.getElementById('cockpit-next-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.init();
+      this.nextTrack();
+    });
+  }
+
+  renderCockpitTrackGrid() {
+    const grid = document.getElementById('cockpit-track-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    this.availableTracks.forEach((tr, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cockpit-key' + (this.currentTrackFile === tr.file ? ' active' : '');
+      btn.textContent = tr.label;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.init();
+        this.sfxMenuSelect();
+        this.pausedByGame = false;
+        this.currentTrackIndex = idx;
+        this.playTrack(tr.file, 'level1.mp3', true);
+      });
+      grid.appendChild(btn);
+    });
+
+    this.syncCockpitPlayerUI();
+  }
+
+  syncCockpitPlayerUI() {
+    const titleEl = document.getElementById('cockpit-track-title');
+    const eqEl = document.getElementById('cockpit-eq');
+    const isPlaying = Boolean(this.bgmAudio && !this.bgmAudio.paused && this.musicEnabled && !this.muted);
+
+    if (titleEl) {
+      titleEl.textContent = this.getTrackDisplayLabel(this.currentTrackFile);
+    }
+    if (eqEl) {
+      eqEl.classList.toggle('playing', isPlaying);
+    }
+
+    const keys = document.querySelectorAll('#cockpit-track-grid .cockpit-key');
+    keys.forEach((btn, idx) => {
+      const tr = this.availableTracks[idx];
+      btn.classList.toggle('active', Boolean(tr && tr.file === this.currentTrackFile));
+    });
   }
 
   setupAutoUnlock() {
@@ -153,10 +233,10 @@ class AstraCatSynth {
         if (p && typeof p.then === 'function') {
           p.then(() => {
             this.isPlayRequestInFlight = false;
+            this.syncCockpitPlayerUI();
           }).catch(() => {
             this.isPlayRequestInFlight = false;
             this.pendingTrack = { file: this.currentTrackFile, fallback: this.fallbackTrackFile };
-            this.updateStatusHint(`Нажми на экран для запуска: ${this.currentTrackFile}`);
           });
         } else {
           this.isPlayRequestInFlight = false;
@@ -170,23 +250,33 @@ class AstraCatSynth {
     window.addEventListener('keydown', unlock, { passive: true });
   }
 
-  scanMusicFolder() {
-    const list = this.availableTracks;
-    const sel = document.getElementById('track-select');
+  async scanMusicFolder() {
+    this.renderCockpitTrackGrid();
 
-    if (sel) {
-      const curVal = sel.value || 'auto';
-      sel.innerHTML = `<option value="auto">🎲 Авто (${list.length} треков level, без повтора 4 ур.)</option>`;
-      list.forEach((fname, idx) => {
-        const opt = document.createElement('option');
-        opt.value = fname;
-        opt.textContent = `Уровень ${idx + 1} (${fname})`;
-        sel.appendChild(opt);
-      });
-      sel.value = curVal;
+    const probes = Array.from({ length: this.maxTrackCount }, (_, i) => {
+      const num = i + 1;
+      const file = `level${num}.mp3`;
+      return fetch(`music/${file}`, { method: 'HEAD' })
+        .then(resp => {
+          const ctype = (resp.headers.get('content-type') || '').toLowerCase();
+          if (resp.ok && !ctype.includes('text/html')) {
+            return { num, file, label: `Трек ${num}` };
+          }
+          return null;
+        })
+        .catch(() => null);
+    });
+
+    const results = await Promise.all(probes);
+    const found = results.filter(Boolean).sort((a, b) => a.num - b.num);
+
+    if (found.length > 0) {
+      this.availableTracks = found;
+      const curIdx = this.availableTracks.findIndex(t => t.file === this.currentTrackFile);
+      if (curIdx !== -1) this.currentTrackIndex = curIdx;
     }
 
-    this.updateStatusHint(`Меню: intro.mp3 • Уровни: level1–11.mp3 • Боссы: boss.mp3, boss2.mp3`);
+    this.renderCockpitTrackGrid();
   }
 
   _makeSoftClipCurve(amount = 1.15) {
@@ -301,7 +391,6 @@ class AstraCatSynth {
       boom_small:   'music/boom_small.mp3',
       boss_alarm:   'music/boss_alarm.mp3',
       boss_explode: 'music/boss_explode.mp3',
-      electric:     'music/electric.mp3',
       drone_bullet: 'music/drone_bullet.mp3',
       drone_wave:   'music/drone_wave.mp3',
       rocket_boom:  'music/rocket_boom.mp3'
@@ -574,6 +663,80 @@ class AstraCatSynth {
     osc.start(now);
     osc.stop(now + dur + 0.01);
     this.allocateVoice(dur, () => { try { osc.stop(); } catch (_) {} });
+  }
+
+  // Приятный кибернетический импульс для пушки с молниями и 3-го дрона
+  playCyberElectric(volumeScale = 1.0) {
+    const nowMs = performance.now();
+    if (nowMs - this.lastCyberSoundTime < 95) return;
+    this.lastCyberSoundTime = nowMs;
+
+    this.init();
+    if (!this.ctx || this.muted || !this.sfxEnabled) return;
+
+    const now = this.ctx.currentTime;
+    const dur = 0.165;
+    const base = this.cyberScale[this.cyberStep % this.cyberScale.length];
+    this.cyberStep++;
+
+    // Основной кибернетический синтезаторный голос
+    const carrier = this.ctx.createOscillator();
+    const harmonic = this.ctx.createOscillator();
+    const modLfo = this.ctx.createOscillator();
+    const modDepth = this.ctx.createGain();
+
+    const bp = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    carrier.type = 'triangle';
+    carrier.frequency.setValueAtTime(base, now);
+    carrier.frequency.exponentialRampToValueAtTime(base * 1.48, now + 0.032);
+    carrier.frequency.exponentialRampToValueAtTime(base * 0.78, now + dur);
+
+    // Мягкая верхняя гармоника с лёгкой кибер-модуляцией 52 Гц
+    harmonic.type = 'sine';
+    harmonic.frequency.setValueAtTime(base * 2.0, now);
+    harmonic.frequency.exponentialRampToValueAtTime(base * 2.5, now + 0.035);
+    harmonic.frequency.exponentialRampToValueAtTime(base * 1.25, now + dur);
+
+    modLfo.type = 'sine';
+    modLfo.frequency.setValueAtTime(52, now);
+    modDepth.gain.setValueAtTime(16, now);
+
+    const harmGain = this.ctx.createGain();
+    harmGain.gain.setValueAtTime(0.14, now);
+    harmGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+    bp.type = 'lowpass';
+    bp.frequency.setValueAtTime(1250, now);
+    bp.frequency.exponentialRampToValueAtTime(620, now + dur);
+    bp.Q.value = 1.8;
+
+    const peak = 0.25 * volumeScale;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(peak, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+    modLfo.connect(modDepth);
+    modDepth.connect(harmonic.frequency);
+
+    carrier.connect(bp);
+    harmonic.connect(harmGain);
+    harmGain.connect(bp);
+    bp.connect(gain);
+    gain.connect(this.voiceBus);
+
+    carrier.start(now);
+    harmonic.start(now);
+    modLfo.start(now);
+
+    carrier.stop(now + dur + 0.01);
+    harmonic.stop(now + dur + 0.01);
+    modLfo.stop(now + dur + 0.01);
+
+    this.allocateVoice(dur, () => {
+      try { carrier.stop(); harmonic.stop(); modLfo.stop(); } catch (_) {}
+    });
   }
 
   playPortalPass() {
@@ -878,8 +1041,7 @@ class AstraCatSynth {
     } else if (baseWeapon === 'rocket_launcher') {
       this.playPlushRocket();
     } else if (baseWeapon === 'electric_arc') {
-      this.playSample('electric', { volume: 0.36, pitch: 0.96, pitchJitter: 0.06, duration: 0.42 });
-      this.playWarmLaser();
+      this.playCyberElectric(1.05);
     } else {
       this.playWarmLaser();
     }
@@ -897,7 +1059,7 @@ class AstraCatSynth {
       this.playSample('drone_wave', { volume: 0.18, pitch: 0.95, pitchJitter: 0.05, offset: 0.04, duration: 0.32 });
       this.playWarmLaser();
     } else if (droneWeapon === 'electric') {
-      this.playSample('electric', { volume: 0.28, pitch: 0.92, pitchJitter: 0.05, duration: 0.48 });
+      this.playCyberElectric(0.88);
     }
   }
 
@@ -951,17 +1113,24 @@ class AstraCatSynth {
 
   sfxGameOver() { this.playNebulaExplosion(); }
 
+  recordRecentTrack(filename) {
+    if (!filename || !/^level\d+\.mp3$/i.test(filename)) return;
+    this.recentTracks = this.recentTracks.filter(f => f !== filename);
+    this.recentTracks.push(filename);
+    if (this.recentTracks.length > 4) this.recentTracks.shift();
+  }
+
+  // Случайный выбор из level1..30 без повтора минимум 4 раза подряд и без привязки к уровню
   pickNextTrack() {
-    if (this.selectedTrack && this.selectedTrack !== 'auto') return this.selectedTrack;
-    const candidates = this.availableTracks.filter(t => !this.recentTracks.includes(t));
+    if (!this.availableTracks.length) return 'level1.mp3';
+    const historyLimit = Math.min(4, Math.max(0, this.availableTracks.length - 1));
+    const blocked = this.recentTracks.slice(-historyLimit);
+    const candidates = this.availableTracks.filter(t => !blocked.includes(t.file));
     const pool = candidates.length > 0 ? candidates : this.availableTracks;
-    if (pool.length === 0) return 'level1.mp3';
 
     const chosen = pool[Math.floor(Math.random() * pool.length)];
-    this.currentTrackIndex = Math.max(0, this.availableTracks.indexOf(chosen));
-    this.recentTracks.push(chosen);
-    if (this.recentTracks.length > 4) this.recentTracks.shift();
-    return chosen;
+    this.currentTrackIndex = Math.max(0, this.availableTracks.findIndex(t => t.file === chosen.file));
+    return chosen.file;
   }
 
   nextTrack() {
@@ -969,10 +1138,8 @@ class AstraCatSynth {
     if (!this.availableTracks.length) return;
     this.pausedByGame = false;
     this.currentTrackIndex = (this.currentTrackIndex + 1) % this.availableTracks.length;
-    const fname = this.availableTracks[this.currentTrackIndex];
-    this.playTrack(fname, 'level1.mp3', true);
-    const sel = document.getElementById('track-select');
-    if (sel) sel.value = fname;
+    const item = this.availableTracks[this.currentTrackIndex];
+    this.playTrack(item.file, 'level1.mp3', true);
   }
 
   prevTrack() {
@@ -980,10 +1147,8 @@ class AstraCatSynth {
     if (!this.availableTracks.length) return;
     this.pausedByGame = false;
     this.currentTrackIndex = (this.currentTrackIndex - 1 + this.availableTracks.length) % this.availableTracks.length;
-    const fname = this.availableTracks[this.currentTrackIndex];
-    this.playTrack(fname, 'level1.mp3', true);
-    const sel = document.getElementById('track-select');
-    if (sel) sel.value = fname;
+    const item = this.availableTracks[this.currentTrackIndex];
+    this.playTrack(item.file, 'level1.mp3', true);
   }
 
   getEffectiveMusicVol() {
@@ -1005,21 +1170,27 @@ class AstraCatSynth {
         if (p && typeof p.then === 'function') {
           p.then(() => {
             this.isPlayRequestInFlight = false;
+            this.syncCockpitPlayerUI();
           }).catch(() => {
             this.isPlayRequestInFlight = false;
             this.pendingTrack = { file: filename, fallback: fallbackTrack };
-            this.updateStatusHint(`Нажми на экран для запуска: ${filename}`);
           });
         } else {
           this.isPlayRequestInFlight = false;
         }
       }
+      this.syncCockpitPlayerUI();
       return;
     }
 
     this.currentTrackFile = filename;
     this.fallbackTrackFile = fallbackTrack;
     this.pendingTrack = null;
+    this.recordRecentTrack(filename);
+
+    const idx = this.availableTracks.findIndex(t => t.file === filename);
+    if (idx !== -1) this.currentTrackIndex = idx;
+    this.syncCockpitPlayerUI();
 
     try {
       this.bgmAudio.pause();
@@ -1033,10 +1204,10 @@ class AstraCatSynth {
         if (playPromise && typeof playPromise.then === 'function') {
           playPromise.then(() => {
             this.isPlayRequestInFlight = false;
+            this.syncCockpitPlayerUI();
           }).catch(() => {
             this.isPlayRequestInFlight = false;
             this.pendingTrack = { file: filename, fallback: fallbackTrack };
-            this.updateStatusHint(`Нажми на экран для запуска: ${filename}`);
           });
         } else {
           this.isPlayRequestInFlight = false;
@@ -1056,6 +1227,7 @@ class AstraCatSynth {
         this.bgmAudio.pause();
       } catch (e) {}
     }
+    this.syncCockpitPlayerUI();
   }
 
   resumeMusic() {
@@ -1066,7 +1238,7 @@ class AstraCatSynth {
         this.isPlayRequestInFlight = true;
         const p = this.bgmAudio.play();
         if (p && typeof p.then === 'function') {
-          p.then(() => { this.isPlayRequestInFlight = false; })
+          p.then(() => { this.isPlayRequestInFlight = false; this.syncCockpitPlayerUI(); })
            .catch(() => { this.isPlayRequestInFlight = false; });
         } else {
           this.isPlayRequestInFlight = false;
@@ -1078,7 +1250,7 @@ class AstraCatSynth {
   }
 
   startIntroMusic() {
-    this.playTrack('intro.mp3', 'level1.mp3', false);
+    this.playTrack('intro.mp3', this.pickNextTrack(), false);
   }
 
   startMusic(mode = 'normal', levelId = 1) {
@@ -1091,6 +1263,7 @@ class AstraCatSynth {
       this.playTrack(bossFile, 'boss.mp3', true);
       return;
     }
+    // Всегда случайный трек из level1..30 без привязки к номеру уровня
     this.playTrack(this.pickNextTrack(), 'level1.mp3', true);
   }
 
@@ -1107,6 +1280,7 @@ class AstraCatSynth {
       } catch (e) {}
     }
     this.currentTrackFile = '';
+    this.syncCockpitPlayerUI();
   }
 
   updateMusicVolume() {
@@ -1116,13 +1290,14 @@ class AstraCatSynth {
         this.isPlayRequestInFlight = true;
         const p = this.bgmAudio.play();
         if (p && typeof p.then === 'function') {
-          p.then(() => { this.isPlayRequestInFlight = false; })
+          p.then(() => { this.isPlayRequestInFlight = false; this.syncCockpitPlayerUI(); })
            .catch(() => { this.isPlayRequestInFlight = false; });
         } else {
           this.isPlayRequestInFlight = false;
         }
       }
     }
+    this.syncCockpitPlayerUI();
   }
 
   toggleMute() {
