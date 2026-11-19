@@ -3,84 +3,84 @@
 class VFXEngine {
   constructor() {
     this.particles = [];
-    this.fireballs = [];
-    this.sparks = [];
-    this.debris = [];
-    this.lightnings = [];
+    this.trails = [];
     this.shockwaves = [];
     this.popups = [];
-    this.trails = [];
-    this.flashAlpha = 0;
+    this.arcs = [];
     this.flashColor = '#ffffff';
+    this.flashAlpha = 0;
+
+    this.maxParticles = 95;
+    this.maxTrails = 45;
+    this.maxShockwaves = 10;
+    this.maxPopups = 14;
   }
 
   clear() {
     this.particles = [];
-    this.fireballs = [];
-    this.sparks = [];
-    this.debris = [];
-    this.lightnings = [];
+    this.trails = [];
     this.shockwaves = [];
     this.popups = [];
-    this.trails = [];
+    this.arcs = [];
     this.flashAlpha = 0;
   }
 
-  triggerFlash(color = '#ffffff', alpha = 0.25) {
+  triggerFlash(color = '#ffffff', alpha = 0.28) {
     this.flashColor = color;
-    this.flashAlpha = Math.max(this.flashAlpha, alpha);
+    this.flashAlpha = Math.min(0.45, Math.max(this.flashAlpha, alpha));
   }
 
-  addShockwave(x, y, color = '#48dbfb', maxR = 85, duration = 0.38) {
-    if (this.shockwaves.length > 24) this.shockwaves.shift();
-    this.shockwaves.push({
-      x, y, r: 8, maxR, color, life: duration, maxLife: duration
+  addTrail(x, y, color = '#48dbfb', r = 4, life = 0.14) {
+    if (this.trails.length >= this.maxTrails) this.trails.shift();
+    this.trails.push({ x, y, color, r, life, maxLife: life });
+  }
+
+  addShockwave(x, y, color = '#ffffff', maxR = 85, dur = 0.36) {
+    if (this.shockwaves.length >= this.maxShockwaves) this.shockwaves.shift();
+    this.shockwaves.push({ x, y, color, r: 8, maxR, life: dur, maxLife: dur });
+  }
+
+  addPopup(x, y, text, color = '#ffd166', scale = 1.0) {
+    if (this.popups.length >= this.maxPopups) this.popups.shift();
+    this.popups.push({
+      x,
+      y,
+      vy: -46,
+      text,
+      color,
+      scale,
+      life: 0.95,
+      maxLife: 0.95
     });
   }
 
-  addHitSparks(x, y, color = '#80ffdb', count = 10) {
-    for (let i = 0; i < count; i++) {
-      if (this.sparks.length > 140) this.sparks.shift();
-      const ang = Math.PI * 0.2 + Math.random() * Math.PI * 0.6 + (Math.random() - 0.5) * 1.8;
-      const spd = 140 + Math.random() * 260;
-      const life = 0.14 + Math.random() * 0.16;
-      this.sparks.push({
-        x, y,
-        vx: Math.cos(ang) * spd,
-        vy: Math.sin(ang) * spd,
-        len: 7 + Math.random() * 9,
-        color: i % 2 === 0 ? '#ffffff' : color,
-        life,
-        maxLife: life
+  addLightningArc(x1, y1, x2, y2, color = '#fee440') {
+    if (this.arcs.length > 8) this.arcs.shift();
+    const pts = [{ x: x1, y: y1 }];
+    const steps = 4;
+    for (let i = 1; i < steps; i++) {
+      const t = i / steps;
+      pts.push({
+        x: x1 + (x2 - x1) * t + (Math.random() - 0.5) * 26,
+        y: y1 + (y2 - y1) * t + (Math.random() - 0.5) * 26
       });
     }
-  }
-
-  addLightningArc(x1, y1, x2, y2, color = '#72efdd') {
-    if (this.lightnings.length > 18) this.lightnings.shift();
-    const segments = 7;
-    const pts = [{ x: x1, y: y1 }];
-    for (let i = 1; i < segments; i++) {
-      const t = i / segments;
-      const bx = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 26;
-      const by = y1 + (y2 - y1) * t + (Math.random() - 0.5) * 26;
-      pts.push({ x: bx, y: by });
-    }
     pts.push({ x: x2, y: y2 });
-    this.lightnings.push({ pts, color, life: 0.22, maxLife: 0.22 });
+    this.arcs.push({ pts, color, life: 0.16, maxLife: 0.16 });
   }
 
-  addBurst(x, y, colors, count = 14, speed = 200) {
-    for (let i = 0; i < count; i++) {
-      if (this.particles.length > 150) this.particles.shift();
-      const ang = Math.random() * Math.PI * 2;
-      const spd = (0.25 + Math.random() * 0.85) * speed;
-      const life = 0.26 + Math.random() * 0.32;
+  addBurst(x, y, colors = ['#ffd166', '#ffffff'], count = 10, speed = 170) {
+    const allowed = Math.min(count, Math.max(0, this.maxParticles - this.particles.length));
+    for (let i = 0; i < allowed; i++) {
+      const ang = (Math.PI * 2 * i) / Math.max(1, count) + (Math.random() - 0.5) * 0.5;
+      const spd = speed * (0.45 + Math.random() * 0.65);
+      const life = 0.28 + Math.random() * 0.22;
       this.particles.push({
-        x, y,
+        x,
+        y,
         vx: Math.cos(ang) * spd,
         vy: Math.sin(ang) * spd,
-        r: 2.5 + Math.random() * 4.5,
+        r: 2.6 + Math.random() * 2.8,
         color: colors[i % colors.length],
         life,
         maxLife: life,
@@ -89,296 +89,159 @@ class VFXEngine {
     }
   }
 
-  addRealisticExplosion(x, y, accent = '#ff9f1c', scale = 1.0, wingCol = '#ff5964', bodyCol = '#3a506b') {
-    this.addShockwave(x, y, accent, 95 * scale, 0.42);
-    if (scale >= 1.1) {
-      this.addShockwave(x, y, '#ffd166', 145 * scale, 0.56);
-    }
-
-    const fireCount = Math.round(14 * scale);
-    for (let i = 0; i < fireCount; i++) {
-      if (this.fireballs.length > 90) this.fireballs.shift();
-      const ang = Math.random() * Math.PI * 2;
-      const spd = (20 + Math.random() * 115) * scale;
-      const life = 0.35 + Math.random() * 0.35;
-      this.fireballs.push({
-        x: x + (Math.random() - 0.5) * 14,
-        y: y + (Math.random() - 0.5) * 14,
-        vx: Math.cos(ang) * spd,
-        vy: Math.sin(ang) * spd - 18,
-        r: (10 + Math.random() * 12) * scale,
-        life,
-        maxLife: life
-      });
-    }
-
-    this.addHitSparks(x, y, accent, Math.round(16 * scale));
-
-    const partTypes = ['wing_left', 'wing_right', 'turbine', 'hull_plate', 'dome_shard'];
-    const partsCount = Math.min(8, Math.round(5 * scale));
-    for (let i = 0; i < partsCount; i++) {
-      if (this.debris.length > 45) this.debris.shift();
-      const ang = (Math.PI * 2 * i) / partsCount + (Math.random() - 0.5) * 0.5;
-      const spd = (75 + Math.random() * 135) * scale;
-      this.debris.push({
-        part: partTypes[i % partTypes.length],
-        x, y,
-        vx: Math.cos(ang) * spd,
-        vy: Math.sin(ang) * spd,
-        rot: Math.random() * Math.PI * 2,
-        vrot: (Math.random() - 0.5) * 15,
-        size: (8 + Math.random() * 5) * Math.min(1.4, scale),
-        primaryCol: i % 2 === 0 ? wingCol : bodyCol,
-        accentCol: accent,
-        life: 0.65 + Math.random() * 0.35,
-        maxLife: 1.0
-      });
-    }
+  addHitSparks(x, y, color = '#ffd166', count = 7) {
+    this.addBurst(x, y, [color, '#ffffff'], Math.min(7, count), 155);
   }
 
   addSmoke(x, y) {
-    if (this.fireballs.length > 90) this.fireballs.shift();
-    this.fireballs.push({
-      x: x + (Math.random() - 0.5) * 16,
-      y: y + (Math.random() - 0.5) * 16,
-      vx: (Math.random() - 0.5) * 28,
-      vy: -30 - Math.random() * 30,
-      r: 9 + Math.random() * 8,
-      life: 0.42,
-      maxLife: 0.85
+    if (this.particles.length >= this.maxParticles) return;
+    this.particles.push({
+      x: x + (Math.random() - 0.5) * 24,
+      y: y + (Math.random() - 0.5) * 14,
+      vx: (Math.random() - 0.5) * 25,
+      vy: -35 - Math.random() * 25,
+      r: 7 + Math.random() * 5,
+      color: 'rgba(180, 170, 200, 0.55)',
+      life: 0.45,
+      maxLife: 0.45,
+      drag: 0.96
     });
   }
 
-  addTrail(x, y, color, r = 5, life = 0.2) {
-    if (this.trails.length > 55) this.trails.shift();
-    this.trails.push({ x, y, color, r, life, maxLife: life });
-  }
+  addRealisticExplosion(x, y, accent = '#ffbe0b', scale = 1.0, c1 = null, c2 = null) {
+    const palette = [accent, '#ffffff', '#ffd166'];
+    if (c1) palette.push(c1);
+    if (c2) palette.push(c2);
 
-  addPopup(x, y, text, color = '#ffd166', scale = 1) {
-    if (this.popups.length > 16) this.popups.shift();
-    this.popups.push({
-      x, y, text, color, scale, vy: -54, life: 0.95, maxLife: 0.95
-    });
+    this.addShockwave(x, y, accent, 68 * Math.min(1.8, scale), 0.34);
+    const count = Math.min(16, Math.round(10 * scale));
+    this.addBurst(x, y, palette, count, 185 * Math.min(1.4, scale));
   }
 
   update(dt) {
     if (this.flashAlpha > 0) {
-      this.flashAlpha = Math.max(0, this.flashAlpha - dt * 1.8);
+      this.flashAlpha = Math.max(0, this.flashAlpha - dt * 1.4);
+    }
+
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.life -= dt;
+      if (p.life <= 0) {
+        this.particles.splice(i, 1);
+        continue;
+      }
+      p.vx *= p.drag;
+      p.vy *= p.drag;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+    }
+
+    for (let i = this.trails.length - 1; i >= 0; i--) {
+      const t = this.trails[i];
+      t.life -= dt;
+      if (t.life <= 0) this.trails.splice(i, 1);
     }
 
     for (let i = this.shockwaves.length - 1; i >= 0; i--) {
       const sw = this.shockwaves[i];
       sw.life -= dt;
-      if (sw.life <= 0) { this.shockwaves.splice(i, 1); continue; }
-      const t = 1 - sw.life / sw.maxLife;
-      sw.r = 8 + (sw.maxR - 8) * (1 - Math.pow(1 - t, 3));
+      if (sw.life <= 0) {
+        this.shockwaves.splice(i, 1);
+        continue;
+      }
+      const prog = 1 - sw.life / sw.maxLife;
+      sw.r = 8 + (sw.maxR - 8) * prog;
     }
 
-    for (let i = this.fireballs.length - 1; i >= 0; i--) {
-      const fb = this.fireballs[i];
-      fb.life -= dt;
-      if (fb.life <= 0) { this.fireballs.splice(i, 1); continue; }
-      fb.x += fb.vx * dt;
-      fb.y += fb.vy * dt;
-      fb.vx *= 0.92;
-      fb.vy *= 0.92;
-      fb.r += dt * 16;
-    }
-
-    for (let i = this.sparks.length - 1; i >= 0; i--) {
-      const sp = this.sparks[i];
-      sp.life -= dt;
-      if (sp.life <= 0) { this.sparks.splice(i, 1); continue; }
-      sp.x += sp.vx * dt;
-      sp.y += sp.vy * dt;
-      sp.vx *= 0.90;
-      sp.vy *= 0.90;
-    }
-
-    for (let i = this.lightnings.length - 1; i >= 0; i--) {
-      this.lightnings[i].life -= dt;
-      if (this.lightnings[i].life <= 0) this.lightnings.splice(i, 1);
-    }
-
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const pt = this.particles[i];
-      pt.life -= dt;
-      if (pt.life <= 0) { this.particles.splice(i, 1); continue; }
-      pt.x += pt.vx * dt;
-      pt.y += pt.vy * dt;
-      pt.vx *= pt.drag;
-      pt.vy *= pt.drag;
-    }
-
-    for (let i = this.debris.length - 1; i >= 0; i--) {
-      const d = this.debris[i];
-      d.life -= dt;
-      if (d.life <= 0) { this.debris.splice(i, 1); continue; }
-      d.x += d.vx * dt;
-      d.y += d.vy * dt;
-      d.vx *= 0.95;
-      d.vy *= 0.95;
-      d.rot += d.vrot * dt;
-    }
-
-    for (let i = this.trails.length - 1; i >= 0; i--) {
-      const tr = this.trails[i];
-      tr.life -= dt;
-      if (tr.life <= 0) this.trails.splice(i, 1);
+    for (let i = this.arcs.length - 1; i >= 0; i--) {
+      const a = this.arcs[i];
+      a.life -= dt;
+      if (a.life <= 0) this.arcs.splice(i, 1);
     }
 
     for (let i = this.popups.length - 1; i >= 0; i--) {
       const pop = this.popups[i];
       pop.life -= dt;
-      if (pop.life <= 0) { this.popups.splice(i, 1); continue; }
+      if (pop.life <= 0) {
+        this.popups.splice(i, 1);
+        continue;
+      }
       pop.y += pop.vy * dt;
       pop.vy *= 0.95;
     }
   }
 
   renderTrails(ctx) {
+    if (!this.trails.length) return;
     ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    for (const tr of this.trails) {
-      const alpha = Math.max(0, tr.life / tr.maxLife);
-      ctx.globalAlpha = alpha * 0.55;
-      ctx.fillStyle = tr.color;
+    for (let i = 0; i < this.trails.length; i++) {
+      const t = this.trails[i];
+      const alpha = (t.life / t.maxLife) * 0.42;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = t.color;
       ctx.beginPath();
-      ctx.arc(tr.x, tr.y, tr.r * alpha, 0, Math.PI * 2);
+      ctx.arc(t.x, t.y, t.r * (t.life / t.maxLife), 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
   }
 
   renderForeground(ctx, W, H) {
-    for (const d of this.debris) {
-      const alpha = Math.max(0, d.life / d.maxLife);
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.translate(d.x, d.y);
-      ctx.rotate(d.rot);
-      ctx.strokeStyle = '#140c29';
-      ctx.lineWidth = 1.8;
-
-      const s = d.size;
-      if (d.part === 'wing_left' || d.part === 'wing_right') {
-        ctx.fillStyle = d.primaryCol;
-        ctx.beginPath();
-        ctx.moveTo(-s, -s * 0.6);
-        ctx.lineTo(s * 1.1, 0);
-        ctx.lineTo(-s * 0.4, s * 0.8);
-        ctx.closePath();
-        ctx.fill(); ctx.stroke();
-      } else if (d.part === 'turbine') {
-        ctx.fillStyle = '#4a5759';
-        ctx.fillRect(-s * 0.6, -s * 0.4, s * 1.2, s * 0.8);
-        ctx.strokeRect(-s * 0.6, -s * 0.4, s * 1.2, s * 0.8);
-        ctx.fillStyle = d.accentCol;
-        ctx.beginPath(); ctx.arc(s * 0.6, 0, s * 0.35, 0, Math.PI * 2); ctx.fill();
-      } else if (d.part === 'dome_shard') {
-        ctx.fillStyle = '#90e0ef';
-        ctx.beginPath();
-        ctx.arc(0, 0, s * 0.65, 0, Math.PI * 1.2);
-        ctx.closePath();
-        ctx.fill(); ctx.stroke();
-      } else {
-        ctx.fillStyle = d.primaryCol;
-        ctx.fillRect(-s * 0.7, -s * 0.5, s * 1.4, s);
-        ctx.strokeRect(-s * 0.7, -s * 0.5, s * 1.4, s);
-      }
-      ctx.restore();
-    }
-
-    for (const fb of this.fireballs) {
-      const ratio = fb.life / fb.maxLife;
-      ctx.save();
-      if (ratio > 0.35) ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = Math.min(1, ratio * 1.25);
-      if (ratio > 0.75) ctx.fillStyle = '#ffffff';
-      else if (ratio > 0.52) ctx.fillStyle = '#ffe169';
-      else if (ratio > 0.30) ctx.fillStyle = '#ff6b35';
-      else ctx.fillStyle = 'rgba(32, 22, 54, 0.72)';
-
-      ctx.beginPath();
-      ctx.arc(fb.x, fb.y, fb.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
     ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
 
-    for (const sw of this.shockwaves) {
-      const alpha = Math.max(0, sw.life / sw.maxLife);
-      ctx.globalAlpha = alpha * 0.85;
+    for (let i = 0; i < this.shockwaves.length; i++) {
+      const sw = this.shockwaves[i];
+      const alpha = (sw.life / sw.maxLife) * 0.72;
+      ctx.globalAlpha = alpha;
       ctx.strokeStyle = sw.color;
-      ctx.lineWidth = 4 * alpha + 1.5;
+      ctx.lineWidth = 3.2;
       ctx.beginPath();
       ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
       ctx.stroke();
     }
 
-    for (const sp of this.sparks) {
-      const alpha = Math.max(0, sp.life / sp.maxLife);
-      const spd = Math.hypot(sp.vx, sp.vy) || 1;
-      const dx = (sp.vx / spd) * sp.len;
-      const dy = (sp.vy / spd) * sp.len;
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = sp.color;
-      ctx.lineWidth = 2.4;
+    for (let i = 0; i < this.particles.length; i++) {
+      const p = this.particles[i];
+      const ratio = p.life / p.maxLife;
+      ctx.globalAlpha = Math.min(1, ratio * 1.15);
+      ctx.fillStyle = p.color;
       ctx.beginPath();
-      ctx.moveTo(sp.x, sp.y);
-      ctx.lineTo(sp.x - dx, sp.y - dy);
-      ctx.stroke();
-    }
-
-    for (const lt of this.lightnings) {
-      const alpha = Math.max(0, lt.life / lt.maxLife);
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = lt.color;
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      lt.pts.forEach((p, idx) => {
-        if (idx === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      });
-      ctx.stroke();
-
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-
-    for (const pt of this.particles) {
-      const alpha = Math.max(0, pt.life / pt.maxLife);
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = pt.color;
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, pt.r * alpha, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, Math.max(1.2, p.r * ratio), 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.restore();
 
-    ctx.save();
-    ctx.textAlign = 'center';
-    for (const pop of this.popups) {
-      const alpha = Math.min(1, (pop.life / pop.maxLife) * 1.4);
-      ctx.globalAlpha = alpha;
-      ctx.font = `900 ${Math.round(15 * pop.scale)}px 'Segoe UI', sans-serif`;
-      ctx.strokeStyle = '#120a2a';
-      ctx.lineWidth = 4;
-      ctx.strokeText(pop.text, pop.x, pop.y);
-      ctx.fillStyle = pop.color;
-      ctx.fillText(pop.text, pop.x, pop.y);
+    for (let i = 0; i < this.arcs.length; i++) {
+      const a = this.arcs[i];
+      ctx.globalAlpha = a.life / a.maxLife;
+      ctx.strokeStyle = a.color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      a.pts.forEach((pt, idx) => (idx === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)));
+      ctx.stroke();
     }
-    ctx.restore();
 
-    if (this.flashAlpha > 0.01) {
-      ctx.save();
+    if (this.popups.length) {
+      ctx.textAlign = 'center';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#120826';
+      ctx.lineWidth = 3.5;
+      for (let i = 0; i < this.popups.length; i++) {
+        const pop = this.popups[i];
+        const alpha = Math.min(1, (pop.life / pop.maxLife) * 1.4);
+        ctx.globalAlpha = alpha;
+        ctx.font = `900 ${Math.round(14 * (pop.scale || 1))}px sans-serif`;
+        ctx.strokeText(pop.text, pop.x, pop.y);
+        ctx.fillStyle = pop.color;
+        ctx.fillText(pop.text, pop.x, pop.y);
+      }
+    }
+
+    if (this.flashAlpha > 0) {
       ctx.globalAlpha = this.flashAlpha;
       ctx.fillStyle = this.flashColor;
       ctx.fillRect(0, 0, W, H);
-      ctx.restore();
     }
+
+    ctx.restore();
   }
 }
