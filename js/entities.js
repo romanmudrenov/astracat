@@ -143,6 +143,94 @@ const DIFFICULTIES = {
   nightmare: { label: 'Безумие', playerHp: 4, enemyHp: 1.55, bulletSpeed: 1.32, spawnRate: 0.64, scoreMult: 1.85, durationMult: 1.15, twoBosses: true }
 };
 
+// =========================================================================
+// АВТО-ЗАГРУЗЧИК И НАРЕЗЧИК СПРАЙТ-ЛИСТОВ (2x2 И 1x4) ИЗ ПАПКИ img/
+// =========================================================================
+const CUSTOM_SPRITES = {};
+
+function registerCustomSprite(key, filename) {
+  const entry = { img: null, ready: false, cols: 1, rows: 1 };
+  CUSTOM_SPRITES[key] = entry;
+  const img = new Image();
+  img.onload = () => {
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    const aspect = w / Math.max(1, h);
+    if (aspect >= 2.2) {
+      entry.cols = 4;
+      entry.rows = 1;
+    } else if (aspect >= 0.82 && aspect <= 1.22) {
+      entry.cols = 2;
+      entry.rows = 2;
+    } else {
+      entry.cols = 1;
+      entry.rows = 1;
+    }
+    entry.img = img;
+    entry.ready = true;
+  };
+  img.src = `img/${filename}`;
+}
+
+(function preloadAllCustomSprites() {
+  for (let id = 1; id <= 6; id++) {
+    registerCustomSprite(`boss_${id}`, `boss${id}.png`);
+    registerCustomSprite(`boss_${id}_mid`, `boss${id}_mid.png`);
+    for (let slot = 1; slot <= 4; slot++) {
+      registerCustomSprite(`enemy_${id}_${slot}`, `enemy${id}_${slot}.png`);
+    }
+  }
+})();
+
+function getEnemySpriteKey(levelId, kind) {
+  const lvl = LEVELS.find(l => l.id === levelId) || LEVELS[0];
+  const idx = (lvl.enemyTypes || []).indexOf(kind);
+  if (idx < 0) return null;
+  return `enemy_${levelId}_${idx + 1}`;
+}
+
+function drawSlicedSprite(ctx, entry, frameIdx, targetSize, animTime, hitFlash = 0, isAttacking = false) {
+  if (!entry || !entry.ready || !entry.img) return false;
+
+  const totalFrames = entry.cols * entry.rows;
+  const safeFrame = ((frameIdx % totalFrames) + totalFrames) % totalFrames;
+  const col = safeFrame % entry.cols;
+  const row = Math.floor(safeFrame / entry.cols);
+
+  const fw = entry.img.naturalWidth / entry.cols;
+  const fh = entry.img.naturalHeight / entry.rows;
+
+  // Живое дыхание + импульс отдачи при выстреле
+  const breathe = Math.sin(animTime * 5.2) * 0.045;
+  const attackPop = isAttacking ? 0.09 : 0;
+  const sx = 1 + breathe + attackPop;
+  const sy = 1 - breathe + attackPop;
+
+  ctx.save();
+  ctx.scale(sx, sy);
+
+  // Лёгкая вспышка при попадании пули без тормозящего ctx.filter
+  if (hitFlash > 0.15) {
+    ctx.globalAlpha = 0.88;
+  }
+
+  ctx.drawImage(
+    entry.img,
+    col * fw, row * fh, fw, fh,
+    -targetSize / 2, -targetSize / 2, targetSize, targetSize
+  );
+
+  if (hitFlash > 0.15) {
+    ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.45, hitFlash * 0.45)})`;
+    ctx.beginPath();
+    ctx.arc(0, 0, targetSize * 0.36, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+  return true;
+}
+
 function roundRectPath(ctx, x, y, w, h, r) {
   const rad = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
@@ -487,7 +575,7 @@ function drawPlayerShipModel(ctx, ship, time, vx = 0, opts = {}) {
 }
 
 // =========================================================================
-// 6 НОВЫХ ИНТЕРАКТИВНЫХ ОБЪЕКТОВ СЕКТОРА (ВКЛЮЧАЯ КОСМО-БУМБОКС РЕГГИ)
+// 6 ИНТЕРАКТИВНЫХ ОБЪЕКТОВ СЕКТОРА
 // =========================================================================
 function drawInteractiveProp(ctx, pr) {
   ctx.save();
@@ -520,8 +608,7 @@ function drawInteractiveProp(ctx, pr) {
     roundRectPath(ctx, -18, -16, 36, 32, 12); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#fff3d6';
     roundRectPath(ctx, -12, -10, 24, 20, 8); ctx.fill();
-    ctx.fillStyle = '#f72585'; ctx.font = '900 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🍬', 0, 1);
+    ctx.fillStyle = '#f72585'; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
   } else if (pr.type === 'jelly_generator') {
     ctx.strokeStyle = '#caf0f8'; ctx.lineWidth = 2.6;
     for (let k = -1; k <= 1; k++) {
@@ -530,19 +617,15 @@ function drawInteractiveProp(ctx, pr) {
     }
     ctx.fillStyle = '#48cae4'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.4;
     ctx.beginPath(); ctx.arc(0, 2, 18, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#fee440'; ctx.font = '900 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('⚡', 0, -4);
+    ctx.fillStyle = '#fee440'; ctx.beginPath(); ctx.arc(0, -5, 4.5, 0, Math.PI * 2); ctx.fill();
   } else if (pr.type === 'reggae_boombox') {
-    // Ур. 5 (Раста): Космо-Бумбокс Регги!
     ctx.rotate(Math.sin(pr.phase * 3.5) * 0.14);
-    // Ручка сверху
     ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 3.5;
     ctx.beginPath(); ctx.moveTo(-12, -12); ctx.lineTo(-12, -20); ctx.lineTo(12, -20); ctx.lineTo(12, -12); ctx.stroke();
-    // Корпус бумбокса в цветах раста
     ctx.fillStyle = '#06d6a0'; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
     roundRectPath(ctx, -22, -12, 44, 26, 6); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#ff4d6d'; ctx.fillRect(-20, -10, 40, 6);
     ctx.fillStyle = '#ffd166'; ctx.fillRect(-20, -4, 40, 5);
-    // Два басовых динамика
     [-12, 12].forEach(sx => {
       ctx.fillStyle = '#14052b'; ctx.beginPath(); ctx.arc(sx, 4, 7.5, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 1.6; ctx.stroke();
@@ -638,7 +721,7 @@ function drawPlayerBullet(ctx, b) {
 }
 
 // =========================================================================
-// 18 УНИКАЛЬНЫХ МИГАЮЩИХ ПРЕПЯТСТВИЙ (УР. 5 — РАСТАМАНСКИЕ)
+// 18 МИГАЮЩИХ ПРЕПЯТСТВИЙ
 // =========================================================================
 function drawObstacle(ctx, ob) {
   ctx.save();
@@ -652,7 +735,6 @@ function drawObstacle(ctx, ob) {
   const blinkCol = strobe ? '#ffffff' : `hsl(${hue}, 100%, 66%)`;
   const blinkCol2 = `hsl(${(hue + 140) % 360}, 100%, 70%)`;
 
-  // Ур. 1
   if (ob.shape === 'om_star') {
     ctx.rotate(ob.rot || 0);
     ctx.fillStyle = blinkCol2; ctx.strokeStyle = INK; ctx.lineWidth = 2.8;
@@ -698,7 +780,6 @@ function drawObstacle(ctx, ob) {
     ctx.restore(); return;
   }
 
-  // Ур. 2
   if (ob.shape === 'mexican_skull_bones') {
     ctx.rotate(Math.sin(ph * 2.5) * 0.22);
     ctx.strokeStyle = strobe ? '#ffbe0b' : '#ffffff'; ctx.lineWidth = 6;
@@ -747,7 +828,6 @@ function drawObstacle(ctx, ob) {
     ctx.restore(); return;
   }
 
-  // Ур. 3
   if (ob.shape === 'cotton_candy_storm') {
     const puffs = [[-12, -2, 11], [12, -2, 11], [-6, -10, 12], [7, -9, 11], [0, -1, 13]];
     puffs.forEach(([px, py, pr], idx) => {
@@ -792,7 +872,6 @@ function drawObstacle(ctx, ob) {
     ctx.restore(); return;
   }
 
-  // Ур. 4
   if (ob.shape === 'moving_seaweed') {
     for (let t = -2; t <= 2; t++) {
       const sway = Math.sin(ph * 4.5 + t * 1.4) * 11;
@@ -823,7 +902,6 @@ function drawObstacle(ctx, ob) {
     ctx.restore(); return;
   }
 
-  // --- УРОВЕНЬ 5 (РАСТАМАНСКИЙ): 1) 7-листник конопли, 2) Винил-пластинка регги, 3) Раста-солнце в очках ---
   if (ob.shape === 'rasta_hemp_leaf') {
     ctx.rotate(Math.sin(ph * 3) * 0.28);
     ctx.translate(0, 10);
@@ -837,7 +915,6 @@ function drawObstacle(ctx, ob) {
     drawGlossyCircle(ctx, 0, 0, 23, '#14052b');
     ctx.strokeStyle = '#4a4e69'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(0, 0, 17, 0, Math.PI * 2); ctx.stroke();
-    // Красно-жёлто-зелёное яблоко пластинки
     ctx.fillStyle = '#ff4d6d'; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#ffd166'; ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#06d6a0'; ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fill();
@@ -855,7 +932,6 @@ function drawObstacle(ctx, ob) {
       ctx.restore();
     }
     drawGlossyCircle(ctx, 0, 0, 15, '#ffd166');
-    // Тёмные солнцезащитные очки
     ctx.fillStyle = '#120826';
     roundRectPath(ctx, -11, -5, 9, 6, 2); ctx.fill();
     roundRectPath(ctx, 2, -5, 9, 6, 2); ctx.fill();
@@ -863,7 +939,6 @@ function drawObstacle(ctx, ob) {
     ctx.restore(); return;
   }
 
-  // Ур. 6
   if (ob.shape === 'fly_agaric_obs') {
     ctx.rotate(Math.sin(ph * 3) * 0.2);
     ctx.fillStyle = '#fff8eb'; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
@@ -895,21 +970,36 @@ function drawObstacle(ctx, ob) {
 }
 
 // =========================================================================
-// ДЕТАЛИЗИРОВАННЫЕ МИГАЮЩИЕ ВРАГИ (ВКЛЮЧАЯ 3 РАСТА-ВРАГА УР. 5)
+// ВРАГИ (С АВТОПОДХВАТОМ enemy[Уровень]_[Номер].png + РЕЗЕРВНАЯ ОТРИСОВКА)
 // =========================================================================
-function drawUniqueEnemy(ctx, e, player = null) {
+function drawUniqueEnemy(ctx, e, player = null, levelId = 1) {
   ctx.save();
   ctx.translate(e.x, e.y);
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   if (e.isElite) ctx.scale(1.18, 1.18);
 
+  // Проверяем загруженный спрайт-лист enemy[levelId]_[slot].png
+  const spriteKey = getEnemySpriteKey(levelId, e.kind);
+  const spriteEntry = spriteKey ? CUSTOM_SPRITES[spriteKey] : null;
+  if (spriteEntry && spriteEntry.ready) {
+    let frame = Math.floor(e.phase * 2.6) % 2;
+    const isAttacking = (e.attackAnimTimer || 0) > 0;
+    if (isAttacking) frame = 3;
+    else if (e.shootTimer < 0.25) frame = 2;
+
+    const size = (e.r || 22) * 2.55;
+    drawSlicedSprite(ctx, spriteEntry, frame, size, e.phase, e.hitFlash, isAttacking);
+    if (e.isElite) drawEliteCrown(ctx, -size * 0.44);
+    ctx.restore();
+    return;
+  }
+
   const flash = e.hitFlash > 0;
   const hue = Math.floor((e.phase * 120) % 360);
   const strobe = Math.sin(e.phase * 10) > 0;
   const neonRim = strobe ? '#ffffff' : `hsl(${hue}, 100%, 66%)`;
 
-  // Ур. 1
   if (e.kind === 'mini_stamp') {
     const stampCol = flash ? '#ffffff' : `hsl(${hue}, 95%, 56%)`;
     e.wingCol = stampCol; e.bodyCol = '#14052b';
@@ -928,7 +1018,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.fillStyle = '#120529'; roundRectPath(ctx, -14, -17, 28, 34, 4); ctx.fill();
     ctx.strokeStyle = `hsl(${(hue + 140) % 360}, 100%, 65%)`; ctx.lineWidth = 1.6;
     ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = '#ffd166'; ctx.font = '900 7px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('666 ॐ', 0, -10);
     drawCartoonEyes(ctx, e, -6.5, 6.5, -1, 4.3, '#ff006e', player, true);
     drawFangedMouth(ctx, 7, 16, 6.5);
     if (e.isElite) drawEliteCrown(ctx, -24);
@@ -947,11 +1036,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     }
     ctx.restore();
     drawGlossyCircle(ctx, 0, 0, 14.5, flash ? '#ffffff' : '#3d1e05');
-    ctx.fillStyle = '#ffbe0b';
-    for (let s = 0; s < 8; s++) {
-      const sa = (Math.PI * 2 * s) / 8 + e.phase;
-      ctx.beginPath(); ctx.arc(Math.cos(sa) * 10.5, Math.sin(sa) * 10.5, 1.5, 0, Math.PI * 2); ctx.fill();
-    }
     drawCartoonEyes(ctx, e, -5.5, 5.5, -2, 4.2, '#06d6a0', player, true);
     drawFangedMouth(ctx, 5.5, 14, 5.5);
     if (e.isElite) drawEliteCrown(ctx, -18);
@@ -977,7 +1061,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // Ур. 2
   if (e.kind === 'mini_skull' || e.kind === 'skeleton_ship') {
     e.wingCol = '#ff006e'; e.bodyCol = '#fff8eb';
     ctx.fillStyle = flash ? '#ffffff' : '#fff8eb'; ctx.strokeStyle = strobe ? '#ffbe0b' : '#ff006e'; ctx.lineWidth = 3;
@@ -1028,7 +1111,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // Ур. 3
   if (e.kind === 'lollipop_ship') {
     e.wingCol = '#ffc2d1'; e.bodyCol = '#fff3d6';
     ctx.fillStyle = '#fff3d6'; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
@@ -1083,7 +1165,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // Ур. 4
   if (e.kind === 'octopus_ship') {
     const octCol = flash ? '#ffffff' : '#7209b7';
     const spotCol = strobe ? '#00f5d4' : '#ff70a6';
@@ -1144,10 +1225,8 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // --- УРОВЕНЬ 5 (РАСТАМАНСКИЙ): 1) Барабан Джембе в раста-шапке, 2) Психо-Хамелеон, 3) Раста-Солнце ---
   if (e.kind === 'rasta_djembe') {
     e.wingCol = '#ff4d6d'; e.bodyCol = '#ffd166';
-    // Дреды по бокам барабана
     for (let side of [-1, 1]) {
       [-4, 4].forEach((dy, idx) => {
         const w = Math.sin(e.phase * 6 + idx + side) * 4;
@@ -1156,14 +1235,12 @@ function drawUniqueEnemy(ctx, e, player = null) {
         ctx.beginPath(); ctx.moveTo(side * 14, -6 + dy); ctx.quadraticCurveTo(side * 23, 6 + w, side * 20, 20 - w); ctx.stroke();
       });
     }
-    // Корпус барабана джембе
     ctx.fillStyle = flash ? '#ffffff' : '#bc6c25';
     ctx.strokeStyle = INK; ctx.lineWidth = 2.6;
     ctx.beginPath();
     ctx.moveTo(-14, -6); ctx.lineTo(14, -6); ctx.lineTo(8, 8); ctx.lineTo(11, 20); ctx.lineTo(-11, 20); ctx.lineTo(-8, 8);
     ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Вязаная раста-шапка (красный, жёлтый, зелёный) сверху
     ctx.fillStyle = '#06d6a0'; ctx.beginPath(); ctx.arc(0, -10, 15, Math.PI, 0); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#ffd166'; ctx.fillRect(-15, -11, 30, 4);
     ctx.fillStyle = '#ff4d6d'; ctx.fillRect(-15, -7, 30, 4);
@@ -1180,13 +1257,11 @@ function drawUniqueEnemy(ctx, e, player = null) {
     const chCol2 = rCols[(Math.floor(e.phase * 2.5) + 1) % 3];
     e.wingCol = chCol; e.bodyCol = chCol2;
 
-    // Закрученный спиральный хвост снизу
     ctx.strokeStyle = chCol2; ctx.lineWidth = 4.5;
     ctx.beginPath();
     ctx.moveTo(0, 12); ctx.quadraticCurveTo(14, 24, 4, 28); ctx.quadraticCurveTo(-6, 28, -2, 21);
     ctx.stroke();
 
-    // Зубчатый гребень на голове и тело хамелеона
     drawGlossyCircle(ctx, 0, -2, 16, chCol);
     ctx.fillStyle = chCol2;
     [-6, 0, 6].forEach(sx => {
@@ -1212,7 +1287,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     }
     ctx.restore();
     drawGlossyCircle(ctx, 0, 0, 15, flash ? '#ffffff' : '#ffd166');
-    // Тёмные очки раста-солнца
     ctx.fillStyle = '#120826';
     roundRectPath(ctx, -11, -5, 9, 6, 2); ctx.fill();
     roundRectPath(ctx, 2, -5, 9, 6, 2); ctx.fill();
@@ -1222,7 +1296,6 @@ function drawUniqueEnemy(ctx, e, player = null) {
     ctx.restore(); return;
   }
 
-  // Ур. 6
   if (e.kind === 'tentacle_shroom') {
     const capCol = flash ? '#ffffff' : `hsl(${hue}, 100%, 58%)`;
     const tentCol = strobe ? '#00f5d4' : '#ffbe0b';
@@ -1257,7 +1330,7 @@ function drawUniqueEnemy(ctx, e, player = null) {
 }
 
 // =========================================================================
-// 12 УНИКАЛЬНЫХ АНИМИРОВАННЫХ БОССОВ (ВКЛЮЧАЯ МАРКУ ХОФМАНА И МЕГА-ЛЬВА ДЖА)
+// 12 БОССОВ (С АВТОПОДХВАТОМ boss[Уровень].png И boss[Уровень]_mid.png)
 // =========================================================================
 function drawUniqueBoss(ctx, b, lvl, player, H) {
   const bScale = b.bossScale || 1.0;
@@ -1267,10 +1340,10 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     [-22 * bScale, 22 * bScale].forEach(ex => { ctx.beginPath(); ctx.moveTo(b.x + ex, b.y - 6); ctx.lineTo(b.laserX + ex * 0.6, H); ctx.stroke(); });
     ctx.restore();
   } else if (b.laserState === 'fire') {
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    ctx.save();
     [-22 * bScale, 22 * bScale].forEach((ex, idx) => {
       const startX = b.x + ex, startY = b.y - 6, endX = b.laserX + ex * 0.6;
-      ctx.strokeStyle = `hsl(${(b.time * 220 + idx * 140) % 360}, 100%, 64%)`; ctx.lineWidth = 22 * bScale; ctx.globalAlpha = 0.44;
+      ctx.strokeStyle = `hsl(${(b.time * 220 + idx * 140) % 360}, 100%, 64%)`; ctx.lineWidth = 20 * bScale; ctx.globalAlpha = 0.42;
       ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, H); ctx.stroke();
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 6 * bScale; ctx.globalAlpha = 0.95;
       ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, H); ctx.stroke();
@@ -1284,12 +1357,26 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
 
+  // Если в папку img/ загружен boss[id].png или boss[id]_mid.png — рисуем с покадровой нарезкой!
+  const bossSpriteKey = b.isMidBoss ? `boss_${lvl.id}_mid` : `boss_${lvl.id}`;
+  const spriteEntry = CUSTOM_SPRITES[bossSpriteKey];
+  if (spriteEntry && spriteEntry.ready) {
+    let frame = Math.floor(b.time * 4.5) % 2;
+    const isAttacking = b.laserState === 'fire' || (b.attackAnimTimer || 0) > 0;
+    if (isAttacking) frame = 3;
+    else if (b.laserState === 'charge' || b.shootTimer < 0.28) frame = 2;
+
+    const targetSize = b.isMidBoss ? 150 : 210;
+    drawSlicedSprite(ctx, spriteEntry, frame, targetSize, b.time, b.hitFlash, isAttacking);
+    ctx.restore();
+    return;
+  }
+
   const flash = b.hitFlash > 0;
   const lookX = player ? Math.max(-4, Math.min(4, (player.x - b.x) * 0.02)) : 0;
   const hue = Math.floor((b.time * 130) % 360);
   const strobe = Math.sin(b.time * 11) > 0;
 
-  // 1. УРОВЕНЬ 1: КРЫЛАТЫЙ ГЛАЗ-ШТЕМПЕЛЬ / КРЫЛАТАЯ МАРКА АЛЬБЕРТА ХОФМАНА
   if (lvl.id === 1) {
     const flap = Math.sin(b.time * 7.5) * 16;
 
@@ -1316,19 +1403,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.restore(); return;
     }
 
-    // Шлейф двойников
-    for (let g = 2; g >= 1; g--) {
-      ctx.save();
-      ctx.translate(-Math.cos(b.time * 1.6) * g * 12, -g * 4);
-      ctx.globalAlpha = 0.22 / g;
-      ctx.strokeStyle = `hsl(${(hue + g * 110) % 360}, 100%, 65%)`;
-      ctx.lineWidth = 4;
-      roundRectPath(ctx, -64, -72, 128, 144, 8);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // Крылья марки Хофмана
     for (let side of [-1, 1]) {
       ctx.save();
       ctx.fillStyle = `hsl(${(hue + (side > 0 ? 60 : 200)) % 360}, 95%, 62%)`;
@@ -1343,7 +1417,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.restore();
     }
 
-    // Зубчатая рамка марки
     const stampW = 126, stampH = 142, halfW = 63, halfH = 71;
     ctx.fillStyle = flash ? '#ffffff' : '#fff8eb';
     ctx.strokeStyle = strobe ? '#ffee33' : '#ff006e';
@@ -1412,7 +1485,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.restore(); return;
   }
 
-  // 2. УРОВЕНЬ 2
   if (lvl.id === 2) {
     if (b.isMidBoss) {
       const flap = Math.sin(b.time * 8) * 18;
@@ -1450,15 +1522,7 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.fillStyle = flash ? '#ffffff' : '#fff8eb'; ctx.strokeStyle = strobe ? '#ffbe0b' : '#ff002b'; ctx.lineWidth = 4.5;
     ctx.beginPath(); ctx.arc(0, -14, 52, Math.PI * 0.82, Math.PI * 2.18); ctx.lineTo(26, 52); ctx.lineTo(-26, 52); ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    if (b.phase === 3) {
-      const hBeat = 1 + Math.sin(b.time * 16) * 0.2;
-      ctx.save(); ctx.translate(0, -34); ctx.scale(hBeat, hBeat);
-      ctx.fillStyle = '#ff002b'; ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    } else {
-      ctx.fillStyle = '#ff006e'; ctx.beginPath(); ctx.arc(0, -42, 10, 0, Math.PI * 2); ctx.fill();
-    }
-
+    ctx.fillStyle = '#ff006e'; ctx.beginPath(); ctx.arc(0, -42, 10, 0, Math.PI * 2); ctx.fill();
     [-21, 21].forEach((ex, idx) => {
       ctx.fillStyle = idx === 0 ? '#06d6a0' : '#3a86ff'; ctx.beginPath(); ctx.arc(ex, -6, 18, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#090206'; ctx.beginPath(); ctx.arc(ex, -6, 13, 0, Math.PI * 2); ctx.fill();
@@ -1468,7 +1532,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.restore(); return;
   }
 
-  // 3. УРОВЕНЬ 3
   if (lvl.id === 3) {
     if (b.isMidBoss) {
       for (let seg = 4; seg >= 0; seg--) {
@@ -1517,7 +1580,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.restore(); return;
   }
 
-  // 4. УРОВЕНЬ 4
   if (lvl.id === 4) {
     if (b.isMidBoss) {
       for (let k = -3; k <= 3; k++) {
@@ -1527,10 +1589,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       }
       ctx.fillStyle = 'rgba(72, 202, 228, 0.72)'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3.5;
       ctx.beginPath(); ctx.arc(0, 6, 44, Math.PI, 0); ctx.quadraticCurveTo(46, 18, 0, 14); ctx.quadraticCurveTo(-46, 18, -44, 6); ctx.closePath(); ctx.fill(); ctx.stroke();
-      const brPulse = 1 + Math.sin(b.time * 10) * 0.14;
-      ctx.save(); ctx.translate(0, -14); ctx.scale(brPulse, brPulse);
-      ctx.fillStyle = '#ff70a6'; ctx.beginPath(); ctx.ellipse(-7, 0, 11, 8, 0, 0, Math.PI * 2); ctx.ellipse(7, 0, 11, 8, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
       [-14, 14].forEach(ex => {
         ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(ex, 0, 8, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(ex + lookX, 0, 4, 0, Math.PI * 2); ctx.fill();
@@ -1543,7 +1601,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       const t = i - 3.5, waveX = Math.sin(b.time * 5.5 + i * 0.9) * 18;
       ctx.strokeStyle = `hsl(${(seaHue + i * 42) % 360}, 98%, 66%)`; ctx.lineWidth = 10;
       ctx.beginPath(); ctx.moveTo(t * 14, 22); ctx.quadraticCurveTo(t * 18 + waveX, 56, t * 22 - waveX * 0.5, 86); ctx.stroke();
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(t * 17 + waveX * 0.6, 52, 3, 0, Math.PI * 2); ctx.fill();
     }
     ctx.fillStyle = flash ? '#ffffff' : `hsl(${seaHue}, 94%, 64%)`;
     ctx.strokeStyle = strobe ? '#ffffff' : '#9bf6ff'; ctx.lineWidth = 4.5;
@@ -1563,15 +1620,10 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.restore(); return;
   }
 
-  // =======================================================================
-  // 5. УРОВЕНЬ 5 (РАСТАМАНСКИЙ):
-  // МАЛЫЙ — ДРЕДАСТЫЙ ХАМЕЛЕОН-ГИПНОТИЗЁР | БОЛЬШОЙ — МЕГА-ЛЕВ ДЖА С ДРЕДАМИ
-  // =======================================================================
   if (lvl.id === 5) {
     const rCols = ['#ff4d6d', '#ffd166', '#06d6a0'];
 
     if (b.isMidBoss) {
-      // МАЛЫЙ БОСС УР. 5: Дредастый Хамелеон-Гипнотизёр на 6 лапах
       for (let side of [-1, 1]) {
         for (let l = 0; l < 3; l++) {
           const step = Math.sin(b.time * 8 + l * 1.6 + side) * 10;
@@ -1579,13 +1631,11 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
           ctx.beginPath(); ctx.moveTo(side * 28, -10 + l * 14); ctx.lineTo(side * 56, -18 + l * 14 + step); ctx.lineTo(side * 68, 8 + l * 14 - step); ctx.stroke();
         }
       }
-      // Гипно-спираль хвоста снизу
       ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 7;
       ctx.beginPath(); ctx.moveTo(0, 28); ctx.quadraticCurveTo(28, 54, 6, 62); ctx.quadraticCurveTo(-14, 62, -6, 46); ctx.stroke();
 
       const chCol = flash ? '#ffffff' : rCols[Math.floor(b.time * 3) % 3];
       drawGlossyCircle(ctx, 0, -4, 38, chCol);
-      // Дреды на макушке
       [-16, -6, 6, 16].forEach((dx, idx) => {
         ctx.strokeStyle = rCols[idx % 3]; ctx.lineWidth = 5;
         ctx.beginPath(); ctx.moveTo(dx, -36); ctx.quadraticCurveTo(dx * 1.8, -54, dx * 2.2, -32); ctx.stroke();
@@ -1598,8 +1648,6 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.restore(); return;
     }
 
-    // БОЛЬШОЙ БОСС УР. 5: МЕГА-ЛЕВ ДЖА С ДРЕДАМИ И РАСТА-КОРОНОЙ
-    // 6 толстых извивающихся красно-жёлто-зелёных дредов-щупалец
     for (let d = 0; d < 6; d++) {
       const side = d < 3 ? -1 : 1;
       const idx = d % 3;
@@ -1612,12 +1660,10 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
       ctx.bezierCurveTo(startX + side * 34 + wave, 24, startX + side * 16 - wave, 62, startX + side * 38 + wave * 0.7, 94);
       ctx.stroke();
 
-      // Золотые кольца-бусины на дредах
       ctx.fillStyle = '#ffd166';
       ctx.beginPath(); ctx.arc(startX + side * 24, 48 + wave * 0.4, 5.5, 0, Math.PI * 2); ctx.fill();
     }
 
-    // Пышная грива Льва Джа
     ctx.save();
     ctx.rotate(Math.sin(b.time * 2) * 0.08);
     for (let m = 0; m < 14; m++) {
@@ -1628,16 +1674,13 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     }
     ctx.restore();
 
-    // Морда Льва Джа
     drawGlossyCircle(ctx, 0, 2, 44, flash ? '#ffffff' : '#f4a261');
 
-    // Вязаная раста-шапка / корона сверху
     ctx.fillStyle = '#06d6a0'; ctx.strokeStyle = INK; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(0, -30, 34, Math.PI, 0); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#ffd166'; ctx.fillRect(-34, -32, 68, 7);
     ctx.fillStyle = '#ff4d6d'; ctx.fillRect(-34, -25, 68, 7);
 
-    // Круглые радужные очки Льва
     [-17, 17].forEach((ex, idx) => {
       ctx.fillStyle = idx === 0 ? '#ff4d6d' : '#06d6a0';
       ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 3.2;
@@ -1648,14 +1691,12 @@ function drawUniqueBoss(ctx, b, lvl, player, H) {
     ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 3.5;
     ctx.beginPath(); ctx.moveTo(-4, -4); ctx.lineTo(4, -4); ctx.stroke();
 
-    // Львиный нос и рычащая клыкастая пасть
     ctx.fillStyle = INK;
     ctx.beginPath(); ctx.moveTo(-7, 10); ctx.lineTo(7, 10); ctx.lineTo(0, 18); ctx.closePath(); ctx.fill();
     drawFangedMouth(ctx, 21, 44, 17);
     ctx.restore(); return;
   }
 
-  // 6. УРОВЕНЬ 6: СПОРОВАЯ МИНИ-СКОЛОПЕНДРА / ВЛАДЫКА МУХОМОР-СКОЛОПЕНДРА
   const segCount = b.isMidBoss ? 3 : 5;
   for (let seg = segCount - 1; seg >= 0; seg--) {
     const sy = (b.isMidBoss ? 12 : 18) + seg * (b.isMidBoss ? 13 : 15);
