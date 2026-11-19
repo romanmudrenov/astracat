@@ -1013,6 +1013,7 @@
         kind,
         isElite,
         stunTimer: 0,
+        attackAnimTimer: 0,
         movePattern: isVFormation ? 'figure8' : patterns[Math.floor(Math.random() * patterns.length)],
         x: Math.max(40, Math.min(W - 40, baseX + offsetX)),
         y: -38 + offsetY,
@@ -1061,7 +1062,7 @@
 
     boss = {
       isMidBoss, bossScale: bScale, x: W / 2, y: -110, targetY: Math.min(155, H * 0.22),
-      r: 62 * bScale, hp: totalHp, maxHp: totalHp, phase: 1, time: 0, hitFlash: 0,
+      r: 62 * bScale, hp: totalHp, maxHp: totalHp, phase: 1, time: 0, hitFlash: 0, attackAnimTimer: 0,
       smokeTimer: 0, shootTimer: 0.95, specialTimer: 3.2, laserState: 'idle', laserTimer: 0, laserX: W / 2
     };
     screenShake = 10;
@@ -1259,6 +1260,7 @@
   }
 
   function fireUniqueBossWeapon(b, lvl, diff) {
+    b.attackAnimTimer = 0.28;
     const waveSpd = getWaveSpeedMult();
     const spd = 220 * diff.bulletSpeed * (0.92 + waveSpd * 0.08);
     const toPlayer = player ? Math.atan2(player.y - b.y, player.x - b.x) : Math.PI / 2;
@@ -1310,7 +1312,6 @@
         });
       }
     } else if (lvl.id === 5) {
-      // Раста-боссы: Дредастый Хамелеон и Мега-Лев Джа
       if (synth) synth.sfxWave();
       b.shootTimer = b.phase === 3 ? 0.88 : 1.15;
       [-0.26, 0.26].forEach((offsetAng, idx) => {
@@ -1331,7 +1332,6 @@
     }
   }
 
-  // Единая функция активации бонусного объекта сектора (работает И от выстрела, И от касания!)
   function activateSectorProp(pr) {
     if (pr.type === 'prism_kaleidoscope') {
       const rayCols = ['#f3c4fb', '#bdb2ff', '#a0c4ff', '#fdffb6', '#ffc6ff'];
@@ -1406,7 +1406,6 @@
       }
       if (world3d) world3d.triggerPulse(pr.x, pr.y, '#caf0f8');
     } else if (pr.type === 'reggae_boombox') {
-      // Раста-уровень 5: Космо-Бумбокс Регги!
       psySlowTimer = 4.0;
       for (let ebIdx = enemyBullets.length - 1; ebIdx >= 0; ebIdx--) {
         const eb = enemyBullets[ebIdx];
@@ -1448,7 +1447,6 @@
       pr.phase += dt * 2.5;
       let triggered = false;
 
-      // 1) Проверка попадания любой пули игрока по бонусному объекту сектора
       for (let j = bullets.length - 1; j >= 0; j--) {
         const b = bullets[j];
         if (b.propCooldown > 0) continue;
@@ -1465,7 +1463,6 @@
         continue;
       }
 
-      // 2) Проверка подбора/касания кораблём игрока
       if (Math.hypot(player.x - pr.x, player.y - pr.y) < player.r + pr.r + 14) {
         activateSectorProp(pr);
         interactiveProps.splice(i, 1);
@@ -1677,7 +1674,7 @@
         const b = bullets[j];
         if (Math.hypot(b.x - ob.x, b.y - ob.y) < ob.r + b.r) {
           ob.hp -= b.dmg;
-          if (vfx) vfx.addHitSparks(b.x, b.y, ob.neonColor, 8);
+          if (vfx) vfx.addHitSparks(b.x, b.y, ob.neonColor, 7);
           if (!b.pierce) bullets.splice(j, 1);
 
           if (ob.hp <= 0) {
@@ -1731,7 +1728,7 @@
       if (b.kind === 'vortex_ring') b.r = Math.min(34, b.r + dt * 28);
       b.x += b.vx * dt; b.y += b.vy * dt;
 
-      if (vfx && vfx.trails.length < 50) vfx.addTrail(b.x, b.y + 6, b.color, Math.min(8, b.r * 0.5), 0.15);
+      if (vfx && vfx.trails.length < 45) vfx.addTrail(b.x, b.y + 6, b.color, Math.min(7, b.r * 0.45), 0.14);
       if (b.y < -40 || b.x < -40 || b.x > W + 40) bullets.splice(i, 1);
     }
 
@@ -1741,6 +1738,7 @@
       const e = enemies[i];
       e.phase += dt * e.freq; e.rot += e.vrot * dt;
       if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt * 6);
+      if (e.attackAnimTimer > 0) e.attackAnimTimer = Math.max(0, e.attackAnimTimer - dt);
 
       if (e.stunTimer > 0) {
         e.stunTimer -= dt;
@@ -1771,6 +1769,7 @@
 
         e.shootTimer -= edt;
         if (e.shootTimer <= 0 && e.y > 40 && e.y < H * 0.68) {
+          e.attackAnimTimer = 0.26;
           e.shootTimer = 1.80 / (diff.bulletSpeed * Math.sqrt(waveSpd));
           const ang = Math.atan2(p.y - e.y, p.x - e.x);
           const spd = 220 * diff.bulletSpeed * (0.9 + waveSpd * 0.1);
@@ -1811,7 +1810,7 @@
         const b = bullets[j];
         if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + b.r) {
           e.hp -= b.dmg; e.hitFlash = 1;
-          if (vfx) vfx.addHitSparks(b.x, b.y, b.color || lvl.accent, 11);
+          if (vfx) vfx.addHitSparks(b.x, b.y, b.color || lvl.accent, 7);
 
           if (b.chainLightning && vfx) {
             for (const other of enemies) {
@@ -1833,7 +1832,7 @@
 
       if (e.hp <= 0) {
         if (synth) synth.sfxExplosion();
-        if (vfx) vfx.addRealisticExplosion(e.x, e.y, lvl.accent, 1.05, e.wingCol, e.bodyCol);
+        if (vfx) vfx.addRealisticExplosion(e.x, e.y, lvl.accent, 1.0, e.wingCol, e.bodyCol);
         if (world3d && e.isElite) world3d.triggerPulse(e.x, e.y, '#ffd6a5');
 
         score += Math.round(e.points * combo * diff.scoreMult);
@@ -1849,7 +1848,7 @@
       }
 
       if (Math.hypot(p.x - e.x, p.y - e.y) < p.r + e.r - 4) {
-        if (vfx) vfx.addRealisticExplosion(e.x, e.y, '#ff5964', 1.1, e.wingCol, e.bodyCol);
+        if (vfx) vfx.addRealisticExplosion(e.x, e.y, '#ff5964', 1.05, e.wingCol, e.bodyCol);
         enemies.splice(i, 1); damagePlayer(); continue;
       }
       if (e.y > H + 50) enemies.splice(i, 1);
@@ -1864,7 +1863,7 @@
         eb.life -= ebDt;
         const ang = Math.atan2(p.y - eb.y, p.x - eb.x);
         eb.vx += Math.cos(ang) * 190 * ebDt; eb.vy += Math.sin(ang) * 190 * ebDt;
-        if (vfx && Math.random() < 0.4) vfx.addTrail(eb.x, eb.y, eb.color || '#ff758f', 4.5, 0.15);
+        if (vfx && vfx.trails.length < 45 && Math.random() < 0.35) vfx.addTrail(eb.x, eb.y, eb.color || '#ff758f', 4.5, 0.14);
       }
       if (eb.kind === 'psy_wave') { eb.hue = (eb.hue + ebDt * 220) % 360; eb.r = Math.min(36, eb.r + ebDt * 12); }
       else if (eb.kind === 'laser_flower' || eb.kind === 'green_spin_star' || eb.kind === 'laser_shuriken' || eb.kind === 'mini_spiral' || eb.kind === 'rubik_square' || eb.kind === 'thrown_donut' || eb.kind === 'mini_mushroom_shot') {
@@ -1873,13 +1872,12 @@
 
       eb.x += eb.vx * ebDt; eb.y += eb.vy * ebDt;
       if (Math.hypot(eb.x - p.x, eb.y - p.y) < p.r + eb.r - 5) {
-        if (vfx) vfx.addHitSparks(eb.x, eb.y, '#ff5964', 10);
+        if (vfx) vfx.addHitSparks(eb.x, eb.y, '#ff5964', 7);
         enemyBullets.splice(i, 1); damagePlayer(); continue;
       }
       if (eb.y > H + 40 || eb.y < -50 || eb.x < -40 || eb.x > W + 40) enemyBullets.splice(i, 1);
     }
 
-    // Выпадающие бонусные капсулы теперь можно подобрать И корабликом, И сбить выстрелом!
     for (let i = bonuses.length - 1; i >= 0; i--) {
       const bn = bonuses[i];
       bn.phase += dt * 5; bn.y += bn.vy * dt;
@@ -1905,11 +1903,12 @@
     const b = boss, lvl = LEVELS[selectedLevelIdx], diff = DIFFICULTIES[selectedDiffKey];
     b.time += dt;
     if (b.hitFlash > 0) b.hitFlash = Math.max(0, b.hitFlash - dt * 7);
+    if (b.attackAnimTimer > 0) b.attackAnimTimer = Math.max(0, b.attackAnimTimer - dt);
     if (b.y < b.targetY) { b.y += 95 * dt; return; }
 
     const hpRatio = b.hp / b.maxHp;
     b.phase = hpRatio > 0.65 ? 1 : (hpRatio > 0.30 ? 2 : 3);
-    if (b.phase === 3 && vfx) { b.smokeTimer -= dt; if (b.smokeTimer <= 0) { b.smokeTimer = 0.16; vfx.addSmoke(b.x, b.y); } }
+    if (b.phase === 3 && vfx) { b.smokeTimer -= dt; if (b.smokeTimer <= 0) { b.smokeTimer = 0.20; vfx.addSmoke(b.x, b.y); } }
 
     const sweepSpeed = (b.phase === 3 ? 2.1 : (b.phase === 2 ? 1.55 : 1.15)) + selectedLevelIdx * 0.05;
     b.x = W / 2 + Math.sin(b.time * sweepSpeed) * Math.max(60, W / 2 - b.r - 24);
@@ -1937,16 +1936,16 @@
       if (Math.hypot(bul.x - b.x, bul.y - b.y) < b.r + bul.r - 6) {
         b.hp -= bul.dmg; b.hitFlash = 1; score += 25;
         if (vfx) {
-          vfx.addHitSparks(bul.x, bul.y, bul.color || lvl.accent, 10);
+          vfx.addHitSparks(bul.x, bul.y, bul.color || lvl.accent, 7);
           if (bul.chainLightning) vfx.addLightningArc(bul.x, bul.y, b.x + (Math.random() - 0.5) * 50, b.y, '#fee440');
         }
         bullets.splice(j, 1);
 
         if (b.hp <= 0) {
           if (synth) synth.sfxBossExplosion();
-          if (vfx) { vfx.triggerFlash('#ffffff', 0.65); vfx.addRealisticExplosion(b.x, b.y, lvl.accent, 2.3, lvl.bossColor, '#ffd166'); }
+          if (vfx) { vfx.triggerFlash('#ffffff', 0.45); vfx.addRealisticExplosion(b.x, b.y, lvl.accent, 2.0, lvl.bossColor, '#ffd166'); }
           if (world3d) world3d.triggerPulse(b.x, b.y, '#ffffff');
-          screenShake = 22;
+          screenShake = 20;
 
           if (b.isMidBoss) {
             midBossDefeated = true; score += 1800; runCoins += Math.round((lvl.coinReward || 380) * 0.5); kills++;
@@ -1970,14 +1969,14 @@
     if (player.shield) {
       player.shield = false; player.invuln = 1.1; player.squashX = 1.3; player.squashY = 0.75;
       if (synth) synth.sfxShieldBlock();
-      if (vfx) { vfx.addShockwave(player.x, player.y, '#48dbfb', 95, 0.42); vfx.addHitSparks(player.x, player.y, '#48dbfb', 16); vfx.addPopup(player.x, player.y - 20, 'ЩИТ ПОГЛОТИЛ УДАР!', '#48dbfb'); }
+      if (vfx) { vfx.addShockwave(player.x, player.y, '#48dbfb', 95, 0.42); vfx.addHitSparks(player.x, player.y, '#48dbfb', 12); vfx.addPopup(player.x, player.y - 20, 'ЩИТ ПОГЛОТИЛ УДАР!', '#48dbfb'); }
       screenShake = 6; return;
     }
     player.hp--; player.invuln = 1.5; player.squashX = 0.72; player.squashY = 1.32;
     if (player.secondaryLevel > 1) player.secondaryLevel = 1; else player.secondaryWeapon = 'none';
     combo = 1; screenShake = 12;
     if (synth) synth.sfxHurt();
-    if (vfx) { vfx.triggerFlash('#ff5964', 0.35); vfx.addRealisticExplosion(player.x, player.y, '#ff5964', 1.1); }
+    if (vfx) { vfx.triggerFlash('#ff5964', 0.32); vfx.addRealisticExplosion(player.x, player.y, '#ff5964', 1.05); }
     if (player.hp <= 0) finishGame(false);
   }
 
@@ -2065,15 +2064,14 @@
   function drawSporeClouds() {
     for (const sc of sporeClouds) {
       ctx.save();
-      const alpha = Math.min(0.42, sc.life * 0.14);
-      const grad = ctx.createRadialGradient(sc.x, sc.y, 8, sc.x, sc.y, sc.r);
-      grad.addColorStop(0, `rgba(204, 255, 51, ${alpha})`);
-      grad.addColorStop(0.6, `rgba(157, 78, 221, ${alpha * 0.8})`);
-      grad.addColorStop(1, 'rgba(157, 78, 221, 0)');
-      ctx.fillStyle = grad;
+      const alpha = Math.min(0.36, sc.life * 0.12);
+      ctx.fillStyle = `rgba(204, 255, 51, ${alpha})`;
       ctx.beginPath();
       ctx.arc(sc.x, sc.y, sc.r, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = `rgba(224, 170, 255, ${alpha * 1.4})`;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
       ctx.restore();
     }
   }
@@ -2211,7 +2209,7 @@
     for (const fr of fishRainItems) drawFishRainItem(ctx, fr);
     for (const bn of bonuses) drawFoodBonus(ctx, bn);
     for (const b of bullets) drawPlayerBullet(ctx, b);
-    for (const e of enemies) drawUniqueEnemy(ctx, e, player);
+    for (const e of enemies) drawUniqueEnemy(ctx, e, player, lvl.id);
     if (boss) drawUniqueBoss(ctx, boss, lvl, player, H);
     for (const eb of enemyBullets) drawEnemyBullet(ctx, eb);
     if (player && state !== 'GAMEOVER' && state !== 'START') {
